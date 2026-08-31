@@ -356,10 +356,7 @@ export function DemoShowcase({ initialDemo = "moss", initialPage = "home" }: Dem
     <section className="bg-[#050505] text-white">
       <div ref={selectorBarRef} className="sticky top-[68px] z-40 border-y border-white/12 bg-[#050505]/92 backdrop-blur-2xl">
         <div className="site-container grid min-h-20 items-center gap-4 py-4 lg:grid-cols-[1fr_30rem]">
-          <div className="flex items-baseline gap-3">
-            <h1 className="text-2xl font-semibold tracking-[-0.05em]">Demos</h1>
-            <span className="text-[10px] uppercase tracking-[0.15em] text-white/32">Complete sites</span>
-          </div>
+          <h1 className="text-7xl font-semibold leading-none tracking-[-0.07em]">Demos</h1>
           <div className="grid w-full grid-cols-3 gap-1" role="tablist" aria-label="Choose a website demo">
             {demoTabs.map((demo, index) => (
               <button
