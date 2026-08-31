@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
+import { MotionObserver } from "@/components/motion-observer";
 import "./globals.css";
 
 const geistSans = Geist({
@@ -15,11 +16,11 @@ const geistMono = Geist_Mono({
 export const metadata: Metadata = {
   metadataBase: new URL("https://keeplyn.com"),
   title: {
-    default: "Keeplyn | Modern Websites for Small Businesses",
-    template: "%s | Keeplyn",
+    default: "Keeplyn / Websites That Work Hard",
+    template: "%s / Keeplyn",
   },
   description:
-    "Keeplyn builds premium, conversion-focused websites for small businesses with straightforward pricing and ongoing support.",
+    "Strategy, design, development, and ongoing website care for small businesses that have outgrown the starter site.",
   keywords: [
     "small business websites",
     "web design",
@@ -27,9 +28,9 @@ export const metadata: Metadata = {
     "Keeplyn",
   ],
   openGraph: {
-    title: "Keeplyn | Better Websites for Growing Businesses",
+    title: "Keeplyn / Websites That Work Hard",
     description:
-      "Modern, trustworthy websites built to help small businesses earn attention and turn visits into inquiries.",
+      "Original, hard-working websites for small businesses ready to look unmistakably themselves.",
     url: "https://keeplyn.com",
     siteName: "Keeplyn",
     type: "website",
@@ -42,7 +43,10 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
       lang="en"
       className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}
     >
-      <body className="flex min-h-full flex-col overflow-x-hidden">{children}</body>
+      <body className="flex min-h-full flex-col overflow-x-hidden">
+        <MotionObserver />
+        {children}
+      </body>
     </html>
   );
 }

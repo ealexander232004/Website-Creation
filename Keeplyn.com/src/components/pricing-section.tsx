@@ -1,185 +1,149 @@
-import { ArrowRight, Check, Sparkles } from "lucide-react";
-import { SectionHeading } from "./section-heading";
+import { ArrowUpRight, Check } from "lucide-react";
+import Link from "next/link";
 
-interface PricingCardProps {
+interface Plan {
   name: string;
   price: string;
-  suffix?: string;
+  cadence: string;
   description: string;
   features: string[];
-  recommended?: boolean;
+  featured?: boolean;
 }
 
-function PricingCard({
-  name,
-  price,
-  suffix,
-  description,
-  features,
-  recommended = false,
-}: PricingCardProps) {
-  return (
-    <article
-      className={`relative flex h-full flex-col rounded-[1.75rem] border p-6 sm:p-8 ${
-        recommended
-          ? "border-violet bg-navy text-white shadow-2xl shadow-navy/20"
-          : "border-navy/10 bg-white text-navy shadow-sm shadow-navy/5"
-      }`}
-    >
-      {recommended ? (
-        <div className="absolute -top-3.5 left-6 flex items-center gap-1.5 rounded-full bg-mint px-3 py-1.5 text-[10px] font-bold uppercase tracking-[0.12em] text-navy shadow-lg shadow-mint/15">
-          <Sparkles className="size-3" aria-hidden="true" />
-          Recommended
-        </div>
-      ) : null}
-      <h3 className="text-lg font-bold">{name}</h3>
-      <p className={`mt-2 min-h-12 text-sm leading-6 ${recommended ? "text-white/55" : "text-slate"}`}>
-        {description}
-      </p>
-      <div className="mt-6 flex items-end gap-1.5">
-        <span className="text-4xl font-bold tracking-[-0.06em]">{price}</span>
-        {suffix ? (
-          <span className={`pb-1 text-sm ${recommended ? "text-white/45" : "text-slate"}`}>
-            {suffix}
-          </span>
-        ) : null}
-      </div>
-      <div className={`my-7 h-px ${recommended ? "bg-white/10" : "bg-navy/8"}`} />
-      <ul className="space-y-3.5" aria-label={`${name} includes`}>
-        {features.map((feature) => (
-          <li key={feature} className="flex gap-3 text-sm leading-5">
-            <span className={`mt-0.5 grid size-5 shrink-0 place-items-center rounded-full ${recommended ? "bg-mint text-navy" : "bg-violet/10 text-violet"}`}>
-              <Check className="size-3" strokeWidth={3} aria-hidden="true" />
-            </span>
-            <span className={recommended ? "text-white/78" : "text-navy/75"}>{feature}</span>
-          </li>
-        ))}
-      </ul>
-      <a
-        href="#contact"
-        className={`mt-8 flex items-center justify-center gap-2 rounded-xl px-5 py-3 text-sm font-bold transition-all ${
-          recommended
-            ? "bg-mint text-navy hover:-translate-y-0.5 hover:bg-white"
-            : "border border-navy/12 bg-mist text-navy hover:border-violet/30 hover:bg-violet/5"
-        }`}
-      >
-        Choose {name}
-        <ArrowRight className="size-4" aria-hidden="true" />
-      </a>
-    </article>
-  );
-}
-
-const builds = [
+const builds: Plan[] = [
   {
     name: "Starter",
     price: "$750",
-    description: "A focused, professional website for a clear service or offer.",
-    features: [
-      "Up to 4 thoughtfully designed pages",
-      "Mobile-first responsive build",
-      "Contact form setup",
-      "Foundational on-page SEO",
-      "One structured revision round",
-    ],
+    cadence: "one time",
+    description: "A focused site for one clear service, offer, or local business.",
+    features: ["Up to 4 pages", "Responsive design", "Contact setup", "Foundational SEO"],
   },
   {
     name: "Pro",
     price: "$1,500",
-    description: "A more strategic website built to support growth and multiple offers.",
-    features: [
-      "Up to 8 custom-designed pages",
-      "Messaging and content guidance",
-      "Conversion-focused page strategy",
-      "Blog or simple CMS setup",
-      "Analytics and key integrations",
-      "Three structured revision rounds",
-    ],
-    recommended: true,
+    cadence: "one time",
+    description: "A deeper system for a growing business with more to say and sell.",
+    features: ["Up to 8 pages", "Messaging guidance", "CMS or blog", "Analytics + integrations"],
+    featured: true,
   },
 ];
 
-const care = [
+const care: Plan[] = [
   {
     name: "Starter Care",
     price: "$49.99",
-    suffix: "/ month",
-    description: "Reliable essentials that keep your website fast, secure, and online.",
-    features: [
-      "Managed website hosting",
-      "SSL, security, and backups",
-      "Core software updates",
-      "30 minutes of content updates monthly",
-      "Standard email support",
-    ],
+    cadence: "per month",
+    description: "The essentials to keep the site secure, current, and online.",
+    features: ["Managed hosting", "SSL + backups", "Core updates", "30 minutes of edits"],
   },
   {
     name: "Pro Care",
     price: "$99.99",
-    suffix: "/ month",
-    description: "Proactive support for businesses that want to keep improving.",
-    features: [
-      "Everything in Starter Care",
-      "90 minutes of content updates monthly",
-      "Priority support queue",
-      "Monthly performance check",
-      "Quarterly conversion recommendations",
-    ],
-    recommended: true,
+    cadence: "per month",
+    description: "More hands-on support for a site that keeps evolving.",
+    features: ["Everything in Starter", "90 minutes of edits", "Priority support", "Performance review"],
+    featured: true,
   },
 ];
 
+function PlanCard({ plan, index }: { plan: Plan; index: number }) {
+  return (
+    <article
+      className={`relative flex h-full flex-col border p-6 transition-transform duration-500 hover:-translate-y-2 sm:p-8 ${
+        plan.featured
+          ? "border-navy bg-navy text-white shadow-[10px_10px_0_#3155ff]"
+          : "border-navy/20 bg-white text-navy shadow-[8px_8px_0_rgba(21,21,21,0.07)]"
+      }`}
+      data-reveal
+      style={{ transitionDelay: `${index * 80}ms` }}
+    >
+      <div className="flex items-start justify-between gap-4">
+        <div>
+          <p className={`font-mono text-[9px] uppercase tracking-[0.16em] ${plan.featured ? "text-mint" : "text-violet"}`}>
+            {plan.featured ? "Most chosen" : "Straightforward"}
+          </p>
+          <h3 className="mt-4 text-2xl font-semibold tracking-[-0.045em]">{plan.name}</h3>
+        </div>
+        <span className={`font-mono text-[10px] ${plan.featured ? "text-white/35" : "text-slate"}`}>0{index + 1}</span>
+      </div>
+
+      <p className={`mt-5 min-h-14 text-sm leading-6 ${plan.featured ? "text-white/55" : "text-slate"}`}>
+        {plan.description}
+      </p>
+
+      <div className={`my-7 h-px ${plan.featured ? "bg-white/15" : "bg-navy/15"}`} />
+      <p className="text-4xl font-semibold tracking-[-0.06em] sm:text-5xl">{plan.price}</p>
+      <p className={`mt-2 font-mono text-[9px] uppercase tracking-[0.14em] ${plan.featured ? "text-white/35" : "text-slate"}`}>
+        {plan.cadence}
+      </p>
+
+      <ul className="mt-8 space-y-3" aria-label={`${plan.name} includes`}>
+        {plan.features.map((feature) => (
+          <li key={feature} className={`flex items-center gap-3 text-sm ${plan.featured ? "text-white/70" : "text-navy/70"}`}>
+            <Check className={`size-3.5 ${plan.featured ? "text-mint" : "text-violet"}`} strokeWidth={3} aria-hidden="true" />
+            {feature}
+          </li>
+        ))}
+      </ul>
+
+      <Link
+        href="/contact"
+        className={`group mt-9 flex items-center justify-between border-t pt-5 text-sm font-semibold ${
+          plan.featured ? "border-white/20 hover:text-mint" : "border-navy/15 hover:text-violet"
+        }`}
+      >
+        Choose {plan.name}
+        <ArrowUpRight className="size-4 transition-transform duration-300 group-hover:-translate-y-1 group-hover:translate-x-1" aria-hidden="true" />
+      </Link>
+    </article>
+  );
+}
+
+function PlanGroup({ number, label, note, plans }: { number: string; label: string; note: string; plans: Plan[] }) {
+  return (
+    <section>
+      <div className="mb-7 flex items-end justify-between border-b border-navy/20 pb-5">
+        <div>
+          <p className="font-mono text-[9px] uppercase tracking-[0.16em] text-violet">{number} / {label}</p>
+          <h3 className="mt-3 text-2xl font-semibold tracking-[-0.045em] text-navy">{note}</h3>
+        </div>
+      </div>
+      <div className="grid gap-7 sm:grid-cols-2">{plans.map((plan, index) => <PlanCard key={plan.name} plan={plan} index={index} />)}</div>
+    </section>
+  );
+}
+
 export function PricingSection() {
   return (
-    <section id="pricing" className="section-space bg-mist">
+    <section id="pricing" className="overflow-hidden border-b border-navy/15 bg-cream py-24 sm:py-32">
       <div className="site-container">
-        <SectionHeading
-          eyebrow="Clear, honest pricing"
-          title="Invest once. Stay supported as you grow."
-          description="Start with the build that fits your business, then choose the care plan that matches how often you need support. No mystery quotes or padded retainers."
-          align="center"
-        />
-
-        <div className="mx-auto mt-10 flex max-w-3xl items-center justify-center gap-3 rounded-2xl border border-violet/15 bg-white p-4 text-center shadow-sm sm:text-left">
-          <span className="hidden size-9 shrink-0 place-items-center rounded-xl bg-violet/10 text-violet sm:grid">
-            <Sparkles className="size-4" aria-hidden="true" />
-          </span>
-          <p className="text-sm leading-6 text-slate">
-            <strong className="text-navy">Best-value pairing:</strong> Pro Website Build + Pro Care for <strong className="text-navy">$1,500 once + $99.99/month.</strong>
-          </p>
-        </div>
-
-        <div className="mt-14 grid gap-12 lg:grid-cols-2 lg:gap-16">
+        <div className="grid gap-10 lg:grid-cols-[0.88fr_1.12fr] lg:items-end" data-reveal>
           <div>
-            <div className="mb-7">
-              <p className="text-xs font-bold uppercase tracking-[0.16em] text-violet">Step 1</p>
-              <h3 className="mt-2 text-2xl font-bold tracking-[-0.04em] text-navy">Website Build</h3>
-              <p className="mt-2 text-sm text-slate">One-time project investment</p>
-            </div>
-            <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-1 xl:grid-cols-2">
-              {builds.map((plan) => (
-                <PricingCard key={plan.name} {...plan} />
-              ))}
-            </div>
+            <p className="font-mono text-[10px] uppercase tracking-[0.18em] text-violet">02 / Pricing</p>
+            <h2 className="mt-6 text-5xl font-semibold leading-[0.92] tracking-[-0.07em] text-navy sm:text-7xl">
+              Simple numbers.
+              <span className="block font-serif font-normal italic text-violet">Serious work.</span>
+            </h2>
           </div>
-
-          <div>
-            <div className="mb-7">
-              <p className="text-xs font-bold uppercase tracking-[0.16em] text-violet">Step 2</p>
-              <h3 className="mt-2 text-2xl font-bold tracking-[-0.04em] text-navy">Hosting + Updates</h3>
-              <p className="mt-2 text-sm text-slate">Ongoing monthly care</p>
-            </div>
-            <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-1 xl:grid-cols-2">
-              {care.map((plan) => (
-                <PricingCard key={plan.name} {...plan} />
-              ))}
-            </div>
+          <div className="max-w-xl lg:justify-self-end">
+            <p className="text-base leading-7 text-slate sm:text-lg">
+              Choose the build that fits now. Add care if you want Keeplyn to handle hosting, maintenance, and the next round of edits.
+            </p>
+            <p className="mt-6 border-l-2 border-mint pl-4 text-sm font-semibold text-navy">
+              Best-value pairing: Pro Build + Pro Care — $1,500 once, then $99.99/month.
+            </p>
           </div>
         </div>
 
-        <p className="mt-8 text-center text-xs leading-5 text-slate/75">
-          Prices shown in USD. Final scope and timeline are confirmed before work begins.
-        </p>
+        <div className="mt-16 grid gap-16 xl:grid-cols-2">
+          <PlanGroup number="A" label="Website build" note="Choose your starting point" plans={builds} />
+          <PlanGroup number="B" label="Ongoing care" note="Choose your support level" plans={care} />
+        </div>
+
+        <div className="mt-12 flex flex-col justify-between gap-3 border-t border-navy/15 pt-5 font-mono text-[9px] uppercase tracking-[0.12em] text-slate sm:flex-row">
+          <p>Prices shown in USD</p>
+          <p>Scope and timeline are confirmed before work begins</p>
+        </div>
       </div>
     </section>
   );

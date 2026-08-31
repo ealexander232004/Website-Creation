@@ -1,10 +1,5 @@
-import { DemoShowcase } from "@/components/demo-showcase";
-import { FaqSection } from "@/components/faq-section";
 import {
-  BenefitsSection,
-  ContactSection,
   HeroSection,
-  ProcessSection,
   SiteFooter,
 } from "@/components/home-sections";
 import { PricingSection } from "@/components/pricing-section";
@@ -16,12 +11,7 @@ export default function Home() {
       <SiteHeader />
       <main>
         <HeroSection />
-        <ProcessSection />
-        <DemoShowcase />
-        <BenefitsSection />
         <PricingSection />
-        <FaqSection />
-        <ContactSection />
       </main>
       <SiteFooter />
     </>

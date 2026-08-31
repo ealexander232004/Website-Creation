@@ -1,6 +1,6 @@
 # Keeplyn
 
-Keeplyn is a polished marketing demo for a small-business web design and care service. It includes the full responsive homepage, concept-work showcase, transparent pricing, FAQ, contact flow, and private customer-portal access page.
+Keeplyn is an editorial marketing site for a small-business web design and care studio. It includes a responsive homepage, transparent pricing, a dedicated gallery of original concept demos, and a focused contact route with accessible motion throughout.
 
 ## Local development
 
