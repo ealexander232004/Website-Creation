@@ -26,10 +26,10 @@ export function MossSite() {
     <div className="bg-[#dfe5d6] text-[#203126]">
       <MossHeader active="home" />
 
-      <section id="moss-top" className="grid min-h-[48rem] lg:grid-cols-[0.48fr_0.52fr]">
-        <div className="flex flex-col p-6 sm:p-10 lg:p-14">
-          <div className="my-auto py-20">
-            <h2 className="text-[clamp(4rem,9vw,8.8rem)] font-semibold leading-[0.78] tracking-[-0.085em]">
+      <section id="moss-top" className="grid min-h-[48rem] lg:grid-cols-[48%_52%]">
+        <div className="flex flex-col">
+          <div className="my-auto px-6 py-20 sm:px-10 lg:px-14">
+            <h2 className="text-[clamp(4rem,7vw,6.6rem)] font-semibold leading-[0.78] tracking-[-0.085em]">
               Outside,
               <span className="block font-serif font-normal italic">considered.</span>
             </h2>
@@ -37,20 +37,31 @@ export function MossSite() {
               Gardens, courtyards, and outdoor rooms designed around the way you actually live.
             </p>
           </div>
-          <div className="relative h-40 overflow-hidden border border-[#203126]/15 sm:h-48">
+          <div className="relative h-48 overflow-hidden sm:h-56 lg:h-64">
             <Image
               src="/demos/moss-water-garden.png"
               alt="Native grasses surrounding a stone-lined garden water feature"
               fill
               sizes="(min-width: 1024px) 48vw, 100vw"
-              className="object-cover object-center"
+              className="!h-full !w-full object-cover object-center"
             />
           </div>
         </div>
-        <div className="relative min-h-[36rem] overflow-hidden">
-          <Image src="/demos/moss-garden.jpg" alt="Lush modern courtyard garden" fill sizes="(min-width: 1024px) 52vw, 100vw" className="object-cover" preload />
-          <div className="absolute inset-0 bg-gradient-to-t from-[#203126]/28 via-transparent to-transparent" />
-          <div className="absolute bottom-6 left-6 border border-white/35 bg-black/20 px-4 py-3 text-xs text-white backdrop-blur-md">Courtyard No. 08 · 2026</div>
+        <div className="grid min-h-[36rem] overflow-hidden sm:grid-cols-2">
+          <div className="relative min-h-[30rem] overflow-hidden sm:min-h-0">
+            <Image src="/demos/moss-garden.jpg" alt="Lush modern courtyard garden" fill sizes="(min-width: 1024px) 26vw, (min-width: 640px) 50vw, 100vw" className="!h-full !w-full object-cover" preload />
+            <div className="absolute inset-0 bg-gradient-to-t from-[#203126]/28 via-transparent to-transparent" />
+            <div className="absolute bottom-6 left-6 border border-white/35 bg-black/20 px-4 py-3 text-xs text-white backdrop-blur-md">Courtyard No. 08 · 2026</div>
+          </div>
+          <div className="relative min-h-[30rem] overflow-hidden sm:min-h-0">
+            <Image
+              src="/demos/moss-garden-passage.png"
+              alt="A fern-lined garden passage beside a dark stone wall"
+              fill
+              sizes="(min-width: 1024px) 26vw, (min-width: 640px) 50vw, 100vw"
+              className="!h-full !w-full object-cover object-center"
+            />
+          </div>
         </div>
       </section>
 
