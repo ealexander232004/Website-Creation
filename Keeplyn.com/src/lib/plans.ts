@@ -48,7 +48,7 @@ export const buildFeatures: ComparisonFeature[] = [
     pro: true,
   },
   {
-    feature: "Custom demo within 2 business days of your request",
+    feature: "You receive a custom demo within 2 business days of your request",
     starter: true,
     pro: true,
   },

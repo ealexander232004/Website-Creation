@@ -1,24 +1,25 @@
 "use client";
 
 import Image from "next/image";
+import Link from "next/link";
 import { ArrowRight, ArrowUpRight, CalendarDays, Clock3, MapPin } from "lucide-react";
 import { useRef, useState, type KeyboardEvent } from "react";
 
 const demoTabs = [
-  { id: "moss", name: "Moss & Mortar", type: "Landscape studio" },
-  { id: "northline", name: "Northline", type: "Family dentistry" },
-  { id: "sera", name: "Sera", type: "Neighborhood bakery" },
+  { id: "moss", name: "Moss & Mortar", type: "Landscape studio", href: "/demos/moss" },
+  { id: "northline", name: "Northline", type: "Family dentistry", href: "/demos/northline" },
+  { id: "sera", name: "Sera", type: "Neighborhood bakery", href: "/demos/sera" },
 ] as const;
 
-function MossSite() {
+export function MossSite() {
   return (
     <div className="bg-[#dfe5d6] text-[#203126]">
-      <header className="flex items-center justify-between border-b border-[#203126]/20 px-5 py-5 sm:px-9">
-        <a href="#moss-top" className="text-lg font-semibold tracking-[-0.04em]">Moss &amp; Mortar</a>
-        <nav className="hidden gap-7 text-[10px] font-semibold uppercase tracking-[0.14em] sm:flex" aria-label="Moss & Mortar demo navigation">
-          <a href="#moss-work">Work</a><a href="#moss-approach">Approach</a><a href="#moss-contact">Contact</a>
+      <header className="flex flex-wrap items-center justify-between gap-4 border-b border-[#203126]/20 px-5 py-5 sm:px-9">
+        <Link href="/demos/moss" className="text-lg font-semibold tracking-[-0.04em]">Moss &amp; Mortar</Link>
+        <nav className="order-3 flex w-full gap-6 text-[10px] font-semibold uppercase tracking-[0.14em] sm:order-none sm:w-auto sm:gap-7" aria-label="Moss & Mortar demo navigation">
+          <a href="#moss-work">Work</a><Link href="/demos/moss/pricing">Pricing</Link><Link href="/demos/moss/contact">Contact</Link>
         </nav>
-        <a href="#moss-contact" className="border border-[#203126] px-4 py-2 text-xs font-semibold">Start a garden</a>
+        <Link href="/demos/moss/contact" className="border border-[#203126] px-4 py-2 text-xs font-semibold">Start a garden</Link>
       </header>
 
       <section id="moss-top" className="grid min-h-[48rem] lg:grid-cols-[0.48fr_0.52fr]">
@@ -100,28 +101,28 @@ function MossSite() {
 
       <section id="moss-contact" className="px-6 py-24 sm:px-10 lg:px-14 lg:py-32">
         <p className="text-[10px] uppercase tracking-[0.16em] text-[#203126]/45">Now booking autumn 2026</p>
-        <a href="mailto:studio@mossandmortar.example" className="group mt-6 flex items-end justify-between border-y border-[#203126]/20 py-8">
+        <Link href="/demos/moss/contact" className="group mt-6 flex items-end justify-between border-y border-[#203126]/20 py-8">
           <span className="text-5xl font-semibold tracking-[-0.07em] sm:text-8xl">Grow something lasting.</span>
           <ArrowUpRight className="mb-2 size-9 transition-transform group-hover:-translate-y-2 group-hover:translate-x-2" aria-hidden="true" />
-        </a>
+        </Link>
       </section>
 
       <footer className="flex flex-col justify-between gap-4 border-t border-[#203126]/20 px-6 py-7 text-xs text-[#203126]/52 sm:flex-row sm:px-10 lg:px-14">
-        <span>Moss &amp; Mortar Landscape Studio</span><span>Sacramento · Davis · Bay Area</span><span>© 2026</span>
+        <span>Moss &amp; Mortar Landscape Studio</span><Link href="/demos">All demos</Link><span>© 2026</span>
       </footer>
     </div>
   );
 }
 
-function NorthlineSite() {
+export function NorthlineSite() {
   return (
     <div className="bg-[#f3f7fb] text-[#173a5a]">
-      <header className="flex items-center justify-between px-5 py-5 sm:px-9">
-        <a href="#northline-top" className="text-lg font-semibold tracking-[-0.04em]">northline<span className="text-[#ff725e]">●</span></a>
-        <nav className="hidden gap-7 text-[10px] font-semibold uppercase tracking-[0.13em] md:flex" aria-label="Northline demo navigation">
-          <a href="#northline-services">Services</a><a href="#northline-visit">Your visit</a><a href="#northline-contact">Contact</a>
+      <header className="flex flex-wrap items-center justify-between gap-4 px-5 py-5 sm:px-9">
+        <Link href="/demos/northline" className="text-lg font-semibold tracking-[-0.04em]">northline<span className="text-[#ff725e]">●</span></Link>
+        <nav className="order-3 flex w-full gap-6 text-[10px] font-semibold uppercase tracking-[0.13em] md:order-none md:w-auto md:gap-7" aria-label="Northline demo navigation">
+          <a href="#northline-services">Services</a><Link href="/demos/northline/pricing">Pricing</Link><Link href="/demos/northline/contact">Contact</Link>
         </nav>
-        <a href="#northline-contact" className="rounded-full bg-[#173a5a] px-5 py-2.5 text-xs font-semibold text-white">Book a visit</a>
+        <Link href="/demos/northline/contact" className="rounded-full bg-[#173a5a] px-5 py-2.5 text-xs font-semibold text-white">Book a visit</Link>
       </header>
 
       <section id="northline-top" className="px-5 pb-8 sm:px-9">
@@ -134,7 +135,7 @@ function NorthlineSite() {
               Care, without the rush.
             </h2>
             <div className="mt-8 flex flex-wrap gap-3">
-              <a href="#northline-contact" className="rounded-full bg-[#ff725e] px-6 py-3 text-sm font-semibold text-white">New patient visit</a>
+              <Link href="/demos/northline/contact" className="rounded-full bg-[#ff725e] px-6 py-3 text-sm font-semibold text-white">New patient visit</Link>
               <a href="#northline-services" className="rounded-full border border-white/45 bg-white/10 px-6 py-3 text-sm font-semibold backdrop-blur-md">See our care</a>
             </div>
           </div>
@@ -195,25 +196,25 @@ function NorthlineSite() {
             <div className="flex items-center gap-3 border-b border-[#173a5a]/12 pb-4"><CalendarDays className="size-5 text-[#ff725e]" /><span className="text-sm font-semibold">Next available</span></div>
             <p className="mt-7 text-4xl font-semibold tracking-[-0.06em]">Tuesday 14</p>
             <p className="mt-2 text-sm text-[#173a5a]/55">9:30am · New patient exam</p>
-            <a href="mailto:hello@northline.example" className="mt-8 flex items-center justify-between rounded-full bg-[#ff725e] px-5 py-3 text-sm font-semibold text-white">Request this time <ArrowRight className="size-4" /></a>
+            <Link href="/demos/northline/contact" className="mt-8 flex items-center justify-between rounded-full bg-[#ff725e] px-5 py-3 text-sm font-semibold text-white">Request this time <ArrowRight className="size-4" /></Link>
           </div>
         </div>
       </section>
 
       <footer className="flex flex-col justify-between gap-5 bg-[#dcebf6] px-6 py-8 text-xs sm:flex-row sm:items-center sm:px-10 lg:px-14">
-        <span className="text-base font-semibold">northline<span className="text-[#ff725e]">●</span></span><span>411 Grand Avenue · Oakland, CA</span><span>(510) 555-0144</span>
+        <span className="text-base font-semibold">northline<span className="text-[#ff725e]">●</span></span><Link href="/demos">All demos</Link><span>(510) 555-0144</span>
       </footer>
     </div>
   );
 }
 
-function SeraSite() {
+export function SeraSite() {
   return (
     <div className="bg-[#f6e8d8] text-[#5d2d26]">
-      <header className="flex items-center justify-between border-b border-[#5d2d26]/18 px-5 py-5 sm:px-9">
-        <a href="#sera-top" className="font-serif text-3xl italic">Sera</a>
-        <nav className="hidden gap-7 text-[10px] font-semibold uppercase tracking-[0.14em] sm:flex" aria-label="Sera demo navigation">
-          <a href="#sera-menu">Menu</a><a href="#sera-story">Our story</a><a href="#sera-visit">Visit</a>
+      <header className="flex flex-wrap items-center justify-between gap-4 border-b border-[#5d2d26]/18 px-5 py-5 sm:px-9">
+        <Link href="/demos/sera" className="font-serif text-3xl italic">Sera</Link>
+        <nav className="order-3 flex w-full gap-6 text-[10px] font-semibold uppercase tracking-[0.14em] sm:order-none sm:w-auto sm:gap-7" aria-label="Sera demo navigation">
+          <a href="#sera-menu">Menu</a><Link href="/demos/sera/pricing">Pricing</Link><Link href="/demos/sera/contact">Contact</Link>
         </nav>
         <p className="text-[10px] font-semibold uppercase tracking-[0.13em]">Open 7—2</p>
       </header>
@@ -286,7 +287,7 @@ function SeraSite() {
       </section>
 
       <footer className="flex flex-col justify-between gap-4 bg-[#5d2d26] px-6 py-7 text-xs text-white/42 sm:flex-row sm:px-10 lg:px-14">
-        <span className="font-serif text-xl italic text-white">Sera</span><span>@serabakehouse</span><span>© 2026</span>
+        <span className="font-serif text-xl italic text-white">Sera</span><Link href="/demos">All demos</Link><span>© 2026</span>
       </footer>
     </div>
   );
@@ -323,6 +324,9 @@ export function DemoShowcase() {
           <div className="flex items-baseline gap-3">
             <h1 className="text-2xl font-semibold tracking-[-0.05em]">Demos</h1>
             <span className="text-[10px] uppercase tracking-[0.15em] text-white/32">Complete sites</span>
+            <Link href={demoTabs[activeIndex].href} className="ml-2 text-[10px] font-semibold uppercase tracking-[0.12em] text-[#c9ff3b] hover:text-white">
+              Open demo <ArrowUpRight className="ml-1 inline size-3" aria-hidden="true" />
+            </Link>
           </div>
           <div className="grid grid-cols-3 gap-1" role="tablist" aria-label="Choose a website demo">
             {demoTabs.map((demo, index) => (
