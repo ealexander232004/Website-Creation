@@ -17,14 +17,14 @@ export const websitePlans: WebsitePlan[] = [
   {
     id: "starter",
     name: "Starter",
-    price: "$750",
+    price: "$749.99",
     hosting: "$49.99/mo",
     summary: "Everything a small business needs to launch with confidence.",
   },
   {
     id: "pro",
     name: "Pro",
-    price: "$1,500",
+    price: "$1,499.99",
     hosting: "$99.99/mo",
     summary: "Advanced systems for businesses ready to sell, automate, and scale.",
     featured: true,

@@ -4,17 +4,40 @@ import { useEffect, useRef } from "react";
 import * as THREE from "three";
 
 const VIOLET = 0x7568ff;
+const VIOLET_SHADOW = 0x655ae8;
+const VIOLET_HIGHLIGHT = 0x8b82ff;
+const BEAD_SHADOW = 0xd8d3ee;
 const LIME = 0xc9ff3b;
 const WHITE = 0xf7f7f4;
 
-function createHelix(direction: 1 | -1, accent: number) {
+function verticalColorMix(y: number, phase: number) {
+  return 0.5 + Math.sin(y * 0.9 + phase) * 0.5;
+}
+
+function applyVerticalColors(geometry: THREE.BufferGeometry, phase: number) {
+  const positions = geometry.getAttribute("position");
+  const colors = new Float32Array(positions.count * 3);
+  const shadow = new THREE.Color(VIOLET_SHADOW);
+  const highlight = new THREE.Color(VIOLET_HIGHLIGHT);
+  const tone = new THREE.Color();
+
+  for (let index = 0; index < positions.count; index += 1) {
+    tone.lerpColors(shadow, highlight, verticalColorMix(positions.getY(index), phase));
+    tone.toArray(colors, index * 3);
+  }
+
+  geometry.setAttribute("color", new THREE.BufferAttribute(colors, 3));
+}
+
+function createHelix(direction: 1 | -1, colorPhase: number) {
   const group = new THREE.Group();
   const strandMaterial = new THREE.MeshBasicMaterial({
-    color: accent,
+    color: WHITE,
     transparent: true,
     opacity: 0.44,
     blending: THREE.AdditiveBlending,
     depthWrite: false,
+    vertexColors: true,
   });
 
   for (const phase of [0, Math.PI]) {
@@ -30,8 +53,10 @@ function createHelix(direction: 1 | -1, accent: number) {
       );
     }
     const curve = new THREE.CatmullRomCurve3(curvePoints);
+    const tubeGeometry = new THREE.TubeGeometry(curve, 360, 0.025, 6, false);
+    applyVerticalColors(tubeGeometry, colorPhase);
     const tube = new THREE.Mesh(
-      new THREE.TubeGeometry(curve, 360, 0.025, 6, false),
+      tubeGeometry,
       strandMaterial,
     );
     group.add(tube);
@@ -41,7 +66,7 @@ function createHelix(direction: 1 | -1, accent: number) {
   const beadGeometry = new THREE.IcosahedronGeometry(0.085, 1);
   const beadMaterial = new THREE.MeshStandardMaterial({
     color: WHITE,
-    emissive: accent,
+    emissive: VIOLET,
     emissiveIntensity: 0.58,
     metalness: 0.22,
     roughness: 0.28,
@@ -50,8 +75,12 @@ function createHelix(direction: 1 | -1, accent: number) {
   const beads = new THREE.InstancedMesh(beadGeometry, beadMaterial, beadCount * 2);
   const dummy = new THREE.Object3D();
   const white = new THREE.Color(WHITE);
-  const violet = new THREE.Color(VIOLET);
+  const beadShadow = new THREE.Color(BEAD_SHADOW);
+  const violetShadow = new THREE.Color(VIOLET_SHADOW);
+  const violetHighlight = new THREE.Color(VIOLET_HIGHLIGHT);
   const lime = new THREE.Color(LIME);
+  const beadTone = new THREE.Color();
+  const violetTone = new THREE.Color();
   const rungs: number[] = [];
 
   for (let index = 0; index < beadCount; index += 1) {
@@ -64,18 +93,21 @@ function createHelix(direction: 1 | -1, accent: number) {
       y,
       Math.sin(angle + Math.PI) * pulse,
     );
+    const colorMix = verticalColorMix(y, colorPhase);
+    beadTone.lerpColors(beadShadow, white, colorMix);
+    violetTone.lerpColors(violetShadow, violetHighlight, colorMix);
 
     dummy.position.copy(first);
     dummy.scale.setScalar(index % 13 === 0 ? 1.7 : index % 5 === 0 ? 1.25 : 1);
     dummy.updateMatrix();
     beads.setMatrixAt(index * 2, dummy.matrix);
-    beads.setColorAt(index * 2, index % 17 === 0 ? lime : white);
+    beads.setColorAt(index * 2, index % 17 === 0 ? lime : beadTone);
 
     dummy.position.copy(second);
     dummy.scale.setScalar(index % 11 === 0 ? 1.55 : 1);
     dummy.updateMatrix();
     beads.setMatrixAt(index * 2 + 1, dummy.matrix);
-    beads.setColorAt(index * 2 + 1, index % 7 === 0 ? violet : white);
+    beads.setColorAt(index * 2 + 1, index % 7 === 0 ? violetTone : beadTone);
 
     if (index % 3 === 0) {
       rungs.push(first.x, first.y, first.z, second.x, second.y, second.z);
@@ -87,14 +119,16 @@ function createHelix(direction: 1 | -1, accent: number) {
 
   const rungGeometry = new THREE.BufferGeometry();
   rungGeometry.setAttribute("position", new THREE.Float32BufferAttribute(rungs, 3));
+  applyVerticalColors(rungGeometry, colorPhase);
   group.add(
     new THREE.LineSegments(
       rungGeometry,
       new THREE.LineBasicMaterial({
-        color: accent,
+        color: WHITE,
         transparent: true,
         opacity: 0.34,
         blending: THREE.AdditiveBlending,
+        vertexColors: true,
       }),
     ),
   );
@@ -104,7 +138,7 @@ function createHelix(direction: 1 | -1, accent: number) {
     const orbit = new THREE.Mesh(
       new THREE.TorusGeometry(1.7 + index * 0.22, 0.008, 5, 150),
       new THREE.MeshBasicMaterial({
-        color: index === 3 ? LIME : accent,
+        color: index === 3 ? LIME : VIOLET,
         transparent: true,
         opacity: 0.13 + index * 0.025,
         blending: THREE.AdditiveBlending,
@@ -158,8 +192,8 @@ export function HelixScene() {
     const camera = new THREE.PerspectiveCamera(46, 1, 0.1, 80);
     camera.position.set(0, 0, 13.8);
 
-    const leftHelix = createHelix(1, VIOLET);
-    const rightHelix = createHelix(-1, 0x9f96ff);
+    const leftHelix = createHelix(1, 0);
+    const rightHelix = createHelix(-1, Math.PI);
     leftHelix.rotation.z = -0.14;
     rightHelix.rotation.z = 0.14;
     scene.add(leftHelix, rightHelix);
@@ -243,6 +277,7 @@ export function HelixScene() {
     sceneCanvas.dataset.motionMode = reducedMotion ? "helix-idle-and-gentle-scroll" : "idle-and-gentle-scroll";
     sceneCanvas.dataset.pointerMotion = "off";
     sceneCanvas.dataset.scrollScale = "0.600";
+    sceneCanvas.dataset.helixColorMode = "opposed-vertical-cycle";
 
     const updateWheel = (event: WheelEvent) => {
       if (event.ctrlKey || Math.abs(event.deltaX) > Math.abs(event.deltaY)) return;

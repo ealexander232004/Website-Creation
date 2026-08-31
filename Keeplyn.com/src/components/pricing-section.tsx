@@ -14,47 +14,50 @@ export function PricingSection() {
         aria-hidden="true"
       />
       <div className="site-container relative z-10">
-        <div className="flex flex-col justify-between gap-7 sm:flex-row sm:items-end">
+        <div>
           <h2 className="max-w-5xl text-[clamp(4.5rem,10vw,9rem)] font-semibold leading-[0.78] tracking-[-0.09em]">
             Choose your build.
           </h2>
-          <Link href="/pricing" className="group flex w-fit items-center gap-2 text-sm text-white/48 hover:text-[#c9ff3b]">
-            See every detail
-            <ArrowUpRight className="size-4 transition-transform group-hover:-translate-y-1 group-hover:translate-x-1" aria-hidden="true" />
-          </Link>
         </div>
 
         <div className="mx-auto mt-16 grid max-w-5xl gap-4 md:grid-cols-2 lg:mt-20">
           {websitePlans.map((plan) => (
-            <Link
-              key={plan.id}
-              href={`/pricing#${plan.id}`}
-              className={`group relative isolate flex min-h-[27rem] flex-col justify-between overflow-hidden border p-7 shadow-[0_30px_100px_rgba(0,0,0,0.38)] transition duration-500 hover:-translate-y-1 sm:p-9 ${
-                plan.featured
-                  ? "border-[#c9ff3b]/65 bg-[linear-gradient(145deg,rgba(11,12,13,0.94),rgba(6,6,8,0.9))] hover:border-[#c9ff3b] md:bg-[linear-gradient(145deg,rgba(13,14,15,0.74),rgba(7,7,10,0.52))]"
-                  : "border-white/16 bg-[linear-gradient(145deg,rgba(10,10,14,0.94),rgba(5,5,7,0.9))] hover:border-white/38 md:bg-[linear-gradient(145deg,rgba(12,12,17,0.72),rgba(5,5,7,0.48))]"
-              }`}
-            >
-              <div
-                className={`pointer-events-none absolute -right-24 -top-24 size-64 rounded-full blur-3xl transition-opacity duration-500 group-hover:opacity-100 ${
-                  plan.featured ? "bg-[#c9ff3b]/8 opacity-70" : "bg-[#7568ff]/10 opacity-60"
+            <div key={plan.id} className="group flex flex-col gap-3">
+              <article
+                className={`relative isolate flex min-h-[27rem] flex-1 flex-col justify-between overflow-hidden border p-7 shadow-[0_30px_100px_rgba(0,0,0,0.38)] transition duration-500 group-hover:-translate-y-1 sm:p-9 ${
+                  plan.featured
+                    ? "border-[#c9ff3b]/65 bg-[linear-gradient(145deg,rgba(11,12,13,0.94),rgba(6,6,8,0.9))] group-hover:border-[#c9ff3b] md:bg-[linear-gradient(145deg,rgba(13,14,15,0.74),rgba(7,7,10,0.52))]"
+                    : "border-white/16 bg-[linear-gradient(145deg,rgba(10,10,14,0.94),rgba(5,5,7,0.9))] group-hover:border-white/38 md:bg-[linear-gradient(145deg,rgba(12,12,17,0.72),rgba(5,5,7,0.48))]"
                 }`}
-                aria-hidden="true"
-              />
-              <div className="relative z-10">
-                <h3 className="text-5xl font-semibold tracking-[-0.075em] sm:text-6xl">{plan.name}</h3>
-                <p className="mt-5 max-w-sm text-sm leading-6 text-white/48">{plan.summary}</p>
-              </div>
+              >
+                <div
+                  className={`pointer-events-none absolute -right-24 -top-24 size-64 rounded-full blur-3xl transition-opacity duration-500 group-hover:opacity-100 ${
+                    plan.featured ? "bg-[#c9ff3b]/8 opacity-70" : "bg-[#7568ff]/10 opacity-60"
+                  }`}
+                  aria-hidden="true"
+                />
+                <div className="relative z-10">
+                  <h3 className="text-5xl font-semibold tracking-[-0.075em] sm:text-6xl">{plan.name}</h3>
+                  <p className="mt-5 max-w-sm text-sm leading-6 text-white/48">{plan.summary}</p>
+                </div>
 
-              <div className="relative z-10 mt-16">
-                <p className="text-[clamp(3.75rem,7vw,6rem)] font-semibold leading-none tracking-[-0.085em]">{plan.price}</p>
-                <p className="mt-3 text-sm text-[#c9ff3b]">+ {plan.hosting} for hosting &amp; updates</p>
-                <span className="mt-10 flex items-center justify-between border-t border-white/14 pt-5 text-sm font-medium group-hover:text-[#c9ff3b]">
-                  View {plan.name}
-                  <ArrowUpRight className="size-4 transition-transform group-hover:-translate-y-1 group-hover:translate-x-1" aria-hidden="true" />
-                </span>
-              </div>
-            </Link>
+                <div className="relative z-10 mt-16">
+                  <p className="text-[clamp(3.75rem,7vw,6rem)] font-semibold leading-none tracking-[-0.085em]">{plan.price}</p>
+                  <p className="mt-3 text-sm text-[#c9ff3b]">+ an optional {plan.hosting} for hosting &amp; updates</p>
+                </div>
+              </article>
+              <Link
+                href={`/pricing#${plan.id}`}
+                className={`flex items-center justify-between border px-6 py-4 text-sm font-medium transition-colors ${
+                  plan.featured
+                    ? "border-[#c9ff3b]/65 bg-[#c9ff3b] text-black hover:bg-[#d5ff69]"
+                    : "border-white/20 bg-[#0a0a0d]/88 text-white hover:border-white/45 hover:text-[#c9ff3b]"
+                }`}
+              >
+                View details
+                <ArrowUpRight className="size-4 transition-transform group-hover:-translate-y-1 group-hover:translate-x-1" aria-hidden="true" />
+              </Link>
+            </div>
           ))}
         </div>
       </div>
