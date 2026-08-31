@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { usePathname } from "next/navigation";
 import { useEffect, useState } from "react";
 import { ArrowUpRight, Menu, X } from "lucide-react";
 import { BrandLogo } from "./brand-logo";
@@ -14,7 +15,11 @@ const navigation = [
 
 export function SiteHeader() {
   const [mobileOpen, setMobileOpen] = useState(false);
+  const pathname = usePathname();
 
+  useEffect(() => {
+    setMobileOpen(false);
+  }, [pathname]);
   useEffect(() => {
     function closeOnEscape(event: KeyboardEvent) {
       if (event.key === "Escape") setMobileOpen(false);
@@ -74,7 +79,6 @@ export function SiteHeader() {
                   key={item.href}
                   href={item.href}
                   className="px-4 py-3 text-sm font-semibold text-white/70 hover:bg-white/8 hover:text-white"
-                  onClick={() => setMobileOpen(false)}
                 >
                   {item.label}
                 </Link>
@@ -82,14 +86,12 @@ export function SiteHeader() {
               <Link
                 href="/start?mode=signin"
                 className="button-secondary mt-2 justify-center"
-                onClick={() => setMobileOpen(false)}
               >
                 Sign in
               </Link>
               <Link
                 href="/start"
                 className="button-primary mt-2 justify-center"
-                onClick={() => setMobileOpen(false)}
               >
                 Get started
               </Link>
