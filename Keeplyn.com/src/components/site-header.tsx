@@ -42,7 +42,7 @@ export function SiteHeader() {
         </nav>
 
         <div className="hidden items-center gap-2.5 sm:flex">
-          <Link href="/contact" className="button-primary !px-4 !py-2.5">
+          <Link href="/start" className="button-primary !px-4 !py-2.5">
             Get started
             <ArrowUpRight className="size-4" aria-hidden="true" />
           </Link>
@@ -77,7 +77,7 @@ export function SiteHeader() {
                 </Link>
               ))}
               <Link
-                href="/contact"
+                href="/start"
                 className="button-primary mt-2 justify-center"
                 onClick={() => setMobileOpen(false)}
               >

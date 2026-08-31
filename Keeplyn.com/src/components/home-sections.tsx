@@ -19,7 +19,7 @@ export function HeroSection() {
           </p>
           <div className="mt-8 flex flex-wrap justify-center gap-3">
             <Link href="/demos" className="button-primary">View demos</Link>
-            <Link href="/contact" className="button-secondary">
+            <Link href="/start" className="button-secondary">
               Start a project <ArrowUpRight className="size-4" aria-hidden="true" />
             </Link>
           </div>

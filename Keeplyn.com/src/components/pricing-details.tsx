@@ -102,7 +102,7 @@ export function PricingDetails() {
                 className={`border-l p-2 sm:p-4 ${plan.featured ? "border-[#7568ff]/24 bg-[#7568ff]/[0.045]" : "border-white/11 bg-white/[0.02]"}`}
               >
                 <Link
-                  href={`/contact?plan=${plan.id}`}
+                  href={`/start?plan=${plan.id}`}
                   className="group flex min-h-16 items-center justify-center gap-2 border border-white/14 px-2 text-center text-xs font-semibold transition-colors hover:border-[#c9ff3b] hover:text-[#c9ff3b] sm:text-sm"
                 >
                   Choose {plan.name}
