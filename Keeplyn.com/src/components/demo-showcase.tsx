@@ -312,26 +312,21 @@ export function DemoShowcase({ initialDemo = "moss", initialPage = "home" }: Dem
   const selectorBarRef = useRef<HTMLDivElement>(null);
   const panelRef = useRef<HTMLDivElement>(null);
 
-  const showDemoPage = (index: number, page: DemoPage, returnToTop = false) => {
+  const showDemoPage = (index: number, page: DemoPage, returnToTop = true) => {
     setActiveIndex(index);
     setActivePage(page);
     const demo = demoTabs[index];
     window.history.replaceState(null, "", `/demos?demo=${demo.id}&page=${page}`);
-    if (returnToTop && panelRef.current) {
+    if (returnToTop) {
+      window.scrollTo({ top: 0, behavior: "auto" });
       window.requestAnimationFrame(() => {
-        if (!panelRef.current) return;
-        const selectorHeight = selectorBarRef.current?.offsetHeight ?? 96;
-        const visiblePanelOffset = 68 + selectorHeight + 16;
-        window.scrollTo({ top: Math.max(panelRef.current.offsetTop - visiblePanelOffset, 0), behavior: "smooth" });
+        window.scrollTo({ top: 0, behavior: "auto" });
       });
     }
   };
 
   const selectDemo = (index: number) => {
-    showDemoPage(index, "home");
-    window.requestAnimationFrame(() => {
-      window.scrollTo({ top: 0, behavior: "auto" });
-    });
+    showDemoPage(index, "home", true);
   };
 
   const handleDemoNavigation = (event: ReactMouseEvent<HTMLDivElement>) => {
