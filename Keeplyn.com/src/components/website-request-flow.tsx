@@ -43,6 +43,7 @@ type Offering = {
 };
 
 type WebsiteRequestFlowProps = {
+  initialAccountMode: "signup" | "signin";
   initialUser: InitialUser | null;
   initialPlan: PlanId | null;
 };
@@ -106,6 +107,7 @@ function StepHeading({
 }
 
 export function WebsiteRequestFlow({
+  initialAccountMode,
   initialUser,
   initialPlan,
 }: WebsiteRequestFlowProps) {
@@ -113,7 +115,7 @@ export function WebsiteRequestFlow({
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const [step, setStep] = useState(initialUser ? 1 : 0);
-  const [accountMode, setAccountMode] = useState<"signup" | "signin">("signup");
+  const [accountMode, setAccountMode] = useState<"signup" | "signin">(initialAccountMode);
   const [currentUser, setCurrentUser] = useState(initialUser);
   const [fullName, setFullName] = useState(initialUser?.name ?? "");
   const [email, setEmail] = useState(initialUser?.email ?? "");

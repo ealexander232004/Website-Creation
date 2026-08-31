@@ -4,7 +4,7 @@ import { SiteHeader } from "@/components/site-header";
 
 export const metadata: Metadata = {
   title: "Contact",
-  description: "Start a website project with Keeplyn.",
+  description: "Send a general inquiry to Keeplyn.",
 };
 
 export default function ContactPage() {

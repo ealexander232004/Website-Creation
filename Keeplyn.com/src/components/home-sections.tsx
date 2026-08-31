@@ -1,6 +1,7 @@
 import { ArrowUpRight } from "lucide-react";
 import Link from "next/link";
 import { BrandLogo } from "./brand-logo";
+import { ContactInquiryForm } from "./contact-inquiry-form";
 import { PoliciesMenu } from "./policies-menu";
 
 export function HeroSection() {
@@ -31,21 +32,29 @@ export function HeroSection() {
 
 export function ContactSection() {
   return (
-    <section id="contact" className="relative flex min-h-[calc(100svh-68px)] items-end overflow-hidden bg-[#050505] py-16 text-white sm:py-20">
+    <section id="contact" className="relative overflow-hidden bg-[#050505] py-16 text-white sm:py-24">
       <div className="absolute -right-32 top-1/2 size-[38rem] -translate-y-1/2 rounded-full border border-[#7568ff]/35 shadow-[0_0_160px_rgba(117,104,255,0.24)]" aria-hidden="true" />
       <div className="absolute -right-10 top-1/2 size-[22rem] -translate-y-1/2 rounded-full border border-white/15" aria-hidden="true" />
       <div className="site-container relative z-10 w-full">
-        <div className="max-w-6xl">
-          <h1 className="text-[clamp(5.5rem,15vw,14rem)] font-semibold leading-[0.72] tracking-[-0.095em]">
-            Let&apos;s build.
-          </h1>
-          <a
-            href="mailto:hello@keeplyn.com?subject=Let%27s%20build%20my%20website"
-            className="group mt-14 flex max-w-3xl items-center justify-between border-y border-white/20 py-6 text-lg font-medium transition-colors hover:border-[#c9ff3b] hover:text-[#c9ff3b] sm:text-3xl"
-          >
-            hello@keeplyn.com
-            <ArrowUpRight className="size-6 transition-transform duration-300 group-hover:-translate-y-1 group-hover:translate-x-1" aria-hidden="true" />
-          </a>
+        <div className="grid min-h-[calc(100svh-68px-8rem)] items-center gap-14 lg:grid-cols-[1.05fr_.95fr] lg:gap-20">
+          <div>
+            <p className="text-[10px] font-semibold uppercase tracking-[0.2em] text-[#c9ff3b]">
+              General inquiries
+            </p>
+            <h1 className="mt-5 max-w-4xl text-[clamp(4.5rem,10vw,9rem)] font-semibold leading-[0.78] tracking-[-0.09em]">
+              Let&apos;s talk.
+            </h1>
+            <p className="mt-8 max-w-lg text-base leading-7 text-white/48">
+              Have a question about Keeplyn? Send us a note. If you&apos;re ready to request a website,
+              use the guided project flow instead.
+            </p>
+            <Link href="/start" className="button-secondary mt-7">
+              Get started
+              <ArrowUpRight className="size-4" aria-hidden="true" />
+            </Link>
+          </div>
+
+          <ContactInquiryForm />
         </div>
       </div>
     </section>
