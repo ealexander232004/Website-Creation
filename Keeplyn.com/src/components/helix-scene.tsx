@@ -3,6 +3,130 @@
 import { useEffect, useRef } from "react";
 import * as THREE from "three";
 
+const VIOLET = 0x7568ff;
+const LIME = 0xc9ff3b;
+const WHITE = 0xf7f7f4;
+
+function createHelix(direction: 1 | -1, accent: number) {
+  const group = new THREE.Group();
+  const strandMaterial = new THREE.MeshBasicMaterial({
+    color: accent,
+    transparent: true,
+    opacity: 0.44,
+    blending: THREE.AdditiveBlending,
+    depthWrite: false,
+  });
+
+  for (const phase of [0, Math.PI]) {
+    const curvePoints: THREE.Vector3[] = [];
+    for (let index = 0; index < 180; index += 1) {
+      const angle = index * 0.19 * direction + phase;
+      curvePoints.push(
+        new THREE.Vector3(
+          Math.cos(angle) * 1.18,
+          (index - 90) * 0.073,
+          Math.sin(angle) * 1.18,
+        ),
+      );
+    }
+    const curve = new THREE.CatmullRomCurve3(curvePoints);
+    const tube = new THREE.Mesh(
+      new THREE.TubeGeometry(curve, 360, 0.025, 6, false),
+      strandMaterial,
+    );
+    group.add(tube);
+  }
+
+  const beadCount = 104;
+  const beadGeometry = new THREE.IcosahedronGeometry(0.085, 1);
+  const beadMaterial = new THREE.MeshStandardMaterial({
+    color: WHITE,
+    emissive: accent,
+    emissiveIntensity: 0.58,
+    metalness: 0.22,
+    roughness: 0.28,
+    vertexColors: true,
+  });
+  const beads = new THREE.InstancedMesh(beadGeometry, beadMaterial, beadCount * 2);
+  const dummy = new THREE.Object3D();
+  const white = new THREE.Color(WHITE);
+  const violet = new THREE.Color(VIOLET);
+  const lime = new THREE.Color(LIME);
+  const rungs: number[] = [];
+
+  for (let index = 0; index < beadCount; index += 1) {
+    const angle = index * 0.325 * direction;
+    const y = (index - beadCount / 2) * 0.126;
+    const pulse = 1.16 + Math.sin(index * 0.33) * 0.045;
+    const first = new THREE.Vector3(Math.cos(angle) * pulse, y, Math.sin(angle) * pulse);
+    const second = new THREE.Vector3(
+      Math.cos(angle + Math.PI) * pulse,
+      y,
+      Math.sin(angle + Math.PI) * pulse,
+    );
+
+    dummy.position.copy(first);
+    dummy.scale.setScalar(index % 13 === 0 ? 1.7 : index % 5 === 0 ? 1.25 : 1);
+    dummy.updateMatrix();
+    beads.setMatrixAt(index * 2, dummy.matrix);
+    beads.setColorAt(index * 2, index % 17 === 0 ? lime : white);
+
+    dummy.position.copy(second);
+    dummy.scale.setScalar(index % 11 === 0 ? 1.55 : 1);
+    dummy.updateMatrix();
+    beads.setMatrixAt(index * 2 + 1, dummy.matrix);
+    beads.setColorAt(index * 2 + 1, index % 7 === 0 ? violet : white);
+
+    if (index % 3 === 0) {
+      rungs.push(first.x, first.y, first.z, second.x, second.y, second.z);
+    }
+  }
+  beads.instanceMatrix.needsUpdate = true;
+  if (beads.instanceColor) beads.instanceColor.needsUpdate = true;
+  group.add(beads);
+
+  const rungGeometry = new THREE.BufferGeometry();
+  rungGeometry.setAttribute("position", new THREE.Float32BufferAttribute(rungs, 3));
+  group.add(
+    new THREE.LineSegments(
+      rungGeometry,
+      new THREE.LineBasicMaterial({
+        color: accent,
+        transparent: true,
+        opacity: 0.34,
+        blending: THREE.AdditiveBlending,
+      }),
+    ),
+  );
+
+  const orbitGroup = new THREE.Group();
+  for (let index = 0; index < 4; index += 1) {
+    const orbit = new THREE.Mesh(
+      new THREE.TorusGeometry(1.7 + index * 0.22, 0.008, 5, 150),
+      new THREE.MeshBasicMaterial({
+        color: index === 3 ? LIME : accent,
+        transparent: true,
+        opacity: 0.13 + index * 0.025,
+        blending: THREE.AdditiveBlending,
+      }),
+    );
+    orbit.rotation.set(index * 0.52, index * 0.37, index * 0.7);
+    orbitGroup.add(orbit);
+  }
+
+  const nodeGeometry = new THREE.IcosahedronGeometry(0.07, 1);
+  const nodeMaterial = new THREE.MeshBasicMaterial({ color: LIME });
+  for (let index = 0; index < 9; index += 1) {
+    const node = new THREE.Mesh(nodeGeometry, nodeMaterial);
+    const angle = (index / 9) * Math.PI * 2;
+    node.position.set(Math.cos(angle) * 2.28, Math.sin(angle * 2) * 1.45, Math.sin(angle) * 2.28);
+    orbitGroup.add(node);
+  }
+  group.add(orbitGroup);
+  group.userData.orbits = orbitGroup;
+  return group;
+}
+
 export function HelixScene() {
   const canvasRef = useRef<HTMLCanvasElement>(null);
 
@@ -14,7 +138,7 @@ export function HelixScene() {
     let renderer: THREE.WebGLRenderer;
     try {
       renderer = new THREE.WebGLRenderer({
-        canvas,
+        canvas: sceneCanvas,
         alpha: true,
         antialias: true,
         powerPreference: "high-performance",
@@ -23,189 +147,186 @@ export function HelixScene() {
       return;
     }
 
-    renderer.setPixelRatio(Math.min(window.devicePixelRatio, 1.75));
-    renderer.setClearColor(0x000000, 0);
+    renderer.setPixelRatio(Math.min(window.devicePixelRatio, 1.65));
+    renderer.setClearColor(0x050505, 0);
     renderer.outputColorSpace = THREE.SRGBColorSpace;
+    renderer.toneMapping = THREE.ACESFilmicToneMapping;
+    renderer.toneMappingExposure = 1.25;
 
     const scene = new THREE.Scene();
-    scene.fog = new THREE.FogExp2(0x050505, 0.055);
+    scene.fog = new THREE.FogExp2(0x050505, 0.042);
+    const camera = new THREE.PerspectiveCamera(46, 1, 0.1, 80);
+    camera.position.set(0, 0, 13.8);
 
-    const camera = new THREE.PerspectiveCamera(48, 1, 0.1, 100);
-    camera.position.set(0, 0, 13.5);
+    const leftHelix = createHelix(1, VIOLET);
+    const rightHelix = createHelix(-1, 0x9f96ff);
+    leftHelix.rotation.z = -0.14;
+    rightHelix.rotation.z = 0.14;
+    scene.add(leftHelix, rightHelix);
 
-    const helix = new THREE.Group();
-    scene.add(helix);
+    const lattice = new THREE.LineSegments(
+      new THREE.WireframeGeometry(new THREE.IcosahedronGeometry(2.55, 4)),
+      new THREE.LineBasicMaterial({
+        color: VIOLET,
+        transparent: true,
+        opacity: 0.065,
+        blending: THREE.AdditiveBlending,
+      }),
+    );
+    lattice.position.z = -2.6;
+    scene.add(lattice);
 
-    const count = 92;
-    const sphereGeometry = new THREE.IcosahedronGeometry(0.105, 1);
-    const sphereMaterial = new THREE.MeshStandardMaterial({
-      color: 0xffffff,
-      emissive: 0x7568ff,
-      emissiveIntensity: 0.42,
-      metalness: 0.15,
-      roughness: 0.34,
-      vertexColors: true,
-    });
-    const beads = new THREE.InstancedMesh(sphereGeometry, sphereMaterial, count * 2);
-    beads.instanceMatrix.setUsage(THREE.DynamicDrawUsage);
-
-    const dummy = new THREE.Object3D();
-    const white = new THREE.Color(0xffffff);
-    const violet = new THREE.Color(0x7568ff);
-    const lime = new THREE.Color(0xc9ff3b);
-    const rungPositions: number[] = [];
-
-    for (let index = 0; index < count; index += 1) {
-      const angle = index * 0.29;
-      const y = (index - count / 2) * 0.145;
-      const radius = 2.05 + Math.sin(index * 0.17) * 0.08;
-
-      const first = new THREE.Vector3(Math.sin(angle) * radius, y, Math.cos(angle) * radius);
-      const second = new THREE.Vector3(Math.sin(angle + Math.PI) * radius, y, Math.cos(angle + Math.PI) * radius);
-
-      dummy.position.copy(first);
-      dummy.scale.setScalar(index % 7 === 0 ? 1.65 : 1);
-      dummy.updateMatrix();
-      beads.setMatrixAt(index * 2, dummy.matrix);
-      beads.setColorAt(index * 2, index % 11 === 0 ? lime : white);
-
-      dummy.position.copy(second);
-      dummy.scale.setScalar(index % 9 === 0 ? 1.5 : 1);
-      dummy.updateMatrix();
-      beads.setMatrixAt(index * 2 + 1, dummy.matrix);
-      beads.setColorAt(index * 2 + 1, index % 5 === 0 ? violet : white);
-
-      if (index % 4 === 0) {
-        rungPositions.push(first.x, first.y, first.z, second.x, second.y, second.z);
-      }
-    }
-    beads.instanceMatrix.needsUpdate = true;
-    if (beads.instanceColor) beads.instanceColor.needsUpdate = true;
-    helix.add(beads);
-
-    const rungGeometry = new THREE.BufferGeometry();
-    rungGeometry.setAttribute("position", new THREE.Float32BufferAttribute(rungPositions, 3));
-    const rungMaterial = new THREE.LineBasicMaterial({
-      color: 0x7568ff,
-      transparent: true,
-      opacity: 0.38,
-      blending: THREE.AdditiveBlending,
-    });
-    const rungs = new THREE.LineSegments(rungGeometry, rungMaterial);
-    helix.add(rungs);
-
-    const knotGeometry = new THREE.TorusKnotGeometry(4.55, 0.018, 320, 12, 2, 5);
-    const knotMaterial = new THREE.MeshBasicMaterial({
-      color: 0x7568ff,
-      transparent: true,
-      opacity: 0.18,
-      wireframe: true,
-      blending: THREE.AdditiveBlending,
-    });
-    const knot = new THREE.Mesh(knotGeometry, knotMaterial);
-    knot.rotation.set(0.55, 0.1, -0.25);
+    const knot = new THREE.Mesh(
+      new THREE.TorusKnotGeometry(2.3, 0.017, 420, 10, 3, 7),
+      new THREE.MeshBasicMaterial({
+        color: LIME,
+        transparent: true,
+        opacity: 0.09,
+        wireframe: true,
+        blending: THREE.AdditiveBlending,
+      }),
+    );
+    knot.position.z = -1.2;
+    knot.rotation.set(0.55, 0.1, 0.4);
     scene.add(knot);
 
-    const particleCount = 650;
+    const particleCount = window.innerWidth < 640 ? 650 : 1450;
     const particlePositions = new Float32Array(particleCount * 3);
+    const particleColors = new Float32Array(particleCount * 3);
+    const violet = new THREE.Color(VIOLET);
+    const white = new THREE.Color(WHITE);
+    const lime = new THREE.Color(LIME);
     for (let index = 0; index < particleCount; index += 1) {
-      const radius = 4 + Math.random() * 14;
+      const radius = 4.5 + Math.random() * 12;
       const theta = Math.random() * Math.PI * 2;
       const phi = Math.acos(2 * Math.random() - 1);
       particlePositions[index * 3] = radius * Math.sin(phi) * Math.cos(theta);
       particlePositions[index * 3 + 1] = radius * Math.sin(phi) * Math.sin(theta);
-      particlePositions[index * 3 + 2] = radius * Math.cos(phi);
+      particlePositions[index * 3 + 2] = radius * Math.cos(phi) - 3;
+      const color = index % 41 === 0 ? lime : index % 6 === 0 ? white : violet;
+      color.toArray(particleColors, index * 3);
     }
     const particleGeometry = new THREE.BufferGeometry();
     particleGeometry.setAttribute("position", new THREE.BufferAttribute(particlePositions, 3));
-    const particleMaterial = new THREE.PointsMaterial({
-      color: 0x8f87ff,
-      size: 0.035,
-      transparent: true,
-      opacity: 0.72,
-      depthWrite: false,
-      blending: THREE.AdditiveBlending,
-    });
-    const particles = new THREE.Points(particleGeometry, particleMaterial);
+    particleGeometry.setAttribute("color", new THREE.BufferAttribute(particleColors, 3));
+    const particles = new THREE.Points(
+      particleGeometry,
+      new THREE.PointsMaterial({
+        size: 0.032,
+        transparent: true,
+        opacity: 0.68,
+        vertexColors: true,
+        depthWrite: false,
+        blending: THREE.AdditiveBlending,
+      }),
+    );
     scene.add(particles);
 
-    scene.add(new THREE.AmbientLight(0xffffff, 1.4));
-    const keyLight = new THREE.PointLight(0x7568ff, 42, 26, 2);
-    keyLight.position.set(4, 4, 7);
-    scene.add(keyLight);
-    const rimLight = new THREE.PointLight(0xc9ff3b, 24, 22, 2);
-    rimLight.position.set(-6, -3, 3);
-    scene.add(rimLight);
+    scene.add(new THREE.AmbientLight(WHITE, 1.65));
+    const violetLight = new THREE.PointLight(VIOLET, 52, 28, 2);
+    violetLight.position.set(0, 5, 8);
+    scene.add(violetLight);
+    const limeLight = new THREE.PointLight(LIME, 27, 24, 2);
+    limeLight.position.set(-6, -4, 5);
+    scene.add(limeLight);
 
     const pointer = new THREE.Vector2();
-    let scrollProgress = 0;
+    let targetScroll = 0;
+    let scrollRotation = 0;
+    let frame = 0;
+    const reducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
 
-    function updatePointer(event: PointerEvent) {
-      pointer.x = event.clientX / window.innerWidth - 0.5;
-      pointer.y = event.clientY / window.innerHeight - 0.5;
-    }
+    const updatePointer = (event: PointerEvent) => {
+      pointer.set(event.clientX / window.innerWidth - 0.5, event.clientY / window.innerHeight - 0.5);
+    };
+    const updateScroll = () => {
+      const distance = Math.max(document.documentElement.scrollHeight - window.innerHeight, 1);
+      targetScroll = window.scrollY / distance;
+      sceneCanvas.dataset.scrollProgress = targetScroll.toFixed(3);
+    };
 
-    function updateScroll() {
-      scrollProgress = window.scrollY / Math.max(window.innerHeight, 1);
-    }
-
-    window.addEventListener("pointermove", updatePointer, { passive: true });
-    window.addEventListener("scroll", updateScroll, { passive: true });
-
-    function resize() {
+    const resize = () => {
       const { clientWidth, clientHeight } = sceneCanvas;
       if (!clientWidth || !clientHeight) return;
       renderer.setSize(clientWidth, clientHeight, false);
       camera.aspect = clientWidth / clientHeight;
       camera.updateProjectionMatrix();
-    }
+      const isMobile = clientWidth < 640;
+      const horizontal = isMobile ? 1.68 : Math.min(5.15, Math.max(2.8, camera.aspect * 2.78));
+      const scale = isMobile ? 0.74 : 1;
+      camera.position.z = isMobile ? 12.4 : 13.8;
+      leftHelix.position.x = -horizontal;
+      rightHelix.position.x = horizontal;
+      leftHelix.scale.setScalar(scale);
+      rightHelix.scale.setScalar(scale);
+    };
 
     const resizeObserver = new ResizeObserver(resize);
     resizeObserver.observe(sceneCanvas);
+    window.addEventListener("pointermove", updatePointer, { passive: true });
+    window.addEventListener("scroll", updateScroll, { passive: true });
+    updateScroll();
     resize();
 
-    const reducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
-    let frame = 0;
+    const render = (time = 0) => {
+      const elapsed = reducedMotion ? 0 : time * 0.001;
+      scrollRotation += (targetScroll - scrollRotation) * 0.075;
+      const scrollSpin = scrollRotation * Math.PI * 8;
 
-    function render(time = 0) {
-      const elapsed = time * 0.001;
-      helix.rotation.y = elapsed * 0.22 + scrollProgress * 0.38;
-      helix.rotation.z = Math.sin(elapsed * 0.32) * 0.12;
-      helix.rotation.x = -0.12 + pointer.y * 0.24;
-      helix.position.x += (pointer.x * 0.7 - helix.position.x) * 0.035;
-      knot.rotation.y = elapsed * -0.075;
-      knot.rotation.z = elapsed * 0.04;
-      particles.rotation.y = elapsed * 0.012;
-      particles.rotation.x = elapsed * -0.008;
-      camera.position.x += (pointer.x * 0.65 - camera.position.x) * 0.025;
-      camera.position.y += (-pointer.y * 0.45 - camera.position.y) * 0.025;
+      leftHelix.rotation.y = elapsed * 0.17 + scrollSpin;
+      rightHelix.rotation.y = elapsed * -0.15 - scrollSpin;
+      leftHelix.rotation.x = -0.12 + pointer.y * 0.14 + scrollRotation * 0.5;
+      rightHelix.rotation.x = 0.12 - pointer.y * 0.14 - scrollRotation * 0.5;
+      leftHelix.position.y = -scrollRotation * 0.7;
+      rightHelix.position.y = scrollRotation * 0.7;
+
+      const leftOrbits = leftHelix.userData.orbits as THREE.Group;
+      const rightOrbits = rightHelix.userData.orbits as THREE.Group;
+      leftOrbits.rotation.z = elapsed * 0.22 + scrollSpin * 0.45;
+      leftOrbits.rotation.x = elapsed * 0.12;
+      rightOrbits.rotation.z = elapsed * -0.19 - scrollSpin * 0.45;
+      rightOrbits.rotation.x = elapsed * -0.1;
+
+      lattice.rotation.y = elapsed * 0.035 + scrollSpin * 0.15;
+      lattice.rotation.x = elapsed * -0.025 + scrollRotation * 0.4;
+      knot.rotation.y = elapsed * -0.075 - scrollSpin * 0.09;
+      knot.rotation.z = elapsed * 0.05 + scrollRotation * 0.6;
+      particles.rotation.y = elapsed * 0.008 + scrollSpin * 0.025;
+      particles.rotation.x = elapsed * -0.005;
+      camera.position.x += (pointer.x * 0.42 - camera.position.x) * 0.025;
+      camera.position.y += (-pointer.y * 0.28 - camera.position.y) * 0.025;
       camera.lookAt(0, 0, 0);
       renderer.render(scene, camera);
       frame = window.requestAnimationFrame(render);
-    }
-
-    if (reducedMotion) {
-      renderer.render(scene, camera);
-    } else {
-      render();
-    }
+    };
+    render();
 
     return () => {
       window.cancelAnimationFrame(frame);
       window.removeEventListener("pointermove", updatePointer);
       window.removeEventListener("scroll", updateScroll);
       resizeObserver.disconnect();
-      sphereGeometry.dispose();
-      sphereMaterial.dispose();
-      rungGeometry.dispose();
-      rungMaterial.dispose();
-      knotGeometry.dispose();
-      knotMaterial.dispose();
-      particleGeometry.dispose();
-      particleMaterial.dispose();
+      const geometries = new Set<THREE.BufferGeometry>();
+      const materials = new Set<THREE.Material>();
+      scene.traverse((object) => {
+        if (object instanceof THREE.Mesh || object instanceof THREE.LineSegments || object instanceof THREE.Points) {
+          geometries.add(object.geometry);
+          const objectMaterials = Array.isArray(object.material) ? object.material : [object.material];
+          objectMaterials.forEach((material) => materials.add(material));
+        }
+      });
+      geometries.forEach((geometry) => geometry.dispose());
+      materials.forEach((material) => material.dispose());
       renderer.dispose();
     };
   }, []);
 
-  return <canvas ref={canvasRef} className="size-full" aria-hidden="true" />;
+  return (
+    <canvas
+      ref={canvasRef}
+      className="size-full"
+      data-scroll-progress="0.000"
+      aria-hidden="true"
+    />
+  );
 }

@@ -1,25 +1,19 @@
 import { ArrowDown, ArrowUpRight } from "lucide-react";
 import Link from "next/link";
 import { BrandLogo } from "./brand-logo";
-import { HelixScene } from "./helix-scene";
 
 export function HeroSection() {
   return (
-    <section className="relative min-h-[calc(100svh-68px)] overflow-hidden bg-[#050505] text-white">
-      <div className="absolute inset-0 opacity-95"><HelixScene /></div>
-      <div className="absolute inset-0 bg-[linear-gradient(90deg,#050505_0%,rgba(5,5,5,0.88)_30%,rgba(5,5,5,0.08)_68%,rgba(5,5,5,0.35)_100%)]" />
-      <div className="absolute inset-0 bg-[radial-gradient(circle_at_76%_48%,rgba(117,104,255,0.14),transparent_36%)]" />
+    <section className="relative min-h-[calc(100svh-68px)] overflow-hidden text-white">
+      <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,rgba(5,5,5,0.42),transparent_48%)]" />
 
       <div className="site-container relative z-10 flex min-h-[calc(100svh-68px)] flex-col justify-between py-10 sm:py-14">
-        <div className="reveal-on-load mt-auto mb-auto max-w-5xl">
-          <h1 className="text-[clamp(4.2rem,11vw,10.5rem)] font-semibold leading-[0.78] tracking-[-0.09em]">
-            Websites
-            <span className="block text-white/82">that move.</span>
+        <div className="reveal-on-load mx-auto mt-auto mb-auto max-w-6xl text-center">
+          <h1 className="text-[clamp(3.6rem,9.5vw,9rem)] font-semibold leading-[0.82] tracking-[-0.085em]">
+            The springboard{" "}
+            <span className="block text-white/78">for your small business.</span>
           </h1>
-          <p className="mt-8 max-w-sm text-base leading-7 text-white/58 sm:text-lg">
-            Designed to stop the scroll.
-          </p>
-          <div className="mt-8 flex gap-3">
+          <div className="mt-10 flex flex-wrap justify-center gap-3">
             <Link href="/demos" className="button-primary">See the work</Link>
             <Link href="/contact" className="button-secondary">
               Start a project <ArrowUpRight className="size-4" aria-hidden="true" />
@@ -27,8 +21,8 @@ export function HeroSection() {
           </div>
         </div>
 
-        <a href="#experience" className="flex w-fit items-center gap-3 text-[10px] font-semibold uppercase tracking-[0.16em] text-white/40 hover:text-white">
-          Scroll <ArrowDown className="size-4 animate-bounce" aria-hidden="true" />
+        <a href="#pricing" className="mx-auto flex w-fit items-center gap-3 text-[10px] font-semibold uppercase tracking-[0.16em] text-white/40 hover:text-white">
+          Plans <ArrowDown className="size-4 animate-bounce" aria-hidden="true" />
         </a>
       </div>
     </section>
@@ -65,7 +59,7 @@ export function SiteFooter() {
           <BrandLogo inverse />
           <nav className="flex flex-wrap gap-x-7 gap-y-3 text-[10px] font-medium uppercase tracking-[0.14em] text-white/45" aria-label="Footer navigation">
             <Link href="/" className="hover:text-mint">Home</Link>
-            <Link href="/#pricing" className="hover:text-mint">Pricing</Link>
+            <Link href="/pricing" className="hover:text-mint">Pricing</Link>
             <Link href="/demos" className="hover:text-mint">Demos</Link>
             <Link href="/contact" className="hover:text-mint">Contact</Link>
           </nav>

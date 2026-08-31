@@ -7,7 +7,7 @@ import { BrandLogo } from "./brand-logo";
 
 const navigation = [
   { label: "Home", href: "/" },
-  { label: "Pricing", href: "/#pricing" },
+  { label: "Pricing", href: "/pricing" },
   { label: "Demos", href: "/demos" },
   { label: "Contact", href: "/contact" },
 ];

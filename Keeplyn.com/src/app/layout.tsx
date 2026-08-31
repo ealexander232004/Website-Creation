@@ -15,7 +15,7 @@ const geistMono = Geist_Mono({
 export const metadata: Metadata = {
   metadataBase: new URL("https://keeplyn.com"),
   title: {
-    default: "Keeplyn / Websites That Work Hard",
+    default: "Keeplyn / The Springboard for Your Small Business",
     template: "%s / Keeplyn",
   },
   description:
@@ -27,7 +27,7 @@ export const metadata: Metadata = {
     "Keeplyn",
   ],
   openGraph: {
-    title: "Keeplyn / Websites That Work Hard",
+    title: "Keeplyn / The Springboard for Your Small Business",
     description:
       "Original, hard-working websites for small businesses ready to look unmistakably themselves.",
     url: "https://keeplyn.com",
