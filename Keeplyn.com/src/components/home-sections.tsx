@@ -13,7 +13,10 @@ export function HeroSection() {
             <span className="text-white/78">The </span>springboard{" "}
             <span className="block text-white/78">for your small business.</span>
           </h1>
-          <div className="mt-10 flex flex-wrap justify-center gap-3">
+          <p className="mt-7 text-[clamp(1rem,1.6vw,1.35rem)] font-medium tracking-[-0.02em] text-white/58">
+            Professional, customized websites
+          </p>
+          <div className="mt-8 flex flex-wrap justify-center gap-3">
             <Link href="/demos" className="button-primary">View demos</Link>
             <Link href="/contact" className="button-secondary">
               Start a project <ArrowUpRight className="size-4" aria-hidden="true" />

@@ -22,7 +22,7 @@ export function PricingSection() {
 
         <div className="mx-auto mt-16 grid max-w-5xl gap-4 md:grid-cols-2 lg:mt-20">
           {websitePlans.map((plan) => (
-            <div key={plan.id} className="group flex flex-col gap-3">
+            <div key={plan.id} className="group flex flex-col">
               <article
                 className={`relative isolate flex min-h-[27rem] flex-1 flex-col justify-between overflow-hidden border p-7 shadow-[0_30px_100px_rgba(0,0,0,0.38)] transition duration-500 group-hover:-translate-y-1 sm:p-9 ${
                   plan.featured
@@ -46,20 +46,16 @@ export function PricingSection() {
                   <p className="mt-3 text-sm text-[#c9ff3b]">+ an optional {plan.hosting} for hosting &amp; updates</p>
                 </div>
               </article>
-              <Link
-                href={`/pricing#${plan.id}`}
-                className={`flex items-center justify-between border px-6 py-4 text-sm font-medium transition-colors ${
-                  plan.featured
-                    ? "border-[#c9ff3b]/65 bg-[#c9ff3b] text-black hover:bg-[#d5ff69]"
-                    : "border-white/20 bg-[#0a0a0d]/88 text-white hover:border-white/45 hover:text-[#c9ff3b]"
-                }`}
-              >
-                View details
-                <ArrowUpRight className="size-4 transition-transform group-hover:-translate-y-1 group-hover:translate-x-1" aria-hidden="true" />
-              </Link>
             </div>
           ))}
         </div>
+        <Link
+          href="/pricing"
+          className="group mx-auto mt-4 flex max-w-5xl items-center justify-between border border-[#c9ff3b]/65 bg-[#c9ff3b] px-6 py-4 text-sm font-medium text-black transition-colors hover:bg-[#d5ff69]"
+        >
+          See what&apos;s included
+          <ArrowUpRight className="size-4 transition-transform group-hover:-translate-y-1 group-hover:translate-x-1" aria-hidden="true" />
+        </Link>
       </div>
     </section>
   );

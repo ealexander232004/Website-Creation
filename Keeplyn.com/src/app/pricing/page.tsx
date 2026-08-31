@@ -14,7 +14,7 @@ export default function PricingPage() {
       <SiteHeader />
       <main className="bg-[#050505] text-white">
         <section className="site-container py-20 sm:py-28">
-          <h1 className="max-w-6xl text-[clamp(5rem,14vw,13rem)] font-semibold leading-[0.72] tracking-[-0.1em]">
+          <h1 className="-ml-[0.065em] max-w-6xl text-[clamp(5rem,14vw,13rem)] font-semibold leading-[0.72] tracking-[-0.1em]">
             Pricing
           </h1>
           <p className="mt-10 max-w-md text-base leading-7 text-white/48">

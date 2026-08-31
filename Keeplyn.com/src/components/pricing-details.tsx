@@ -74,7 +74,6 @@ function PlanHeader({ hosting = false }: { hosting?: boolean }) {
           ) : (
             <p className="mt-2 text-lg font-semibold tracking-[-0.05em] text-white sm:text-3xl">{plan.price}</p>
           )}
-          {hosting ? <p className="mt-2 text-[9px] uppercase tracking-[0.14em] text-white/30">Optional</p> : null}
         </div>
       ))}
     </div>
