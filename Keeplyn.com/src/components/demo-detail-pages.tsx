@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { NorthlineAppointmentPicker } from "./northline-appointment-picker";
+import { MossAppointmentPicker, NorthlineAppointmentPicker } from "./northline-appointment-picker";
 import {
   ArrowRight,
   ArrowUpRight,
@@ -13,6 +13,8 @@ import {
 export const demoSlugs = ["moss", "northline", "sera"] as const;
 
 export type DemoSlug = (typeof demoSlugs)[number];
+
+type DemoHeaderPage = "home" | "pricing" | "contact" | "booking";
 
 export function isDemoSlug(value: string): value is DemoSlug {
   return demoSlugs.includes(value as DemoSlug);
@@ -81,7 +83,7 @@ const seraPackages = [
   },
 ];
 
-export function MossHeader({ active }: { active: "home" | "pricing" | "contact" }) {
+export function MossHeader({ active }: { active: DemoHeaderPage }) {
   return (
     <header className="flex flex-wrap items-center justify-between gap-4 border-b border-[#203126]/20 px-5 py-5 sm:px-9">
         <Link href="/demos/moss" className="text-lg font-semibold tracking-[-0.04em]">Moss &amp; Mortar</Link>
@@ -90,21 +92,21 @@ export function MossHeader({ active }: { active: "home" | "pricing" | "contact" 
           <Link href="/demos/moss/pricing" aria-current={active === "pricing" ? "page" : undefined} className={active === "pricing" ? "underline underline-offset-4" : ""}>Pricing</Link>
           <Link href="/demos/moss/contact" aria-current={active === "contact" ? "page" : undefined} className={active === "contact" ? "underline underline-offset-4" : ""}>Contact</Link>
         </nav>
-        <Link href="/demos/moss/contact" className="border border-[#203126] px-4 py-2 text-xs font-semibold">Start a garden</Link>
+        <Link href="/demos/moss/booking" aria-current={active === "booking" ? "page" : undefined} className={`border border-[#203126] px-4 py-2 text-xs font-semibold ${active === "booking" ? "bg-[#203126] text-[#edf1e9]" : ""}`}>Start your garden</Link>
     </header>
   );
 }
 
-export function NorthlineHeader({ active }: { active: "home" | "pricing" | "contact" }) {
+export function NorthlineHeader({ active }: { active: DemoHeaderPage }) {
   return (
     <header className="flex flex-wrap items-center justify-between gap-4 px-5 py-5 sm:px-9">
         <Link href="/demos/northline" className="text-lg font-semibold tracking-[-0.04em]">northline<span className="text-[#ff725e]">●</span></Link>
         <nav className="order-3 flex w-full items-center gap-6 text-[10px] font-semibold uppercase tracking-[0.13em] md:order-none md:w-auto md:gap-7" aria-label="Northline navigation">
           <Link href="/demos/northline" aria-current={active === "home" ? "page" : undefined} className={active === "home" ? "text-[#ff725e]" : ""}>Home</Link>
           <Link href="/demos/northline/pricing" aria-current={active === "pricing" ? "page" : undefined} className={active === "pricing" ? "text-[#ff725e]" : ""}>Pricing</Link>
-          <Link href="/demos/northline/contact" aria-current={active === "contact" ? "page" : undefined} className={active === "contact" ? "text-[#ff725e]" : ""}>Book appointment</Link>
+          <Link href="/demos/northline/contact" aria-current={active === "contact" ? "page" : undefined} className={active === "contact" ? "text-[#ff725e]" : ""}>Contact</Link>
         </nav>
-        <Link href="/demos/northline/contact" className="rounded-full bg-[#173a5a] px-5 py-2.5 text-xs font-semibold text-white">Book appointment</Link>
+        <Link href="/demos/northline/booking" aria-current={active === "booking" ? "page" : undefined} className={`rounded-full px-5 py-2.5 text-xs font-semibold ${active === "booking" ? "bg-[#ff725e] text-white" : "bg-[#173a5a] text-white"}`}>Book appointment</Link>
     </header>
   );
 }
@@ -198,7 +200,7 @@ function NorthlinePricing() {
               <p className="mt-4 text-sm leading-6 text-[#173a5a]/58">{plan.detail}</p>
               <p className="mt-9 text-6xl font-semibold tracking-[-0.08em]">{plan.price}</p>
               <PackageFeatures features={plan.features} iconClassName="text-[#ff725e]" />
-              <Link href="/demos/northline/contact" className="mt-auto flex items-center justify-between rounded-full bg-[#173a5a] px-5 py-3 text-sm font-semibold text-white">Book a visit <ArrowRight className="size-4" aria-hidden="true" /></Link>
+              <Link href="/demos/northline/booking" className="mt-auto flex items-center justify-between rounded-full bg-[#173a5a] px-5 py-3 text-sm font-semibold text-white">Book a visit <ArrowRight className="size-4" aria-hidden="true" /></Link>
             </article>
           ))}
         </section>
@@ -208,7 +210,7 @@ function NorthlinePricing() {
           <p className="text-sm leading-7 text-[#173a5a]/62">We are in network with major PPO plans, submit claims on your behalf, and offer payment plans for restorative treatment over $750.</p>
         </section>
       </div>
-      <footer className="flex flex-col justify-between gap-5 bg-[#dcebf6] px-6 py-8 text-xs sm:flex-row sm:items-center sm:px-10 lg:px-14"><span className="text-base font-semibold">northline<span className="text-[#ff725e]">●</span></span><Link href="/demos/northline/contact">Request an appointment</Link><span>(510) 555-0144</span></footer>
+      <footer className="flex flex-col justify-between gap-5 bg-[#dcebf6] px-6 py-8 text-xs sm:flex-row sm:items-center sm:px-10 lg:px-14"><span className="text-base font-semibold">northline<span className="text-[#ff725e]">●</span></span><Link href="/demos/northline/booking">Request an appointment</Link><span>(510) 555-0144</span></footer>
     </div>
   );
 }
@@ -266,17 +268,17 @@ function ContactForm({ subject, serviceLabel, services, inputClassName, buttonCl
   return (
     <form action="mailto:hello@keeplyn.com" method="post" encType="text/plain" className="grid gap-5">
       <input type="hidden" name="subject" value={subject} />
-      <div className="grid gap-5 sm:grid-cols-2">
-        <label className="grid gap-2 text-xs font-semibold">Name<input required autoComplete="name" name="name" className={inputClassName} placeholder="Your name" /></label>
-        <label className="grid gap-2 text-xs font-semibold">Email<input required autoComplete="email" name="email" type="email" className={inputClassName} placeholder="you@example.com" /></label>
+      <div className="grid grid-cols-[repeat(auto-fit,minmax(min(14rem,100%),1fr))] gap-5">
+        <label className="grid min-w-0 gap-2 text-xs font-semibold">Name<input required autoComplete="name" name="name" className={`${inputClassName} min-w-0`} placeholder="Your name" /></label>
+        <label className="grid min-w-0 gap-2 text-xs font-semibold">Email<input required autoComplete="email" name="email" type="email" className={`${inputClassName} min-w-0`} placeholder="you@example.com" /></label>
       </div>
-      <label className="grid gap-2 text-xs font-semibold">{serviceLabel}
-        <select name="service" className={inputClassName} defaultValue="">
+      <label className="grid min-w-0 gap-2 text-xs font-semibold">{serviceLabel}
+        <select name="service" className={`${inputClassName} min-w-0`} defaultValue="">
           <option value="" disabled>Choose one</option>
           {services.map((service) => <option key={service}>{service}</option>)}
         </select>
       </label>
-      <label className="grid gap-2 text-xs font-semibold">Tell us a little more<textarea required name="message" rows={6} className={`${inputClassName} resize-y`} placeholder="Timing, priorities, and anything else we should know." /></label>
+      <label className="grid min-w-0 gap-2 text-xs font-semibold">Tell us a little more<textarea required name="message" rows={6} className={`${inputClassName} min-w-0 resize-y`} placeholder="Timing, priorities, and anything else we should know." /></label>
       <button type="submit" className={`flex items-center justify-between px-5 py-4 text-sm font-semibold ${buttonClassName}`}>Send inquiry <ArrowUpRight className="size-4" aria-hidden="true" /></button>
     </form>
   );
@@ -324,11 +326,59 @@ function NorthlineContact() {
             </div>
           </section>
           <section className="p-7 sm:p-12 lg:p-16">
+            <p className="text-[10px] font-semibold uppercase tracking-[0.16em] text-[#ff725e]">Contact Northline</p>
+            <h2 className="mt-5 text-4xl font-semibold tracking-[-0.06em] sm:text-5xl">How can we help?</h2>
+            <div className="mt-10">
+              <ContactForm subject="Northline demo inquiry" serviceLabel="What can we help with?" services={["General question", "Insurance and billing", "Existing appointment", "Patient records", "Other"]} inputClassName="min-h-12 w-full rounded-xl border border-[#173a5a]/16 bg-[#f3f7fb] px-4 py-3 text-sm outline-none placeholder:text-[#173a5a]/35 focus:border-[#ff725e]" buttonClassName="rounded-full bg-[#173a5a] text-white" />
+            </div>
+          </section>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function MossBooking() {
+  return (
+    <div className="min-h-svh bg-[#dfe5d6] text-[#203126]">
+      <MossHeader active="booking" />
+      <div className="px-6 py-16 sm:px-10 lg:px-14 lg:py-24">
+        <div className="mx-auto grid max-w-[92rem] overflow-hidden border border-[#203126]/20 bg-[#edf1e9] lg:grid-cols-[0.46fr_0.54fr]">
+          <section className="bg-[#203126] p-7 text-[#edf1e9] sm:p-12 lg:p-16">
+            <p className="text-[10px] uppercase tracking-[0.16em] text-[#c9ff3b]">Complimentary first conversation</p>
+            <h1 className="mt-6 text-[clamp(4rem,8vw,7.5rem)] font-semibold leading-[0.82] tracking-[-0.085em]">Start with the way you want to live outside.</h1>
+            <p className="mt-8 max-w-md text-sm leading-7 text-white/58">Choose an available time for a short garden consultation. We&apos;ll talk about the property, your priorities, and the best next step.</p>
+          </section>
+          <section className="p-7 sm:p-12 lg:p-16">
+            <p className="text-[10px] font-semibold uppercase tracking-[0.16em] text-[#203126]/52">Start your garden</p>
+            <h2 className="mt-5 text-4xl font-semibold tracking-[-0.06em] sm:text-5xl">Choose a consultation time.</h2>
+            <div className="mt-10"><MossAppointmentPicker /></div>
+          </section>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function NorthlineBooking() {
+  return (
+    <div className="min-h-svh bg-[#f3f7fb] text-[#173a5a]">
+      <NorthlineHeader active="booking" />
+      <div className="px-5 pb-10 sm:px-9">
+        <div className="mx-auto grid max-w-[92rem] overflow-hidden rounded-[2rem] bg-white lg:grid-cols-[0.46fr_0.54fr]">
+          <section className="bg-[#173a5a] p-7 text-white sm:p-12 lg:p-16">
+            <p className="text-[10px] uppercase tracking-[0.16em] text-[#ff9a89]">Accepting new patients</p>
+            <h1 className="mt-6 text-[clamp(4rem,8vw,7.5rem)] font-semibold leading-[0.82] tracking-[-0.085em]">Let&apos;s make your next visit easier.</h1>
+            <div className="mt-14 space-y-6 border-t border-white/16 pt-7 text-sm text-white/65">
+              <p className="flex gap-4"><Phone className="size-5 shrink-0 text-[#ff725e]" aria-hidden="true" />(510) 555-0144</p>
+              <p className="flex gap-4"><MapPin className="size-5 shrink-0 text-[#ff725e]" aria-hidden="true" />411 Grand Avenue · Oakland, CA</p>
+              <p className="flex gap-4"><Clock3 className="size-5 shrink-0 text-[#ff725e]" aria-hidden="true" />Monday—Thursday · 8am—5pm</p>
+            </div>
+          </section>
+          <section className="p-7 sm:p-12 lg:p-16">
             <p className="text-[10px] font-semibold uppercase tracking-[0.16em] text-[#ff725e]">Book an appointment</p>
             <h2 className="mt-5 text-4xl font-semibold tracking-[-0.06em] sm:text-5xl">Choose a time that works.</h2>
-            <div className="mt-10">
-              <NorthlineAppointmentPicker />
-            </div>
+            <div className="mt-10"><NorthlineAppointmentPicker /></div>
           </section>
         </div>
       </div>
@@ -371,5 +421,11 @@ export function DemoPricingPage({ demo }: { demo: DemoSlug }) {
 export function DemoContactPage({ demo }: { demo: DemoSlug }) {
   if (demo === "moss") return <MossContact />;
   if (demo === "northline") return <NorthlineContact />;
+  return <SeraContact />;
+}
+
+export function DemoBookingPage({ demo }: { demo: DemoSlug }) {
+  if (demo === "moss") return <MossBooking />;
+  if (demo === "northline") return <NorthlineBooking />;
   return <SeraContact />;
 }

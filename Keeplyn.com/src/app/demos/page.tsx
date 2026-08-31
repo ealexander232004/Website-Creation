@@ -18,7 +18,7 @@ export default async function DemosPage({ searchParams }: DemosPageProps) {
   const demoValue = Array.isArray(query.demo) ? query.demo[0] : query.demo;
   const pageValue = Array.isArray(query.page) ? query.page[0] : query.page;
   const initialDemo = demoValue && isDemoSlug(demoValue) ? demoValue : "moss";
-  const initialPage: DemoPage = pageValue === "pricing" || pageValue === "contact" ? pageValue : "home";
+  const initialPage: DemoPage = pageValue === "pricing" || pageValue === "contact" || pageValue === "booking" ? pageValue : "home";
 
   return (
     <>
