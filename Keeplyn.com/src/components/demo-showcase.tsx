@@ -4,7 +4,14 @@ import Image from "next/image";
 import Link from "next/link";
 import { ArrowRight, ArrowUpRight, CalendarDays, Clock3, MapPin } from "lucide-react";
 import { useRef, useState, type KeyboardEvent, type MouseEvent as ReactMouseEvent } from "react";
-import { DemoContactPage, DemoPricingPage, type DemoSlug } from "@/components/demo-detail-pages";
+import {
+  DemoContactPage,
+  DemoPricingPage,
+  MossHeader,
+  NorthlineHeader,
+  SeraHeader,
+  type DemoSlug,
+} from "@/components/demo-detail-pages";
 
 const demoTabs = [
   { id: "moss", name: "Moss & Mortar", type: "Landscape studio" },
@@ -17,13 +24,7 @@ export type DemoPage = "home" | "pricing" | "contact";
 export function MossSite() {
   return (
     <div className="bg-[#dfe5d6] text-[#203126]">
-      <header className="flex flex-wrap items-center justify-between gap-4 border-b border-[#203126]/20 px-5 py-5 sm:px-9">
-        <Link href="/demos/moss" className="text-lg font-semibold tracking-[-0.04em]">Moss &amp; Mortar</Link>
-        <nav className="order-3 flex w-full gap-6 text-[10px] font-semibold uppercase tracking-[0.14em] sm:order-none sm:w-auto sm:gap-7" aria-label="Moss & Mortar demo navigation">
-          <a href="#moss-work">Work</a><Link href="/demos/moss/pricing">Pricing</Link><Link href="/demos/moss/contact">Contact</Link>
-        </nav>
-        <Link href="/demos/moss/contact" className="border border-[#203126] px-4 py-2 text-xs font-semibold">Start a garden</Link>
-      </header>
+      <MossHeader active="home" />
 
       <section id="moss-top" className="grid min-h-[48rem] lg:grid-cols-[0.48fr_0.52fr]">
         <div className="flex flex-col p-6 sm:p-10 lg:p-14">
@@ -119,13 +120,7 @@ export function MossSite() {
 export function NorthlineSite() {
   return (
     <div className="bg-[#f3f7fb] text-[#173a5a]">
-      <header className="flex flex-wrap items-center justify-between gap-4 px-5 py-5 sm:px-9">
-        <Link href="/demos/northline" className="text-lg font-semibold tracking-[-0.04em]">northline<span className="text-[#ff725e]">●</span></Link>
-        <nav className="order-3 flex w-full gap-6 text-[10px] font-semibold uppercase tracking-[0.13em] md:order-none md:w-auto md:gap-7" aria-label="Northline demo navigation">
-          <a href="#northline-services">Services</a><Link href="/demos/northline/pricing">Pricing</Link><Link href="/demos/northline/contact">Contact</Link>
-        </nav>
-        <Link href="/demos/northline/contact" className="rounded-full bg-[#173a5a] px-5 py-2.5 text-xs font-semibold text-white">Book a visit</Link>
-      </header>
+      <NorthlineHeader active="home" />
 
       <section id="northline-top" className="px-5 pb-8 sm:px-9">
         <div className="relative min-h-[46rem] overflow-hidden rounded-[2rem] bg-[#bfd9ef]">
@@ -212,13 +207,7 @@ export function NorthlineSite() {
 export function SeraSite() {
   return (
     <div className="bg-[#f6e8d8] text-[#5d2d26]">
-      <header className="flex flex-wrap items-center justify-between gap-4 border-b border-[#5d2d26]/18 px-5 py-5 sm:px-9">
-        <Link href="/demos/sera" className="font-serif text-3xl italic">Sera</Link>
-        <nav className="order-3 flex w-full gap-6 text-[10px] font-semibold uppercase tracking-[0.14em] sm:order-none sm:w-auto sm:gap-7" aria-label="Sera demo navigation">
-          <a href="#sera-menu">Menu</a><Link href="/demos/sera/pricing">Pricing</Link><Link href="/demos/sera/contact">Contact</Link>
-        </nav>
-        <p className="text-[10px] font-semibold uppercase tracking-[0.13em]">Open 7—2</p>
-      </header>
+      <SeraHeader active="home" />
 
       <section id="sera-top" className="grid min-h-[48rem] lg:grid-cols-2">
         <div className="relative min-h-[34rem] overflow-hidden lg:order-2">
@@ -303,6 +292,7 @@ export function DemoShowcase({ initialDemo = "moss", initialPage = "home" }: Dem
   const [activeIndex, setActiveIndex] = useState(initialIndex);
   const [activePage, setActivePage] = useState<DemoPage>(initialPage);
   const tabRefs = useRef<Array<HTMLButtonElement | null>>([]);
+  const selectorBarRef = useRef<HTMLDivElement>(null);
   const panelRef = useRef<HTMLDivElement>(null);
 
   const showDemoPage = (index: number, page: DemoPage, returnToTop = false) => {
@@ -313,7 +303,9 @@ export function DemoShowcase({ initialDemo = "moss", initialPage = "home" }: Dem
     if (returnToTop && panelRef.current) {
       window.requestAnimationFrame(() => {
         if (!panelRef.current) return;
-        window.scrollTo({ top: Math.max(panelRef.current.offsetTop - 136, 0), behavior: "smooth" });
+        const selectorHeight = selectorBarRef.current?.offsetHeight ?? 96;
+        const visiblePanelOffset = 68 + selectorHeight + 16;
+        window.scrollTo({ top: Math.max(panelRef.current.offsetTop - visiblePanelOffset, 0), behavior: "smooth" });
       });
     }
   };
@@ -359,13 +351,13 @@ export function DemoShowcase({ initialDemo = "moss", initialPage = "home" }: Dem
 
   return (
     <section className="bg-[#050505] text-white">
-      <div className="sticky top-[68px] z-40 border-y border-white/12 bg-[#050505]/92 backdrop-blur-2xl">
-        <div className="site-container flex min-h-20 flex-col gap-4 py-4 lg:flex-row lg:items-center lg:justify-between">
+      <div ref={selectorBarRef} className="sticky top-[68px] z-40 border-y border-white/12 bg-[#050505]/92 backdrop-blur-2xl">
+        <div className="site-container grid min-h-20 items-center gap-4 py-4 lg:grid-cols-[1fr_30rem]">
           <div className="flex items-baseline gap-3">
             <h1 className="text-2xl font-semibold tracking-[-0.05em]">Demos</h1>
             <span className="text-[10px] uppercase tracking-[0.15em] text-white/32">Complete sites</span>
           </div>
-          <div className="grid grid-cols-3 gap-1" role="tablist" aria-label="Choose a website demo">
+          <div className="grid w-full grid-cols-3 gap-1" role="tablist" aria-label="Choose a website demo">
             {demoTabs.map((demo, index) => (
               <button
                 key={demo.id}
@@ -378,7 +370,7 @@ export function DemoShowcase({ initialDemo = "moss", initialPage = "home" }: Dem
                 tabIndex={activeIndex === index ? 0 : -1}
                 onClick={() => selectDemo(index, true)}
                 onKeyDown={handleKeyDown}
-                className={`min-w-0 border px-3 py-3 text-left transition-colors sm:min-w-40 sm:px-4 ${
+                className={`flex min-h-14 min-w-0 flex-col justify-center border px-3 py-3 text-left transition-colors sm:px-4 ${
                   activeIndex === index
                     ? "border-[#c9ff3b] bg-[#c9ff3b] text-[#050505]"
                     : "border-white/12 bg-white/4 text-white/52 hover:border-white/30 hover:text-white"

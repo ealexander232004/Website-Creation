@@ -1,6 +1,5 @@
 import Link from "next/link";
 import {
-  ArrowLeft,
   ArrowRight,
   ArrowUpRight,
   Check,
@@ -81,56 +80,45 @@ const seraPackages = [
   },
 ];
 
-function MossHeader({ active }: { active: "home" | "pricing" | "contact" }) {
+export function MossHeader({ active }: { active: "home" | "pricing" | "contact" }) {
   return (
-    <header className="border-b border-[#203126]/20 px-5 py-5 sm:px-9">
-      <div className="mx-auto flex max-w-[92rem] flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+    <header className="flex flex-wrap items-center justify-between gap-4 border-b border-[#203126]/20 px-5 py-5 sm:px-9">
         <Link href="/demos/moss" className="text-lg font-semibold tracking-[-0.04em]">Moss &amp; Mortar</Link>
-        <nav className="flex items-center gap-5 text-[10px] font-semibold uppercase tracking-[0.14em] sm:gap-7" aria-label="Moss & Mortar navigation">
+        <nav className="order-3 flex w-full items-center gap-6 text-[10px] font-semibold uppercase tracking-[0.14em] sm:order-none sm:w-auto sm:gap-7" aria-label="Moss & Mortar navigation">
           <Link href="/demos/moss" aria-current={active === "home" ? "page" : undefined} className={active === "home" ? "underline underline-offset-4" : ""}>Home</Link>
           <Link href="/demos/moss/pricing" aria-current={active === "pricing" ? "page" : undefined} className={active === "pricing" ? "underline underline-offset-4" : ""}>Pricing</Link>
           <Link href="/demos/moss/contact" aria-current={active === "contact" ? "page" : undefined} className={active === "contact" ? "underline underline-offset-4" : ""}>Contact</Link>
         </nav>
-      </div>
+        <Link href="/demos/moss/contact" className="border border-[#203126] px-4 py-2 text-xs font-semibold">Start a garden</Link>
     </header>
   );
 }
 
-function NorthlineHeader({ active }: { active: "home" | "pricing" | "contact" }) {
+export function NorthlineHeader({ active }: { active: "home" | "pricing" | "contact" }) {
   return (
-    <header className="px-5 py-5 sm:px-9">
-      <div className="mx-auto flex max-w-[92rem] flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+    <header className="flex flex-wrap items-center justify-between gap-4 px-5 py-5 sm:px-9">
         <Link href="/demos/northline" className="text-lg font-semibold tracking-[-0.04em]">northline<span className="text-[#ff725e]">●</span></Link>
-        <nav className="flex items-center gap-5 text-[10px] font-semibold uppercase tracking-[0.13em] sm:gap-7" aria-label="Northline navigation">
+        <nav className="order-3 flex w-full items-center gap-6 text-[10px] font-semibold uppercase tracking-[0.13em] md:order-none md:w-auto md:gap-7" aria-label="Northline navigation">
           <Link href="/demos/northline" aria-current={active === "home" ? "page" : undefined} className={active === "home" ? "text-[#ff725e]" : ""}>Home</Link>
           <Link href="/demos/northline/pricing" aria-current={active === "pricing" ? "page" : undefined} className={active === "pricing" ? "text-[#ff725e]" : ""}>Pricing</Link>
           <Link href="/demos/northline/contact" aria-current={active === "contact" ? "page" : undefined} className={active === "contact" ? "text-[#ff725e]" : ""}>Contact</Link>
         </nav>
-      </div>
+        <Link href="/demos/northline/contact" className="rounded-full bg-[#173a5a] px-5 py-2.5 text-xs font-semibold text-white">Book a visit</Link>
     </header>
   );
 }
 
-function SeraHeader({ active }: { active: "home" | "pricing" | "contact" }) {
+export function SeraHeader({ active }: { active: "home" | "pricing" | "contact" }) {
   return (
-    <header className="border-b border-[#5d2d26]/18 px-5 py-5 sm:px-9">
-      <div className="mx-auto flex max-w-[92rem] flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+    <header className="flex flex-wrap items-center justify-between gap-4 border-b border-[#5d2d26]/18 px-5 py-5 sm:px-9">
         <Link href="/demos/sera" className="font-serif text-3xl italic">Sera</Link>
-        <nav className="flex items-center gap-5 text-[10px] font-semibold uppercase tracking-[0.14em] sm:gap-7" aria-label="Sera navigation">
+        <nav className="order-3 flex w-full items-center gap-6 text-[10px] font-semibold uppercase tracking-[0.14em] sm:order-none sm:w-auto sm:gap-7" aria-label="Sera navigation">
           <Link href="/demos/sera" aria-current={active === "home" ? "page" : undefined} className={active === "home" ? "text-[#ff765f]" : ""}>Home</Link>
           <Link href="/demos/sera/pricing" aria-current={active === "pricing" ? "page" : undefined} className={active === "pricing" ? "text-[#ff765f]" : ""}>Pricing</Link>
           <Link href="/demos/sera/contact" aria-current={active === "contact" ? "page" : undefined} className={active === "contact" ? "text-[#ff765f]" : ""}>Contact</Link>
         </nav>
-      </div>
+        <p className="text-[10px] font-semibold uppercase tracking-[0.13em]">Open 7—2</p>
     </header>
-  );
-}
-
-function DemoExit({ className }: { className: string }) {
-  return (
-    <Link href="/demos" className={`inline-flex items-center gap-2 text-[10px] font-semibold uppercase tracking-[0.14em] ${className}`}>
-      <ArrowLeft className="size-3.5" aria-hidden="true" /> All Keeplyn demos
-    </Link>
   );
 }
 
@@ -154,8 +142,7 @@ function MossPricing() {
       <div>
         <section className="px-6 py-20 sm:px-10 lg:px-14 lg:py-28">
           <div className="mx-auto max-w-[92rem]">
-            <DemoExit className="text-[#203126]/52" />
-            <p className="mt-16 text-[10px] font-semibold uppercase tracking-[0.16em] text-[#203126]/52">Design services · Northern California</p>
+            <p className="text-[10px] font-semibold uppercase tracking-[0.16em] text-[#203126]/52">Design services · Northern California</p>
             <h1 className="mt-6 max-w-6xl text-[clamp(4rem,9vw,8.5rem)] font-semibold leading-[0.8] tracking-[-0.085em]">A garden plan with room to grow.</h1>
             <p className="mt-8 max-w-xl text-base leading-7 text-[#203126]/64">Every engagement starts with the ground, the season, and the way you want to live outside.</p>
           </div>
@@ -197,8 +184,7 @@ function NorthlinePricing() {
       <NorthlineHeader active="pricing" />
       <div className="px-5 pb-10 sm:px-9">
         <section className="mx-auto max-w-[92rem] overflow-hidden rounded-[2rem] bg-[#173a5a] px-7 py-16 text-white sm:px-12 sm:py-24 lg:px-16">
-          <DemoExit className="text-white/52" />
-          <p className="mt-16 text-[10px] font-semibold uppercase tracking-[0.16em] text-[#ff9a89]">Self-pay pricing</p>
+          <p className="text-[10px] font-semibold uppercase tracking-[0.16em] text-[#ff9a89]">Self-pay pricing</p>
           <h1 className="mt-6 max-w-5xl text-[clamp(4rem,9vw,8.5rem)] font-semibold leading-[0.82] tracking-[-0.085em]">Clear costs. No surprises.</h1>
           <p className="mt-8 max-w-2xl text-base leading-7 text-white/62">We review every cost before care begins and help you use insurance benefits without letting them drive the plan.</p>
         </section>
@@ -233,8 +219,7 @@ function SeraPricing() {
       <div>
         <section className="px-6 py-20 sm:px-10 lg:px-14 lg:py-28">
           <div className="mx-auto max-w-[92rem]">
-            <DemoExit className="text-[#5d2d26]/52" />
-            <div className="mt-16 grid gap-10 lg:grid-cols-[0.68fr_0.32fr] lg:items-end">
+            <div className="grid gap-10 lg:grid-cols-[0.68fr_0.32fr] lg:items-end">
               <div><p className="font-serif text-3xl italic text-[#ff765f]">Order for the table.</p><h1 className="mt-5 text-[clamp(4.5rem,10vw,9rem)] font-semibold leading-[0.76] tracking-[-0.09em]">Good mornings, by the dozen.</h1></div>
               <p className="border-t border-[#5d2d26]/20 pt-6 text-sm leading-7 text-[#5d2d26]/62">Catering is baked to order Tuesday through Saturday. Forty-eight hours&apos; notice keeps everything unhurried.</p>
             </div>
@@ -302,8 +287,7 @@ function MossContact() {
       <MossHeader active="contact" />
       <div className="px-6 py-16 sm:px-10 lg:px-14 lg:py-24">
         <div className="mx-auto max-w-[92rem]">
-          <DemoExit className="text-[#203126]/52" />
-          <div className="mt-16 grid gap-14 lg:grid-cols-[0.48fr_0.52fr]">
+          <div className="grid gap-14 lg:grid-cols-[0.48fr_0.52fr]">
             <div>
               <p className="text-[10px] font-semibold uppercase tracking-[0.16em] text-[#203126]/52">Now booking autumn 2026</p>
               <h1 className="mt-6 text-[clamp(4rem,8vw,8rem)] font-semibold leading-[0.8] tracking-[-0.085em]">Tell us about the life outside.</h1>
@@ -330,8 +314,7 @@ function NorthlineContact() {
       <div className="px-5 pb-10 sm:px-9">
         <div className="mx-auto grid max-w-[92rem] overflow-hidden rounded-[2rem] bg-white lg:grid-cols-[0.46fr_0.54fr]">
           <section className="bg-[#173a5a] p-7 text-white sm:p-12 lg:p-16">
-            <DemoExit className="text-white/52" />
-            <p className="mt-16 text-[10px] uppercase tracking-[0.16em] text-[#ff9a89]">Accepting new patients</p>
+            <p className="text-[10px] uppercase tracking-[0.16em] text-[#ff9a89]">Accepting new patients</p>
             <h1 className="mt-6 text-[clamp(4rem,8vw,7.5rem)] font-semibold leading-[0.82] tracking-[-0.085em]">Let&apos;s make your next visit easier.</h1>
             <div className="mt-14 space-y-6 border-t border-white/16 pt-7 text-sm text-white/65">
               <p className="flex gap-4"><Phone className="size-5 shrink-0 text-[#ff725e]" aria-hidden="true" />(510) 555-0144</p>
@@ -358,8 +341,7 @@ function SeraContact() {
       <SeraHeader active="contact" />
       <div className="px-6 py-16 sm:px-10 lg:px-14 lg:py-24">
         <div className="mx-auto max-w-[92rem]">
-          <DemoExit className="text-[#5d2d26]/52" />
-          <div className="mt-16 grid gap-14 lg:grid-cols-[0.5fr_0.5fr]">
+          <div className="grid gap-14 lg:grid-cols-[0.5fr_0.5fr]">
             <div>
               <p className="font-serif text-3xl italic text-[#ff765f]">Save us a place.</p>
               <h1 className="mt-5 text-[clamp(4.5rem,9vw,8.5rem)] font-semibold leading-[0.75] tracking-[-0.09em]">Bread for whatever&apos;s next.</h1>
