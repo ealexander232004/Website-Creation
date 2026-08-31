@@ -1,0 +1,139 @@
+@import "tailwindcss";
+
+:root {
+  --background: #fbfaf6;
+  --foreground: #111a2e;
+}
+
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-cream: #fbfaf6;
+  --color-mist: #f2f4f7;
+  --color-navy: #111a2e;
+  --color-slate: #5c6578;
+  --color-violet: #6259e8;
+  --color-mint: #bdfbe8;
+  --font-sans: var(--font-geist-sans);
+  --font-mono: var(--font-geist-mono);
+}
+
+@layer base {
+  * {
+    box-sizing: border-box;
+  }
+
+  html {
+    scroll-behavior: smooth;
+    scroll-padding-top: 5rem;
+  }
+
+  body {
+    margin: 0;
+    background: var(--background);
+    color: var(--foreground);
+    font-family: var(--font-geist-sans), Arial, Helvetica, sans-serif;
+  }
+
+  ::selection {
+    background: #bdfbe8;
+    color: #111a2e;
+  }
+
+  button,
+  a,
+  summary {
+    -webkit-tap-highlight-color: transparent;
+  }
+
+  :where(a, button, summary):focus-visible {
+    outline: 3px solid #6259e8;
+    outline-offset: 3px;
+  }
+}
+
+@layer components {
+  .site-container {
+    width: min(100% - 2rem, 76rem);
+    margin-inline: auto;
+  }
+
+  .section-space {
+    padding-block: clamp(5rem, 9vw, 8rem);
+  }
+
+  .button-primary {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    border-radius: 0.75rem;
+    background: #111a2e;
+    padding: 0.875rem 1.25rem;
+    color: white;
+    font-size: 0.875rem;
+    font-weight: 700;
+    transition:
+      transform 200ms ease,
+      background-color 200ms ease,
+      box-shadow 200ms ease;
+  }
+
+  .button-primary:hover {
+    transform: translateY(-2px);
+    background: #6259e8;
+    box-shadow: 0 14px 30px -14px rgb(98 89 232 / 45%);
+  }
+
+  .button-secondary {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    border: 1px solid rgb(17 26 46 / 12%);
+    border-radius: 0.75rem;
+    background: rgb(255 255 255 / 75%);
+    padding: 0.875rem 1.25rem;
+    color: #111a2e;
+    font-size: 0.875rem;
+    font-weight: 700;
+    transition:
+      transform 200ms ease,
+      border-color 200ms ease,
+      background-color 200ms ease;
+  }
+
+  .button-secondary:hover {
+    transform: translateY(-2px);
+    border-color: rgb(98 89 232 / 35%);
+    background: white;
+  }
+}
+
+.hero-grid {
+  background-image:
+    linear-gradient(to right, rgb(17 26 46 / 5%) 1px, transparent 1px),
+    linear-gradient(to bottom, rgb(17 26 46 / 5%) 1px, transparent 1px);
+  background-size: 42px 42px;
+}
+
+.faq-item[open] > summary {
+  padding-bottom: 0.75rem;
+}
+
+@media (min-width: 640px) {
+  .site-container {
+    width: min(100% - 3rem, 76rem);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  html {
+    scroll-behavior: auto;
+  }
+
+  *,
+  *::before,
+  *::after {
+    scroll-behavior: auto !important;
+    transition-duration: 0.01ms !important;
+  }
+}
