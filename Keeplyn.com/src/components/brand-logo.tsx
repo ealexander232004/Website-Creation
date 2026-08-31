@@ -38,7 +38,7 @@ export function BrandLogo({ inverse = false }: BrandLogoProps) {
           inverse ? "text-white" : "text-navy"
         }`}
       >
-        Keeplyn<span className="text-violet">/</span>
+        Keeplyn
       </span>
     </Link>
   );
