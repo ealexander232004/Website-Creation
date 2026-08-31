@@ -242,7 +242,7 @@ export function HelixScene() {
     const reducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
     sceneCanvas.dataset.motionMode = reducedMotion ? "helix-idle-and-gentle-scroll" : "idle-and-gentle-scroll";
     sceneCanvas.dataset.pointerMotion = "off";
-    sceneCanvas.dataset.scrollScale = "0.333";
+    sceneCanvas.dataset.scrollScale = "0.600";
 
     const updateWheel = (event: WheelEvent) => {
       if (event.ctrlKey || Math.abs(event.deltaX) > Math.abs(event.deltaY)) return;
@@ -252,7 +252,7 @@ export function HelixScene() {
         : event.deltaMode === WheelEvent.DOM_DELTA_PAGE
           ? window.innerHeight
           : 1;
-      const scaledDelta = event.deltaY * unit / 3;
+      const scaledDelta = event.deltaY * unit * 0.6;
       const maxScroll = Math.max(document.documentElement.scrollHeight - window.innerHeight, 0);
       if (!smoothScrollActive) smoothScrollTarget = window.scrollY;
       smoothScrollTarget = THREE.MathUtils.clamp(smoothScrollTarget + scaledDelta, 0, maxScroll);
