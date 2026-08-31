@@ -33,8 +33,8 @@ export function HeroSection() {
 export function ContactSection() {
   return (
     <section id="contact" className="relative overflow-hidden bg-[#050505] py-16 text-white sm:py-24">
-      <div className="absolute -right-32 top-1/2 size-[38rem] -translate-y-1/2 rounded-full border border-[#7568ff]/35 shadow-[0_0_160px_rgba(117,104,255,0.24)]" aria-hidden="true" />
-      <div className="absolute -right-10 top-1/2 size-[22rem] -translate-y-1/2 rounded-full border border-white/15" aria-hidden="true" />
+      <div className="absolute -left-32 top-1/2 size-[38rem] -translate-y-1/2 rounded-full border border-[#7568ff]/35 shadow-[0_0_160px_rgba(117,104,255,0.24)]" aria-hidden="true" />
+      <div className="absolute -left-10 top-1/2 size-[22rem] -translate-y-1/2 rounded-full border border-white/15" aria-hidden="true" />
       <div className="site-container relative z-10 w-full">
         <div className="grid min-h-[calc(100svh-68px-8rem)] items-center gap-14 lg:grid-cols-[1.05fr_.95fr] lg:gap-20">
           <div>
