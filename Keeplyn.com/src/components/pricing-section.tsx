@@ -43,7 +43,7 @@ export function PricingSection() {
 
                 <div className="relative z-10 mt-16">
                   <p className="text-[clamp(3.75rem,7vw,6rem)] font-semibold leading-none tracking-[-0.085em]">{plan.price}</p>
-                  <p className="mt-3 text-sm text-[#c9ff3b]">+ an optional {plan.hosting} for hosting &amp; updates</p>
+                  <p className="mt-3 text-sm text-[#c9ff3b]">+ {plan.hosting} for hosting &amp; updates, optionally</p>
                 </div>
               </article>
             </div>
