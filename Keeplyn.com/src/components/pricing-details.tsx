@@ -32,7 +32,7 @@ function FeatureRows({ features }: { features: ComparisonFeature[] }) {
       {features.map((item) => (
         <div
           key={item.feature}
-          className="grid min-h-24 grid-cols-[minmax(0,1.35fr)_minmax(4.75rem,.58fr)_minmax(4.75rem,.58fr)] border-t border-white/11 sm:grid-cols-[minmax(0,1.55fr)_minmax(7rem,.62fr)_minmax(7rem,.62fr)]"
+          className="grid min-h-24 grid-cols-[minmax(0,1fr)_minmax(5.25rem,.7fr)_minmax(5.25rem,.7fr)] border-t border-white/11 sm:grid-cols-[minmax(0,1.55fr)_minmax(7rem,.62fr)_minmax(7rem,.62fr)]"
         >
           <div className="flex items-center px-4 py-5 sm:px-7">
             <p className="max-w-xl text-sm leading-6 text-white/68 sm:text-base">{item.feature}</p>
@@ -51,7 +51,7 @@ function FeatureRows({ features }: { features: ComparisonFeature[] }) {
 
 function PlanHeader({ hosting = false }: { hosting?: boolean }) {
   return (
-    <div className="grid grid-cols-[minmax(0,1.35fr)_minmax(4.75rem,.58fr)_minmax(4.75rem,.58fr)] sm:grid-cols-[minmax(0,1.55fr)_minmax(7rem,.62fr)_minmax(7rem,.62fr)]">
+    <div className="grid grid-cols-[minmax(0,1fr)_minmax(5.25rem,.7fr)_minmax(5.25rem,.7fr)] sm:grid-cols-[minmax(0,1.55fr)_minmax(7rem,.62fr)_minmax(7rem,.62fr)]">
       <div className="flex items-end px-4 py-6 sm:px-7 sm:py-8">
         <p className="text-[10px] font-medium uppercase tracking-[0.18em] text-white/34">Feature</p>
       </div>
@@ -64,10 +64,17 @@ function PlanHeader({ hosting = false }: { hosting?: boolean }) {
           }`}
         >
           <p className="text-xs font-semibold uppercase tracking-[0.12em] text-white/76 sm:text-sm">{plan.name}</p>
-          <p className="mt-2 text-lg font-semibold tracking-[-0.05em] text-white sm:text-3xl">
-            {hosting ? plan.hosting : plan.price}
-          </p>
-          {hosting ? <p className="mt-1 text-[9px] uppercase tracking-[0.14em] text-white/30">Optional</p> : null}
+          {hosting ? (
+            <div className="mt-2">
+              <p className="text-lg font-semibold tracking-[-0.05em] text-white sm:text-3xl">
+                {plan.hosting.replace("/mo", "")}
+              </p>
+              <p className="mt-0.5 text-[9px] font-medium uppercase tracking-[0.12em] text-white/42">Per month</p>
+            </div>
+          ) : (
+            <p className="mt-2 text-lg font-semibold tracking-[-0.05em] text-white sm:text-3xl">{plan.price}</p>
+          )}
+          {hosting ? <p className="mt-2 text-[9px] uppercase tracking-[0.14em] text-white/30">Optional</p> : null}
         </div>
       ))}
     </div>
@@ -86,7 +93,7 @@ export function PricingDetails() {
           <PlanHeader />
           <FeatureRows features={buildFeatures} />
 
-          <div className="grid grid-cols-[minmax(0,1.35fr)_minmax(4.75rem,.58fr)_minmax(4.75rem,.58fr)] border-t border-white/11 sm:grid-cols-[minmax(0,1.55fr)_minmax(7rem,.62fr)_minmax(7rem,.62fr)]">
+          <div className="grid grid-cols-[minmax(0,1fr)_minmax(5.25rem,.7fr)_minmax(5.25rem,.7fr)] border-t border-white/11 sm:grid-cols-[minmax(0,1.55fr)_minmax(7rem,.62fr)_minmax(7rem,.62fr)]">
             <div className="flex items-center px-4 py-6 sm:px-7">
               <p className="text-xs uppercase tracking-[0.14em] text-white/32">Ready when you are</p>
             </div>
@@ -124,10 +131,6 @@ export function PricingDetails() {
             <PlanHeader hosting />
             <FeatureRows features={hostingFeatures} />
           </div>
-
-          <p className="mt-5 text-xs leading-5 text-white/32">
-            Hosting and updates are optional and are not required with either website build.
-          </p>
         </div>
       </div>
     </section>

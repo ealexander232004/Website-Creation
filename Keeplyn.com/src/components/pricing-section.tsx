@@ -29,10 +29,10 @@ export function PricingSection() {
             <Link
               key={plan.id}
               href={`/pricing#${plan.id}`}
-              className={`group relative flex min-h-[27rem] flex-col justify-between overflow-hidden border p-7 shadow-[0_30px_100px_rgba(0,0,0,0.38)] transition duration-500 hover:-translate-y-1 sm:p-9 ${
+              className={`group relative isolate flex min-h-[27rem] flex-col justify-between overflow-hidden border p-7 shadow-[0_30px_100px_rgba(0,0,0,0.38)] transition duration-500 hover:-translate-y-1 sm:p-9 ${
                 plan.featured
-                  ? "border-[#c9ff3b]/65 bg-[linear-gradient(145deg,rgba(13,14,15,0.74),rgba(7,7,10,0.52))] hover:border-[#c9ff3b]"
-                  : "border-white/16 bg-[linear-gradient(145deg,rgba(12,12,17,0.72),rgba(5,5,7,0.48))] hover:border-white/38"
+                  ? "border-[#c9ff3b]/65 bg-[linear-gradient(145deg,rgba(11,12,13,0.94),rgba(6,6,8,0.9))] hover:border-[#c9ff3b] md:bg-[linear-gradient(145deg,rgba(13,14,15,0.74),rgba(7,7,10,0.52))]"
+                  : "border-white/16 bg-[linear-gradient(145deg,rgba(10,10,14,0.94),rgba(5,5,7,0.9))] hover:border-white/38 md:bg-[linear-gradient(145deg,rgba(12,12,17,0.72),rgba(5,5,7,0.48))]"
               }`}
             >
               <div
@@ -41,12 +41,12 @@ export function PricingSection() {
                 }`}
                 aria-hidden="true"
               />
-              <div className="relative">
+              <div className="relative z-10">
                 <h3 className="text-5xl font-semibold tracking-[-0.075em] sm:text-6xl">{plan.name}</h3>
                 <p className="mt-5 max-w-sm text-sm leading-6 text-white/48">{plan.summary}</p>
               </div>
 
-              <div className="relative mt-16">
+              <div className="relative z-10 mt-16">
                 <p className="text-[clamp(3.75rem,7vw,6rem)] font-semibold leading-none tracking-[-0.085em]">{plan.price}</p>
                 <p className="mt-3 text-sm text-[#c9ff3b]">+ {plan.hosting} for hosting &amp; updates</p>
                 <span className="mt-10 flex items-center justify-between border-t border-white/14 pt-5 text-sm font-medium group-hover:text-[#c9ff3b]">

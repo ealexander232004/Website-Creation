@@ -233,15 +233,24 @@ export function HelixScene() {
     const pointer = new THREE.Vector2();
     let targetScroll = 0;
     let scrollRotation = 0;
+    let scrollVelocity = 0;
+    let scrollOffset = 0;
+    let previousScrollY = window.scrollY;
+    let previousFrameTime = 0;
     let frame = 0;
     const reducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+    sceneCanvas.dataset.motionMode = reducedMotion ? "helix-idle-and-scroll" : "idle-and-scroll";
 
     const updatePointer = (event: PointerEvent) => {
       pointer.set(event.clientX / window.innerWidth - 0.5, event.clientY / window.innerHeight - 0.5);
     };
     const updateScroll = () => {
+      const currentScrollY = window.scrollY;
+      const scrollDelta = currentScrollY - previousScrollY;
+      scrollVelocity += THREE.MathUtils.clamp(scrollDelta * 0.00125, -0.32, 0.32);
+      previousScrollY = currentScrollY;
       const distance = Math.max(document.documentElement.scrollHeight - window.innerHeight, 1);
-      targetScroll = window.scrollY / distance;
+      targetScroll = currentScrollY / distance;
       sceneCanvas.dataset.scrollProgress = targetScroll.toFixed(3);
     };
 
@@ -269,12 +278,21 @@ export function HelixScene() {
     resize();
 
     const render = (time = 0) => {
-      const elapsed = reducedMotion ? 0 : time * 0.001;
+      const deltaSeconds = previousFrameTime
+        ? Math.min((time - previousFrameTime) / 1000, 0.05)
+        : 1 / 60;
+      previousFrameTime = time;
+      const helixElapsed = time * 0.001;
+      const elapsed = reducedMotion ? 0 : helixElapsed;
       scrollRotation += (targetScroll - scrollRotation) * 0.075;
-      const scrollSpin = scrollRotation * Math.PI * 8;
+      scrollVelocity *= Math.pow(0.02, deltaSeconds);
+      scrollOffset += scrollVelocity * Math.min(deltaSeconds * 60, 2);
+      const idleSpin = helixElapsed * 0.17;
+      const scrollSpin = scrollRotation * Math.PI * 8 + scrollOffset;
+      const combinedSpin = idleSpin + scrollSpin;
 
-      leftHelix.rotation.y = elapsed * 0.17 + scrollSpin;
-      rightHelix.rotation.y = elapsed * -0.15 - scrollSpin;
+      leftHelix.rotation.y = combinedSpin;
+      rightHelix.rotation.y = -combinedSpin * 0.94;
       leftHelix.rotation.x = -0.12 + pointer.y * 0.14 + scrollRotation * 0.5;
       rightHelix.rotation.x = 0.12 - pointer.y * 0.14 - scrollRotation * 0.5;
       leftHelix.position.y = -scrollRotation * 0.7;
@@ -297,6 +315,8 @@ export function HelixScene() {
       camera.position.y += (-pointer.y * 0.28 - camera.position.y) * 0.025;
       camera.lookAt(0, 0, 0);
       renderer.render(scene, camera);
+      sceneCanvas.dataset.spin = combinedSpin.toFixed(3);
+      sceneCanvas.dataset.scrollVelocity = scrollVelocity.toFixed(3);
       frame = window.requestAnimationFrame(render);
     };
     render();

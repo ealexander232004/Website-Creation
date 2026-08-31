@@ -72,6 +72,11 @@ export const buildFeatures: ComparisonFeature[] = [
     starter: false,
     pro: true,
   },
+  {
+    feature: "3D animations",
+    starter: false,
+    pro: true,
+  },
 ];
 
 export const hostingFeatures: ComparisonFeature[] = [

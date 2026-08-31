@@ -10,11 +10,11 @@ export function HeroSection() {
       <div className="site-container relative z-10 flex min-h-[calc(100svh-68px)] flex-col justify-between py-10 sm:py-14">
         <div className="reveal-on-load mx-auto mt-auto mb-auto max-w-6xl text-center">
           <h1 className="text-[clamp(3.6rem,9.5vw,9rem)] font-semibold leading-[0.82] tracking-[-0.085em]">
-            The springboard{" "}
+            <span className="text-white/78">The </span>springboard{" "}
             <span className="block text-white/78">for your small business.</span>
           </h1>
           <div className="mt-10 flex flex-wrap justify-center gap-3">
-            <Link href="/demos" className="button-primary">See the work</Link>
+            <Link href="/demos" className="button-primary">View demos</Link>
             <Link href="/contact" className="button-secondary">
               Start a project <ArrowUpRight className="size-4" aria-hidden="true" />
             </Link>
@@ -50,7 +50,7 @@ export function ContactSection() {
 
 export function SiteFooter() {
   return (
-    <footer className="border-t border-white/10 bg-[#050505] py-8 text-white">
+    <footer className="relative z-20 border-t border-white/10 bg-[#050505] py-8 text-white">
       <div className="site-container flex flex-col justify-between gap-6 sm:flex-row sm:items-center">
           <BrandLogo inverse />
           <nav className="flex flex-wrap gap-x-7 gap-y-3 text-[10px] font-medium uppercase tracking-[0.14em] text-white/45" aria-label="Footer navigation">
