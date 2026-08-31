@@ -133,6 +133,27 @@ function createHelix(direction: 1 | -1, colorPhase: number) {
     ),
   );
 
+  const satelliteGroup = new THREE.Group();
+  const satelliteGeometry = new THREE.IcosahedronGeometry(0.07, 1);
+  const satelliteMaterial = new THREE.MeshBasicMaterial({
+    color: LIME,
+    transparent: true,
+    opacity: 0.88,
+  });
+  for (let index = 0; index < 9; index += 1) {
+    const satellite = new THREE.Mesh(satelliteGeometry, satelliteMaterial);
+    const angle = (index / 9) * Math.PI * 2;
+    satellite.position.set(
+      Math.cos(angle) * 2.28,
+      Math.sin(angle * 2) * 1.45,
+      Math.sin(angle) * 2.28,
+    );
+    satellite.scale.setScalar(index % 3 === 0 ? 1.25 : 1);
+    satelliteGroup.add(satellite);
+  }
+  group.add(satelliteGroup);
+  group.userData.satellites = satelliteGroup;
+
   return group;
 }
 
@@ -173,24 +194,8 @@ export function HelixScene() {
     rightHelix.rotation.z = 0.14;
     scene.add(leftHelix, rightHelix);
 
-    const lattice = new THREE.LineSegments(
-      new THREE.WireframeGeometry(new THREE.IcosahedronGeometry(2.55, 4)),
-      new THREE.LineBasicMaterial({
-        color: VIOLET,
-        transparent: true,
-        opacity: 0.065,
-        blending: THREE.AdditiveBlending,
-      }),
-    );
-    lattice.position.z = -2.6;
-    scene.add(lattice);
-
     const particleCount = window.innerWidth < 640 ? 650 : 1450;
     const particlePositions = new Float32Array(particleCount * 3);
-    const particleColors = new Float32Array(particleCount * 3);
-    const violet = new THREE.Color(VIOLET);
-    const white = new THREE.Color(WHITE);
-    const lime = new THREE.Color(LIME);
     for (let index = 0; index < particleCount; index += 1) {
       const radius = 4.5 + Math.random() * 12;
       const theta = Math.random() * Math.PI * 2;
@@ -198,28 +203,24 @@ export function HelixScene() {
       particlePositions[index * 3] = radius * Math.sin(phi) * Math.cos(theta);
       particlePositions[index * 3 + 1] = radius * Math.sin(phi) * Math.sin(theta);
       particlePositions[index * 3 + 2] = radius * Math.cos(phi) - 3;
-      const color = index % 41 === 0 ? lime : index % 6 === 0 ? white : violet;
-      color.toArray(particleColors, index * 3);
     }
     const particleGeometry = new THREE.BufferGeometry();
     particleGeometry.setAttribute("position", new THREE.BufferAttribute(particlePositions, 3));
-    particleGeometry.setAttribute("color", new THREE.BufferAttribute(particleColors, 3));
     const particles = new THREE.Points(
       particleGeometry,
       new THREE.PointsMaterial({
-        size: 0.032,
+        color: WHITE,
+        size: 0.026,
         transparent: true,
-        opacity: 0.68,
-        vertexColors: true,
+        opacity: 0.58,
         depthWrite: false,
         blending: THREE.AdditiveBlending,
       }),
     );
     scene.add(particles);
 
-    const centralStarCount = window.innerWidth < 640 ? 120 : 320;
+    const centralStarCount = window.innerWidth < 640 ? 190 : 520;
     const centralStarPositions = new Float32Array(centralStarCount * 3);
-    const centralStarColors = new Float32Array(centralStarCount * 3);
     for (let index = 0; index < centralStarCount; index += 1) {
       const radius = 0.55 + Math.pow(Math.random(), 0.7) * 4.2;
       const theta = Math.random() * Math.PI * 2;
@@ -227,19 +228,16 @@ export function HelixScene() {
       centralStarPositions[index * 3] = Math.cos(theta) * radius;
       centralStarPositions[index * 3 + 1] = y;
       centralStarPositions[index * 3 + 2] = -2.8 - Math.random() * 3.6;
-      const color = index % 53 === 0 ? lime : index % 8 === 0 ? white : violet;
-      color.toArray(centralStarColors, index * 3);
     }
     const centralStarGeometry = new THREE.BufferGeometry();
     centralStarGeometry.setAttribute("position", new THREE.BufferAttribute(centralStarPositions, 3));
-    centralStarGeometry.setAttribute("color", new THREE.BufferAttribute(centralStarColors, 3));
     const centralStars = new THREE.Points(
       centralStarGeometry,
       new THREE.PointsMaterial({
+        color: WHITE,
         size: 0.028,
         transparent: true,
-        opacity: 0.58,
-        vertexColors: true,
+        opacity: 0.64,
         depthWrite: false,
         blending: THREE.AdditiveBlending,
       }),
@@ -269,9 +267,12 @@ export function HelixScene() {
     sceneCanvas.dataset.scrollScale = "0.600";
     sceneCanvas.dataset.helixColorMode = "opposed-vertical-cycle";
     sceneCanvas.dataset.helixOrbits = "off";
+    sceneCanvas.dataset.satelliteDots = "9-per-helix";
     sceneCanvas.dataset.scrollDecay = "0.200";
     sceneCanvas.dataset.centerKnot = "off";
+    sceneCanvas.dataset.centerLattice = "off";
     sceneCanvas.dataset.centralStars = centralStarCount.toString();
+    sceneCanvas.dataset.starColor = "white-only";
 
     const updateWheel = (event: WheelEvent) => {
       if (event.ctrlKey || Math.abs(event.deltaX) > Math.abs(event.deltaY)) return;
@@ -355,8 +356,13 @@ export function HelixScene() {
       leftHelix.position.y = -scrollRotation * 0.23;
       rightHelix.position.y = scrollRotation * 0.23;
 
-      lattice.rotation.y = elapsed * 0.035 + scrollSpin * 0.15;
-      lattice.rotation.x = elapsed * -0.025 + scrollRotation * 0.4;
+      const leftSatellites = leftHelix.userData.satellites as THREE.Group;
+      const rightSatellites = rightHelix.userData.satellites as THREE.Group;
+      leftSatellites.rotation.z = elapsed * 0.22 + scrollSpin * 0.45;
+      leftSatellites.rotation.x = elapsed * 0.12;
+      rightSatellites.rotation.z = elapsed * -0.19 - scrollSpin * 0.45;
+      rightSatellites.rotation.x = elapsed * -0.1;
+
       particles.rotation.y = elapsed * 0.008 + scrollSpin * 0.025;
       particles.rotation.x = elapsed * -0.005;
       centralStars.rotation.y = elapsed * -0.006 + scrollSpin * 0.018;
