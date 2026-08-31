@@ -138,7 +138,6 @@ export function NorthlineSite() {
             </h2>
             <div className="mt-8 flex flex-wrap gap-3">
               <Link href="/demos/northline/contact" className="rounded-full bg-[#ff725e] px-6 py-3 text-sm font-semibold text-white">New patient visit</Link>
-              <a href="#northline-services" className="rounded-full border border-white/45 bg-white/10 px-6 py-3 text-sm font-semibold backdrop-blur-md">See our care</a>
             </div>
           </div>
         </div>

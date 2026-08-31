@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { NorthlineAppointmentPicker } from "./northline-appointment-picker";
 import {
   ArrowRight,
   ArrowUpRight,
@@ -101,9 +102,9 @@ export function NorthlineHeader({ active }: { active: "home" | "pricing" | "cont
         <nav className="order-3 flex w-full items-center gap-6 text-[10px] font-semibold uppercase tracking-[0.13em] md:order-none md:w-auto md:gap-7" aria-label="Northline navigation">
           <Link href="/demos/northline" aria-current={active === "home" ? "page" : undefined} className={active === "home" ? "text-[#ff725e]" : ""}>Home</Link>
           <Link href="/demos/northline/pricing" aria-current={active === "pricing" ? "page" : undefined} className={active === "pricing" ? "text-[#ff725e]" : ""}>Pricing</Link>
-          <Link href="/demos/northline/contact" aria-current={active === "contact" ? "page" : undefined} className={active === "contact" ? "text-[#ff725e]" : ""}>Contact</Link>
+          <Link href="/demos/northline/contact" aria-current={active === "contact" ? "page" : undefined} className={active === "contact" ? "text-[#ff725e]" : ""}>Book appointment</Link>
         </nav>
-        <Link href="/demos/northline/contact" className="rounded-full bg-[#173a5a] px-5 py-2.5 text-xs font-semibold text-white">Book a visit</Link>
+        <Link href="/demos/northline/contact" className="rounded-full bg-[#173a5a] px-5 py-2.5 text-xs font-semibold text-white">Book appointment</Link>
     </header>
   );
 }
@@ -323,10 +324,10 @@ function NorthlineContact() {
             </div>
           </section>
           <section className="p-7 sm:p-12 lg:p-16">
-            <p className="text-[10px] font-semibold uppercase tracking-[0.16em] text-[#ff725e]">Request an appointment</p>
-            <h2 className="mt-5 text-4xl font-semibold tracking-[-0.06em] sm:text-5xl">We&apos;ll find a time that works.</h2>
+            <p className="text-[10px] font-semibold uppercase tracking-[0.16em] text-[#ff725e]">Book an appointment</p>
+            <h2 className="mt-5 text-4xl font-semibold tracking-[-0.06em] sm:text-5xl">Choose a time that works.</h2>
             <div className="mt-10">
-              <ContactForm subject="Northline demo appointment request" serviceLabel="What brings you in?" services={["New patient visit", "Preventive visit", "Restorative care", "Cosmetic consultation", "Urgent concern"]} inputClassName="min-h-12 w-full rounded-xl border border-[#173a5a]/16 bg-[#f3f7fb] px-4 py-3 text-sm outline-none placeholder:text-[#173a5a]/35 focus:border-[#ff725e]" buttonClassName="rounded-full bg-[#ff725e] text-white" />
+              <NorthlineAppointmentPicker />
             </div>
           </section>
         </div>
