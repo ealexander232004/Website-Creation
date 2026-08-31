@@ -145,7 +145,7 @@ export default function TermsOfServicePage() {
         </p>
         <p>
           Questions about these terms can be sent to{" "}
-          <a href="mailto:hello@keeplyn.com">hello@keeplyn.com</a>.
+          <a href="mailto:support@keeplyn.com">support@keeplyn.com</a>.
         </p>
       </PolicySection>
     </PolicyPage>

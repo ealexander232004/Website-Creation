@@ -115,7 +115,7 @@ export default function PrivacyPolicyPage() {
         </p>
         <p>
           To ask a privacy question or submit a request, email{" "}
-          <a href="mailto:hello@keeplyn.com">hello@keeplyn.com</a>.
+          <a href="mailto:support@keeplyn.com">support@keeplyn.com</a>.
         </p>
       </PolicySection>
     </PolicyPage>
