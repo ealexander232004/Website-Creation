@@ -42,6 +42,9 @@ export function SiteHeader() {
         </nav>
 
         <div className="hidden items-center gap-2.5 sm:flex">
+          <Link href="/start?mode=signin" className="button-secondary !px-4 !py-2.5">
+            Sign in
+          </Link>
           <Link href="/start" className="button-primary !px-4 !py-2.5">
             Get started
             <ArrowUpRight className="size-4" aria-hidden="true" />
@@ -76,6 +79,13 @@ export function SiteHeader() {
                   {item.label}
                 </Link>
               ))}
+              <Link
+                href="/start?mode=signin"
+                className="button-secondary mt-2 justify-center"
+                onClick={() => setMobileOpen(false)}
+              >
+                Sign in
+              </Link>
               <Link
                 href="/start"
                 className="button-primary mt-2 justify-center"

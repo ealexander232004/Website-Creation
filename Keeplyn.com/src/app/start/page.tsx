@@ -12,6 +12,7 @@ export const metadata: Metadata = {
 
 type StartPageProps = {
   searchParams: Promise<{
+    mode?: string;
     plan?: string;
   }>;
 };
@@ -25,6 +26,7 @@ export default async function StartPage({ searchParams }: StartPageProps) {
 
   return (
     <WebsiteRequestFlow
+      initialAccountMode={params.mode === "signin" ? "signin" : "signup"}
       initialPlan={params.plan === "starter" || params.plan === "pro" ? params.plan : null}
       initialUser={
         user
