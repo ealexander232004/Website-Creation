@@ -65,7 +65,7 @@ export function SiteFooter() {
   return (
     <footer className="relative z-20 border-t border-white/10 bg-[#050505] py-8 text-white">
       <div className="site-container flex flex-col justify-between gap-6 sm:flex-row sm:items-center">
-        <BrandLogo inverse />
+        <BrandLogo />
         <nav className="flex flex-wrap gap-x-7 gap-y-3 text-[10px] font-medium uppercase tracking-[0.14em] text-white/45" aria-label="Footer navigation">
           <Link href="/" className="transition-colors hover:text-mint">Home</Link>
           <Link href="/pricing" className="transition-colors hover:text-mint">Pricing</Link>
