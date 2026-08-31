@@ -5,6 +5,7 @@ import Link from "next/link";
 import { ArrowRight, ArrowUpRight, CalendarDays, Clock3, MapPin } from "lucide-react";
 import { useRef, useState, type KeyboardEvent, type MouseEvent as ReactMouseEvent } from "react";
 import {
+  DemoBookingPage,
   DemoContactPage,
   DemoPricingPage,
   MossHeader,
@@ -19,7 +20,7 @@ const demoTabs = [
   { id: "sera", name: "Sera", type: "Local bakery" },
 ] as const;
 
-export type DemoPage = "home" | "pricing" | "contact";
+export type DemoPage = "home" | "pricing" | "contact" | "booking";
 
 export function MossSite() {
   return (
@@ -148,7 +149,7 @@ export function NorthlineSite() {
               Care, without the rush.
             </h2>
             <div className="mt-8 flex flex-wrap gap-3">
-              <Link href="/demos/northline/contact" className="rounded-full bg-[#ff725e] px-6 py-3 text-sm font-semibold text-white">New patient visit</Link>
+              <Link href="/demos/northline/booking" className="rounded-full bg-[#ff725e] px-6 py-3 text-sm font-semibold text-white">New patient visit</Link>
             </div>
           </div>
         </div>
@@ -208,7 +209,7 @@ export function NorthlineSite() {
             <div className="flex items-center gap-3 border-b border-[#173a5a]/12 pb-4"><CalendarDays className="size-5 text-[#ff725e]" /><span className="text-sm font-semibold">Next available</span></div>
             <p className="mt-7 text-4xl font-semibold tracking-[-0.06em]">Tuesday 14</p>
             <p className="mt-2 text-sm text-[#173a5a]/55">9:30am · New patient exam</p>
-            <Link href="/demos/northline/contact" className="mt-8 flex items-center justify-between rounded-full bg-[#ff725e] px-5 py-3 text-sm font-semibold text-white">Request this time <ArrowRight className="size-4" /></Link>
+            <Link href="/demos/northline/booking" className="mt-8 flex items-center justify-between rounded-full bg-[#ff725e] px-5 py-3 text-sm font-semibold text-white">Request this time <ArrowRight className="size-4" /></Link>
           </div>
         </div>
       </section>
@@ -347,7 +348,7 @@ export function DemoShowcase({ initialDemo = "moss", initialPage = "home" }: Dem
       return;
     }
 
-    const match = href.match(/^\/demos\/(moss|northline|sera)(?:\/(pricing|contact))?$/);
+    const match = href.match(/^\/demos\/(moss|northline|sera)(?:\/(pricing|contact|booking))?$/);
     if (!match) return;
 
     event.preventDefault();
@@ -415,6 +416,8 @@ export function DemoShowcase({ initialDemo = "moss", initialPage = "home" }: Dem
             <DemoPricingPage demo={demoTabs[activeIndex].id} />
           ) : activePage === "contact" ? (
             <DemoContactPage demo={demoTabs[activeIndex].id} />
+          ) : activePage === "booking" ? (
+            <DemoBookingPage demo={demoTabs[activeIndex].id} />
           ) : activeIndex === 0 ? (
             <MossSite />
           ) : activeIndex === 1 ? (
