@@ -3,7 +3,7 @@
 import Image from "next/image";
 import Link from "next/link";
 import { ArrowRight, ArrowUpRight, CalendarDays, Clock3, MapPin } from "lucide-react";
-import { useRef, useState, type KeyboardEvent, type MouseEvent as ReactMouseEvent } from "react";
+import { useEffect, useRef, useState, type KeyboardEvent, type MouseEvent as ReactMouseEvent } from "react";
 import {
   DemoBookingPage,
   DemoContactPage,
@@ -311,6 +311,9 @@ export function DemoShowcase({ initialDemo = "moss", initialPage = "home" }: Dem
   const tabRefs = useRef<Array<HTMLButtonElement | null>>([]);
   const selectorBarRef = useRef<HTMLDivElement>(null);
   const panelRef = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    window.scrollTo({ top: 0, behavior: "auto" });
+  }, [activeIndex, activePage]);
 
   const showDemoPage = (index: number, page: DemoPage, returnToTop = true) => {
     setActiveIndex(index);
