@@ -26,7 +26,7 @@ export function PricingSection() {
               <article
                 className={`relative isolate flex min-h-[27rem] flex-1 flex-col justify-between overflow-hidden border p-7 shadow-[0_30px_100px_rgba(0,0,0,0.38)] transition duration-500 group-hover:-translate-y-1 sm:p-9 ${
                   plan.featured
-                    ? "border-[#c9ff3b]/65 bg-[linear-gradient(145deg,rgba(11,12,13,0.94),rgba(6,6,8,0.9))] group-hover:border-[#c9ff3b] md:bg-[linear-gradient(145deg,rgba(13,14,15,0.74),rgba(7,7,10,0.52))]"
+                    ? "border-white/16 bg-[linear-gradient(145deg,rgba(11,12,13,0.94),rgba(6,6,8,0.9))] group-hover:border-white/38 md:bg-[linear-gradient(145deg,rgba(13,14,15,0.74),rgba(7,7,10,0.52))]"
                     : "border-white/16 bg-[linear-gradient(145deg,rgba(10,10,14,0.94),rgba(5,5,7,0.9))] group-hover:border-white/38 md:bg-[linear-gradient(145deg,rgba(12,12,17,0.72),rgba(5,5,7,0.48))]"
                 }`}
               >
@@ -51,10 +51,10 @@ export function PricingSection() {
         </div>
         <Link
           href="/pricing"
-          className="group mx-auto mt-4 flex max-w-5xl items-center justify-between border border-[#c9ff3b]/65 bg-[#c9ff3b] px-6 py-4 text-sm font-medium text-black transition-colors hover:bg-[#d5ff69]"
+          className="group relative mx-auto mt-4 flex max-w-5xl items-center justify-center border border-[#c9ff3b]/65 bg-[#c9ff3b] px-6 py-4 text-center text-sm font-medium text-black transition-colors hover:bg-[#d5ff69]"
         >
           See what&apos;s included
-          <ArrowUpRight className="size-4 transition-transform group-hover:-translate-y-1 group-hover:translate-x-1" aria-hidden="true" />
+          <ArrowUpRight className="absolute right-6 size-4 transition-transform group-hover:-translate-y-1 group-hover:translate-x-1" aria-hidden="true" />
         </Link>
       </div>
     </section>
