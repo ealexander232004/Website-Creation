@@ -13,6 +13,13 @@ npm run dev
 
 Open [http://localhost:3000](http://localhost:3000).
 
+Copy `.env.example` to `.env.local` and add the public Supabase project URL and
+publishable key. The customer request flow uses cookie-based Supabase Auth,
+private Storage uploads, and the schema in `supabase/migrations`.
+
+Email confirmation redirects must allow both `http://localhost:3000/**` and the
+deployed Keeplyn domain in Supabase Auth URL Configuration.
+
 ## Quality checks
 
 ```bash
