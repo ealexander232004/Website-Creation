@@ -230,25 +230,42 @@ export function HelixScene() {
     limeLight.position.set(-6, -4, 5);
     scene.add(limeLight);
 
-    const pointer = new THREE.Vector2();
     let targetScroll = 0;
     let scrollRotation = 0;
     let scrollVelocity = 0;
     let scrollOffset = 0;
     let previousScrollY = window.scrollY;
+    let smoothScrollTarget = window.scrollY;
+    let smoothScrollActive = false;
     let previousFrameTime = 0;
     let frame = 0;
     const reducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
-    sceneCanvas.dataset.motionMode = reducedMotion ? "helix-idle-and-scroll" : "idle-and-scroll";
+    sceneCanvas.dataset.motionMode = reducedMotion ? "helix-idle-and-gentle-scroll" : "idle-and-gentle-scroll";
+    sceneCanvas.dataset.pointerMotion = "off";
+    sceneCanvas.dataset.scrollScale = "0.333";
 
-    const updatePointer = (event: PointerEvent) => {
-      pointer.set(event.clientX / window.innerWidth - 0.5, event.clientY / window.innerHeight - 0.5);
+    const updateWheel = (event: WheelEvent) => {
+      if (event.ctrlKey || Math.abs(event.deltaX) > Math.abs(event.deltaY)) return;
+      event.preventDefault();
+      const unit = event.deltaMode === WheelEvent.DOM_DELTA_LINE
+        ? 16
+        : event.deltaMode === WheelEvent.DOM_DELTA_PAGE
+          ? window.innerHeight
+          : 1;
+      const scaledDelta = event.deltaY * unit / 3;
+      const maxScroll = Math.max(document.documentElement.scrollHeight - window.innerHeight, 0);
+      if (!smoothScrollActive) smoothScrollTarget = window.scrollY;
+      smoothScrollTarget = THREE.MathUtils.clamp(smoothScrollTarget + scaledDelta, 0, maxScroll);
+      smoothScrollActive = true;
+      sceneCanvas.dataset.wheelDelta = scaledDelta.toFixed(3);
+      sceneCanvas.dataset.scrollTarget = smoothScrollTarget.toFixed(3);
     };
     const updateScroll = () => {
       const currentScrollY = window.scrollY;
       const scrollDelta = currentScrollY - previousScrollY;
-      scrollVelocity += THREE.MathUtils.clamp(scrollDelta * 0.00125, -0.32, 0.32);
+      scrollVelocity += THREE.MathUtils.clamp(scrollDelta * 0.00018, -0.055, 0.055);
       previousScrollY = currentScrollY;
+      if (!smoothScrollActive) smoothScrollTarget = currentScrollY;
       const distance = Math.max(document.documentElement.scrollHeight - window.innerHeight, 1);
       targetScroll = currentScrollY / distance;
       sceneCanvas.dataset.scrollProgress = targetScroll.toFixed(3);
@@ -272,7 +289,7 @@ export function HelixScene() {
 
     const resizeObserver = new ResizeObserver(resize);
     resizeObserver.observe(sceneCanvas);
-    window.addEventListener("pointermove", updatePointer, { passive: true });
+    window.addEventListener("wheel", updateWheel, { passive: false });
     window.addEventListener("scroll", updateScroll, { passive: true });
     updateScroll();
     resize();
@@ -284,19 +301,30 @@ export function HelixScene() {
       previousFrameTime = time;
       const helixElapsed = time * 0.001;
       const elapsed = reducedMotion ? 0 : helixElapsed;
-      scrollRotation += (targetScroll - scrollRotation) * 0.075;
-      scrollVelocity *= Math.pow(0.02, deltaSeconds);
+      if (smoothScrollActive) {
+        const scrollDistance = smoothScrollTarget - window.scrollY;
+        const scrollEase = reducedMotion ? 1 : 1 - Math.pow(0.002, deltaSeconds);
+        if (Math.abs(scrollDistance) < 0.35) {
+          window.scrollTo(0, smoothScrollTarget);
+          smoothScrollActive = false;
+        } else {
+          window.scrollTo(0, window.scrollY + scrollDistance * scrollEase);
+        }
+      }
+      const rotationFollow = 1 - Math.pow(0.01, deltaSeconds);
+      scrollRotation += (targetScroll - scrollRotation) * rotationFollow;
+      scrollVelocity *= Math.pow(0.006, deltaSeconds);
       scrollOffset += scrollVelocity * Math.min(deltaSeconds * 60, 2);
       const idleSpin = helixElapsed * 0.17;
-      const scrollSpin = scrollRotation * Math.PI * 8 + scrollOffset;
+      const scrollSpin = scrollRotation * Math.PI * 2.4 + scrollOffset;
       const combinedSpin = idleSpin + scrollSpin;
 
       leftHelix.rotation.y = combinedSpin;
       rightHelix.rotation.y = -combinedSpin * 0.94;
-      leftHelix.rotation.x = -0.12 + pointer.y * 0.14 + scrollRotation * 0.5;
-      rightHelix.rotation.x = 0.12 - pointer.y * 0.14 - scrollRotation * 0.5;
-      leftHelix.position.y = -scrollRotation * 0.7;
-      rightHelix.position.y = scrollRotation * 0.7;
+      leftHelix.rotation.x = -0.12 + scrollRotation * 0.16;
+      rightHelix.rotation.x = 0.12 - scrollRotation * 0.16;
+      leftHelix.position.y = -scrollRotation * 0.23;
+      rightHelix.position.y = scrollRotation * 0.23;
 
       const leftOrbits = leftHelix.userData.orbits as THREE.Group;
       const rightOrbits = rightHelix.userData.orbits as THREE.Group;
@@ -311,8 +339,6 @@ export function HelixScene() {
       knot.rotation.z = elapsed * 0.05 + scrollRotation * 0.6;
       particles.rotation.y = elapsed * 0.008 + scrollSpin * 0.025;
       particles.rotation.x = elapsed * -0.005;
-      camera.position.x += (pointer.x * 0.42 - camera.position.x) * 0.025;
-      camera.position.y += (-pointer.y * 0.28 - camera.position.y) * 0.025;
       camera.lookAt(0, 0, 0);
       renderer.render(scene, camera);
       sceneCanvas.dataset.spin = combinedSpin.toFixed(3);
@@ -323,7 +349,7 @@ export function HelixScene() {
 
     return () => {
       window.cancelAnimationFrame(frame);
-      window.removeEventListener("pointermove", updatePointer);
+      window.removeEventListener("wheel", updateWheel);
       window.removeEventListener("scroll", updateScroll);
       resizeObserver.disconnect();
       const geometries = new Set<THREE.BufferGeometry>();
