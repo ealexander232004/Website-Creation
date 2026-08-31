@@ -86,7 +86,7 @@ export const hostingFeatures: ComparisonFeature[] = [
     pro: true,
   },
   {
-    feature: "We will do unlimited updates to your website",
+    feature: "We will update content on your website whenever you want",
     starter: true,
     pro: true,
   },
