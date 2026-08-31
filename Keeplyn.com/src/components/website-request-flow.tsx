@@ -376,7 +376,7 @@ export function WebsiteRequestFlow({
       <main className="relative min-h-svh overflow-hidden bg-[#050505] text-white">
         <div className="pointer-events-none absolute left-1/2 top-1/2 size-[48rem] -translate-x-1/2 -translate-y-1/2 rounded-full bg-[#7568ff]/12 blur-[180px]" />
         <div className="site-container relative flex min-h-svh flex-col py-6 sm:py-8">
-          <BrandLogo inverse />
+          <BrandLogo />
           <div className="my-auto max-w-5xl py-20">
             <CheckCircle2 className="size-12 text-[#c9ff3b]" strokeWidth={1.5} aria-hidden="true" />
             <p className="mt-8 text-[10px] font-semibold uppercase tracking-[0.2em] text-[#c9ff3b]">
@@ -407,7 +407,7 @@ export function WebsiteRequestFlow({
     <main className="min-h-svh bg-[#050505] text-white">
       <header className="border-b border-white/10 bg-black/70 backdrop-blur-xl">
         <div className="site-container flex h-[68px] items-center justify-between">
-          <BrandLogo inverse />
+          <BrandLogo />
           <Link
             href="/"
             className="inline-flex items-center gap-2 text-xs font-semibold uppercase tracking-[0.1em] text-white/42 transition-colors hover:text-white"

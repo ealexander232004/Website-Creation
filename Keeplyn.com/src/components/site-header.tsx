@@ -27,7 +27,7 @@ export function SiteHeader() {
   return (
     <header className="sticky top-0 z-50 border-b border-white/10 bg-black/75 text-white backdrop-blur-2xl">
       <div className="site-container flex h-[68px] items-center justify-between">
-        <BrandLogo inverse />
+        <BrandLogo />
 
         <nav className="hidden items-center gap-8 lg:flex" aria-label="Main navigation">
           {navigation.map((item) => (
