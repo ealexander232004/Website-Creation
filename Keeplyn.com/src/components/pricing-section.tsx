@@ -22,16 +22,16 @@ export function PricingSection() {
 
         <div className="mx-auto mt-16 grid max-w-5xl gap-4 md:grid-cols-2 lg:mt-20">
           {websitePlans.map((plan) => (
-            <div key={plan.id} className="group flex flex-col">
+            <div key={plan.id} className="flex flex-col">
               <article
-                className={`relative isolate flex min-h-[27rem] flex-1 flex-col justify-between overflow-hidden border p-7 shadow-[0_30px_100px_rgba(0,0,0,0.38)] transition duration-500 group-hover:-translate-y-1 sm:p-9 ${
+                className={`relative isolate flex min-h-[27rem] flex-1 flex-col justify-between overflow-hidden border p-7 shadow-[0_30px_100px_rgba(0,0,0,0.38)] sm:p-9 ${
                   plan.featured
-                    ? "border-white/16 bg-[linear-gradient(145deg,rgba(11,12,13,0.94),rgba(6,6,8,0.9))] group-hover:border-white/38 md:bg-[linear-gradient(145deg,rgba(13,14,15,0.74),rgba(7,7,10,0.52))]"
-                    : "border-white/16 bg-[linear-gradient(145deg,rgba(10,10,14,0.94),rgba(5,5,7,0.9))] group-hover:border-white/38 md:bg-[linear-gradient(145deg,rgba(12,12,17,0.72),rgba(5,5,7,0.48))]"
+                    ? "border-white/16 bg-[linear-gradient(145deg,rgba(11,12,13,0.94),rgba(6,6,8,0.9))] md:bg-[linear-gradient(145deg,rgba(13,14,15,0.74),rgba(7,7,10,0.52))]"
+                    : "border-white/16 bg-[linear-gradient(145deg,rgba(10,10,14,0.94),rgba(5,5,7,0.9))] md:bg-[linear-gradient(145deg,rgba(12,12,17,0.72),rgba(5,5,7,0.48))]"
                 }`}
               >
                 <div
-                  className={`pointer-events-none absolute -right-24 -top-24 size-64 rounded-full blur-3xl transition-opacity duration-500 group-hover:opacity-100 ${
+                  className={`pointer-events-none absolute -right-24 -top-24 size-64 rounded-full blur-3xl ${
                     plan.featured ? "bg-[#c9ff3b]/8 opacity-70" : "bg-[#7568ff]/10 opacity-60"
                   }`}
                   aria-hidden="true"
