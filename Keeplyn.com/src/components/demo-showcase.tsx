@@ -16,7 +16,7 @@ import {
 const demoTabs = [
   { id: "moss", name: "Moss & Mortar", type: "Landscape studio" },
   { id: "northline", name: "Northline", type: "Family dentistry" },
-  { id: "sera", name: "Sera", type: "Neighborhood bakery" },
+  { id: "sera", name: "Sera", type: "Local bakery" },
 ] as const;
 
 export type DemoPage = "home" | "pricing" | "contact";

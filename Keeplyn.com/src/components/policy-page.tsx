@@ -46,19 +46,11 @@ export function PolicyPage({
 
         <article className="site-container relative py-20 sm:py-28 lg:py-32">
           <header className="grid gap-10 border-b border-white/12 pb-16 lg:grid-cols-[1.45fr_0.55fr] lg:items-end lg:gap-20 lg:pb-20">
-            <div>
-              <p className="mb-7 text-[10px] font-semibold uppercase tracking-[0.2em] text-mint">
-                Keeplyn / Policies
-              </p>
-              <h1 className="max-w-5xl text-[clamp(4.25rem,10vw,9rem)] font-semibold leading-[0.78] tracking-[-0.085em]">
-                {title}
-              </h1>
-            </div>
+            <h1 className="max-w-5xl text-[clamp(4.25rem,10vw,9rem)] font-semibold leading-[0.78] tracking-[-0.085em]">
+              {title}
+            </h1>
             <div className="max-w-lg lg:pb-1">
               <p className="text-base leading-7 text-white/58">{summary}</p>
-              <p className="mt-6 text-[10px] font-medium uppercase tracking-[0.16em] text-white/30">
-                Effective August 31, 2026
-              </p>
             </div>
           </header>
 
