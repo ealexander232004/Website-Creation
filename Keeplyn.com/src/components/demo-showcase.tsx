@@ -23,9 +23,8 @@ export function MossSite() {
       </header>
 
       <section id="moss-top" className="grid min-h-[48rem] lg:grid-cols-[0.48fr_0.52fr]">
-        <div className="flex flex-col justify-between p-6 sm:p-10 lg:p-14">
-          <p className="text-[10px] font-semibold uppercase tracking-[0.16em] text-[#203126]/55">Landscape architecture · Northern California</p>
-          <div className="py-20">
+        <div className="flex flex-col p-6 sm:p-10 lg:p-14">
+          <div className="my-auto py-20">
             <h2 className="text-[clamp(4rem,9vw,8.8rem)] font-semibold leading-[0.78] tracking-[-0.085em]">
               Outside,
               <span className="block font-serif font-normal italic">considered.</span>
@@ -130,8 +129,7 @@ export function NorthlineSite() {
           <Image src="/demos/northline-clinic.jpg" alt="Dentist speaking with a patient in a modern clinic" fill sizes="100vw" className="object-cover object-center" preload />
           <div className="absolute inset-0 bg-[linear-gradient(90deg,rgba(23,58,90,.88)_0%,rgba(23,58,90,.46)_42%,rgba(23,58,90,.05)_72%)]" />
           <div className="absolute inset-x-0 bottom-0 p-7 text-white sm:p-12 lg:p-16">
-            <p className="text-[10px] font-semibold uppercase tracking-[0.16em] text-white/62">Family dentistry · Oakland</p>
-            <h2 className="mt-5 max-w-4xl text-[clamp(4rem,9vw,8.6rem)] font-semibold leading-[0.82] tracking-[-0.085em]">
+            <h2 className="max-w-4xl text-[clamp(4rem,9vw,8.6rem)] font-semibold leading-[0.82] tracking-[-0.085em]">
               Care, without the rush.
             </h2>
             <div className="mt-8 flex flex-wrap gap-3">
@@ -225,9 +223,8 @@ export function SeraSite() {
           <div className="absolute inset-0 bg-gradient-to-t from-[#5d2d26]/28 to-transparent" />
           <div className="absolute right-6 top-6 grid size-28 place-items-center rounded-full bg-[#ff765f] text-center text-xs font-semibold uppercase tracking-[0.1em] text-white shadow-xl">Baked<br />today</div>
         </div>
-        <div className="flex flex-col justify-between p-6 sm:p-10 lg:p-14">
-          <p className="text-[10px] uppercase tracking-[0.16em] text-[#5d2d26]/52">Naturally leavened · Long Beach</p>
-          <div className="py-20">
+        <div className="flex flex-col p-6 sm:p-10 lg:p-14">
+          <div className="my-auto py-20">
             <h2 className="text-[clamp(4.8rem,11vw,10rem)] font-semibold leading-[0.72] tracking-[-0.09em]">Fresh by <span className="font-serif font-normal italic text-[#ff765f]">seven.</span></h2>
             <p className="mt-8 max-w-sm text-base leading-7 text-[#5d2d26]/62">Small-batch bread, laminated pastry, and really good coffee. Until sold out.</p>
           </div>
@@ -324,9 +321,6 @@ export function DemoShowcase() {
           <div className="flex items-baseline gap-3">
             <h1 className="text-2xl font-semibold tracking-[-0.05em]">Demos</h1>
             <span className="text-[10px] uppercase tracking-[0.15em] text-white/32">Complete sites</span>
-            <Link href={demoTabs[activeIndex].href} className="ml-2 text-[10px] font-semibold uppercase tracking-[0.12em] text-[#c9ff3b] hover:text-white">
-              Open demo <ArrowUpRight className="ml-1 inline size-3" aria-hidden="true" />
-            </Link>
           </div>
           <div className="grid grid-cols-3 gap-1" role="tablist" aria-label="Choose a website demo">
             {demoTabs.map((demo, index) => (
@@ -355,16 +349,18 @@ export function DemoShowcase() {
         </div>
       </div>
 
-      <div
-        ref={panelRef}
-        id="demo-panel"
-        role="tabpanel"
-        aria-labelledby={`demo-tab-${demoTabs[activeIndex].id}`}
-        tabIndex={0}
-        className="demo-switch-in mx-auto max-w-[100rem] scroll-mt-36 overflow-hidden border-x border-white/10"
-        key={demoTabs[activeIndex].id}
-      >
-        {activeIndex === 0 ? <MossSite /> : activeIndex === 1 ? <NorthlineSite /> : <SeraSite />}
+      <div className="site-container py-6 sm:py-10">
+        <div
+          ref={panelRef}
+          id="demo-panel"
+          role="tabpanel"
+          aria-labelledby={`demo-tab-${demoTabs[activeIndex].id}`}
+          tabIndex={0}
+          className="demo-switch-in scroll-mt-36 overflow-hidden border border-white/12 shadow-[0_30px_120px_rgba(0,0,0,0.42)]"
+          key={demoTabs[activeIndex].id}
+        >
+          {activeIndex === 0 ? <MossSite /> : activeIndex === 1 ? <NorthlineSite /> : <SeraSite />}
+        </div>
       </div>
     </section>
   );

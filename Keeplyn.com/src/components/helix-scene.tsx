@@ -278,7 +278,7 @@ export function HelixScene() {
     sceneCanvas.dataset.pointerMotion = "off";
     sceneCanvas.dataset.scrollScale = "0.600";
     sceneCanvas.dataset.helixColorMode = "opposed-vertical-cycle";
-    sceneCanvas.dataset.scrollDecay = "0.050";
+    sceneCanvas.dataset.scrollDecay = "0.200";
 
     const updateWheel = (event: WheelEvent) => {
       if (event.ctrlKey || Math.abs(event.deltaX) > Math.abs(event.deltaY)) return;
@@ -349,7 +349,7 @@ export function HelixScene() {
       }
       const rotationFollow = 1 - Math.pow(0.01, deltaSeconds);
       scrollRotation += (targetScroll - scrollRotation) * rotationFollow;
-      scrollVelocity *= Math.pow(0.05, deltaSeconds);
+      scrollVelocity *= Math.pow(0.2, deltaSeconds);
       scrollOffset += scrollVelocity * Math.min(deltaSeconds * 60, 2);
       const idleSpin = helixElapsed * 0.17;
       const scrollSpin = scrollRotation * Math.PI * 2.4 + scrollOffset;
