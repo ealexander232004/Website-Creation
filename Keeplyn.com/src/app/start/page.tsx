@@ -13,8 +13,6 @@ export const metadata: Metadata = {
 type StartPageProps = {
   searchParams: Promise<{
     plan?: string;
-    verified?: string;
-    auth_error?: string;
   }>;
 };
 
@@ -28,8 +26,6 @@ export default async function StartPage({ searchParams }: StartPageProps) {
   return (
     <WebsiteRequestFlow
       initialPlan={params.plan === "starter" || params.plan === "pro" ? params.plan : null}
-      verificationComplete={params.verified === "1"}
-      authError={params.auth_error === "verification"}
       initialUser={
         user
           ? {
@@ -39,7 +35,6 @@ export default async function StartPage({ searchParams }: StartPageProps) {
                 typeof user.user_metadata.full_name === "string"
                   ? user.user_metadata.full_name
                   : "",
-              emailConfirmed: Boolean(user.email_confirmed_at),
             }
           : null
       }

@@ -10,7 +10,6 @@ import {
   ImagePlus,
   LoaderCircle,
   LockKeyhole,
-  MailCheck,
   Plus,
   Sparkles,
   Trash2,
@@ -35,7 +34,6 @@ type InitialUser = {
   id: string;
   email: string;
   name: string;
-  emailConfirmed: boolean;
 };
 
 type Offering = {
@@ -47,13 +45,10 @@ type Offering = {
 type WebsiteRequestFlowProps = {
   initialUser: InitialUser | null;
   initialPlan: PlanId | null;
-  verificationComplete: boolean;
-  authError: boolean;
 };
 
 const flowSteps = [
   { label: "Account", eyebrow: "Create your login" },
-  { label: "Verify", eyebrow: "Confirm your email" },
   { label: "Plan", eyebrow: "Choose your build" },
   { label: "Offerings", eyebrow: "What you sell" },
   { label: "Photos", eyebrow: "Show the work" },
@@ -113,20 +108,16 @@ function StepHeading({
 export function WebsiteRequestFlow({
   initialUser,
   initialPlan,
-  verificationComplete,
-  authError,
 }: WebsiteRequestFlowProps) {
   const supabase = useMemo(() => createClient(), []);
   const fileInputRef = useRef<HTMLInputElement>(null);
-  const startsVerified = Boolean(initialUser?.emailConfirmed);
 
-  const [step, setStep] = useState(startsVerified ? 2 : 0);
+  const [step, setStep] = useState(initialUser ? 1 : 0);
   const [accountMode, setAccountMode] = useState<"signup" | "signin">("signup");
   const [currentUser, setCurrentUser] = useState(initialUser);
   const [fullName, setFullName] = useState(initialUser?.name ?? "");
   const [email, setEmail] = useState(initialUser?.email ?? "");
   const [password, setPassword] = useState("");
-  const [pendingEmail, setPendingEmail] = useState(initialUser?.email ?? "");
   const [plan, setPlan] = useState<PlanId | null>(initialPlan);
   const [offerings, setOfferings] = useState<Offering[]>([emptyOffering()]);
   const [photos, setPhotos] = useState<File[]>([]);
@@ -135,22 +126,16 @@ export function WebsiteRequestFlow({
   const [themeDescription, setThemeDescription] = useState("");
   const [additionalNotes, setAdditionalNotes] = useState("");
   const [dragging, setDragging] = useState(false);
-  const [error, setError] = useState<string | null>(
-    authError ? "That verification link could not be completed. Please try again." : null,
-  );
-  const [notice, setNotice] = useState<string | null>(
-    verificationComplete ? "Email verified. You can continue your request." : null,
-  );
+  const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
   const [requestId, setRequestId] = useState<number | null>(null);
 
   const selectedPlan = websitePlans.find((item) => item.id === plan) ?? null;
-  const minimumStep = currentUser?.emailConfirmed ? 2 : 0;
+  const minimumStep = currentUser ? 1 : 0;
 
   async function handleAccountSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     setError(null);
-    setNotice(null);
 
     if (fullName.trim().length < 2 && accountMode === "signup") {
       setError("Please add your name.");
@@ -170,7 +155,6 @@ export function WebsiteRequestFlow({
         password,
         options: {
           data: { full_name: fullName.trim() },
-          emailRedirectTo: `${window.location.origin}/auth/callback?next=/start`,
         },
       });
 
@@ -181,19 +165,17 @@ export function WebsiteRequestFlow({
         return;
       }
 
-      setPendingEmail(email.trim());
-
-      if (data.session && data.user?.email_confirmed_at) {
-        setCurrentUser({
-          id: data.user.id,
-          email: data.user.email ?? email.trim(),
-          name: fullName.trim(),
-          emailConfirmed: true,
-        });
-        setStep(2);
-      } else {
-        setStep(1);
+      if (!data.session || !data.user) {
+        setError("We couldn't finish creating your account. Please try again.");
+        return;
       }
+
+      setCurrentUser({
+        id: data.user.id,
+        email: data.user.email ?? email.trim(),
+        name: fullName.trim(),
+      });
+      setStep(1);
       return;
     }
 
@@ -205,11 +187,7 @@ export function WebsiteRequestFlow({
     setBusy(false);
 
     if (signInError) {
-      setError(
-        signInError.message.toLowerCase().includes("confirm")
-          ? "Please verify your email before signing in."
-          : "We couldn't sign you in with that email and password.",
-      );
+      setError("We couldn't sign you in with that email and password.");
       return;
     }
 
@@ -220,44 +198,19 @@ export function WebsiteRequestFlow({
         typeof data.user.user_metadata.full_name === "string"
           ? data.user.user_metadata.full_name
           : "",
-      emailConfirmed: Boolean(data.user.email_confirmed_at),
     });
-    setStep(2);
-  }
-
-  async function resendVerification() {
-    setError(null);
-    setNotice(null);
-    setBusy(true);
-
-    const { error: resendError } = await supabase.auth.resend({
-      type: "signup",
-      email: pendingEmail,
-      options: {
-        emailRedirectTo: `${window.location.origin}/auth/callback?next=/start`,
-      },
-    });
-
-    setBusy(false);
-
-    if (resendError) {
-      setError(resendError.message);
-      return;
-    }
-
-    setNotice(`A fresh verification email was sent to ${pendingEmail}.`);
+    setStep(1);
   }
 
   function goNext() {
     setError(null);
-    setNotice(null);
 
-    if (step === 2 && !plan) {
+    if (step === 1 && !plan) {
       setError("Choose a plan to continue.");
       return;
     }
 
-    if (step === 3) {
+    if (step === 2) {
       const result = websiteRequestSchema.shape.offerings.safeParse(offerings);
       if (!result.success) {
         setError("Give every offering a title, description, and valid price.");
@@ -270,7 +223,6 @@ export function WebsiteRequestFlow({
 
   function goBack() {
     setError(null);
-    setNotice(null);
     setStep((current) => Math.max(current - 1, minimumStep));
   }
 
@@ -326,7 +278,6 @@ export function WebsiteRequestFlow({
 
   async function submitRequest() {
     setError(null);
-    setNotice(null);
 
     const combinedTheme = [
       themeTags.length ? `Preferred directions: ${themeTags.join(", ")}.` : "",
@@ -357,8 +308,8 @@ export function WebsiteRequestFlow({
         error: userError,
       } = await supabase.auth.getUser();
 
-      if (userError || !user?.email_confirmed_at) {
-        throw new Error("Your verified session has expired. Please sign in again.");
+      if (userError || !user) {
+        throw new Error("Your session has expired. Please sign in again.");
       }
 
       const uploadGroup = crypto.randomUUID();
@@ -521,12 +472,6 @@ export function WebsiteRequestFlow({
         </aside>
 
         <section className="min-w-0 pb-12 lg:pb-20">
-          {notice ? (
-            <div className="mb-7 flex items-start gap-3 border border-[#c9ff3b]/25 bg-[#c9ff3b]/7 px-4 py-3 text-sm text-[#dcff87]" role="status">
-              <CheckCircle2 className="mt-0.5 size-4 shrink-0" aria-hidden="true" />
-              {notice}
-            </div>
-          ) : null}
           {error ? (
             <div className="mb-7 flex items-start gap-3 border border-[#ff8f7e]/30 bg-[#ff725e]/8 px-4 py-3 text-sm text-[#ffb4a8]" role="alert">
               <X className="mt-0.5 size-4 shrink-0" aria-hidden="true" />
@@ -542,7 +487,7 @@ export function WebsiteRequestFlow({
                 description={
                   accountMode === "signup"
                     ? "Create a secure account so your request, photos, and future website updates stay connected to you."
-                    : "Sign in to continue a new website request with your verified account."
+                    : "Sign in to continue a new website request with your account."
                 }
               />
               <form onSubmit={handleAccountSubmit} className="max-w-2xl space-y-6">
@@ -609,40 +554,7 @@ export function WebsiteRequestFlow({
           {step === 1 ? (
             <>
               <StepHeading
-                kicker="Step 02 / Verification"
-                title="Check your inbox."
-                description={`We sent a confirmation link to ${pendingEmail}. Open it to verify your email and continue your website request.`}
-              />
-              <div className="max-w-2xl border border-white/14 bg-white/[0.035] p-6 sm:p-8">
-                <MailCheck className="size-10 text-[#c9ff3b]" strokeWidth={1.5} aria-hidden="true" />
-                <p className="mt-6 text-sm leading-6 text-white/54">
-                  The link will bring you straight back here. If you opened it in another browser, sign in once your email is confirmed.
-                </p>
-                <div className="mt-7 flex flex-col gap-3 sm:flex-row">
-                  <button type="button" className="button-secondary justify-center" onClick={resendVerification} disabled={busy}>
-                    {busy ? <LoaderCircle className="size-4 animate-spin" aria-hidden="true" /> : null}
-                    Resend email
-                  </button>
-                  <button
-                    type="button"
-                    className="button-primary justify-center"
-                    onClick={() => {
-                      setEmail(pendingEmail);
-                      setAccountMode("signin");
-                      setStep(0);
-                    }}
-                  >
-                    Sign in after verifying
-                  </button>
-                </div>
-              </div>
-            </>
-          ) : null}
-
-          {step === 2 ? (
-            <>
-              <StepHeading
-                kicker="Step 03 / Plan"
+                kicker="Step 02 / Plan"
                 title="Choose your build."
                 description="Pick the foundation that fits your business today. You can review everything before submitting—no payment is taken here."
               />
@@ -675,10 +587,10 @@ export function WebsiteRequestFlow({
             </>
           ) : null}
 
-          {step === 3 ? (
+          {step === 2 ? (
             <>
               <StepHeading
-                kicker="Step 04 / Offerings"
+                kicker="Step 03 / Offerings"
                 title="What do you offer?"
                 description="Add the products, services, packages, or menu items you want customers to see. Use the price you want displayed."
               />
@@ -749,10 +661,10 @@ export function WebsiteRequestFlow({
             </>
           ) : null}
 
-          {step === 4 ? (
+          {step === 3 ? (
             <>
               <StepHeading
-                kicker="Step 05 / Photos"
+                kicker="Step 04 / Photos"
                 title="Show us—or describe it."
                 description="Upload photos you already love, describe images you want us to generate, or skip this step and let us guide the art direction."
               />
@@ -827,10 +739,10 @@ export function WebsiteRequestFlow({
             </>
           ) : null}
 
-          {step === 5 ? (
+          {step === 4 ? (
             <>
               <StepHeading
-                kicker="Step 06 / Theme"
+                kicker="Step 05 / Theme"
                 title="How should it feel?"
                 description="Describe the visual world you want. Brand colors, reference sites, words, eras, and moods are all useful—but this step is optional."
               />
@@ -863,10 +775,10 @@ export function WebsiteRequestFlow({
             </>
           ) : null}
 
-          {step === 6 ? (
+          {step === 5 ? (
             <>
               <StepHeading
-                kicker="Step 07 / Final notes"
+                kicker="Step 06 / Final notes"
                 title="Anything else?"
                 description="Share deadlines, must-have pages, links to an existing site, special functionality, or anything else we should know before we begin."
               />
@@ -894,7 +806,7 @@ export function WebsiteRequestFlow({
             </>
           ) : null}
 
-          {step >= 2 ? (
+          {step >= 1 ? (
             <div className="mt-10 flex flex-col-reverse gap-3 border-t border-white/10 pt-6 sm:flex-row sm:items-center sm:justify-between">
               <button
                 type="button"
@@ -943,7 +855,7 @@ export function WebsiteRequestFlow({
             </dl>
             <div className="mt-7 flex gap-3 border-t border-white/10 pt-5 text-[10px] leading-5 text-white/30">
               <LockKeyhole className="mt-0.5 size-3.5 shrink-0" aria-hidden="true" />
-              Your request and photos are private and tied to your verified account.
+              Your request and photos are private and tied to your account.
             </div>
           </div>
         </aside>
