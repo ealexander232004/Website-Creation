@@ -266,7 +266,7 @@ type ContactFormProps = {
 
 function ContactForm({ subject, serviceLabel, services, inputClassName, buttonClassName }: ContactFormProps) {
   return (
-    <form action="mailto:hello@keeplyn.com" method="post" encType="text/plain" className="grid gap-5">
+    <form action="mailto:support@keeplyn.com" method="post" encType="text/plain" className="grid gap-5">
       <input type="hidden" name="subject" value={subject} />
       <div className="grid grid-cols-[repeat(auto-fit,minmax(min(14rem,100%),1fr))] gap-5">
         <label className="grid min-w-0 gap-2 text-xs font-semibold">Name<input required autoComplete="name" name="name" className={`${inputClassName} min-w-0`} placeholder="Your name" /></label>

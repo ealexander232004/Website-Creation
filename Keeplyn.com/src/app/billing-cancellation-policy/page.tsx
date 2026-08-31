@@ -39,7 +39,7 @@ export default function BillingCancellationPolicyPage() {
         </p>
         <p>
           A request is initiated when you email{" "}
-          <a href="mailto:hello@keeplyn.com">hello@keeplyn.com</a> with enough
+          <a href="mailto:support@keeplyn.com">support@keeplyn.com</a> with enough
           information for us to identify the purchase. “Business days” means Monday
           through Friday, excluding U.S. federal holidays. “Original purchase” means
           the initial charge for the applicable service or plan.
@@ -103,7 +103,7 @@ export default function BillingCancellationPolicyPage() {
         </p>
         <p>
           To cancel, request a refund, or ask a billing question, email{" "}
-          <a href="mailto:hello@keeplyn.com">hello@keeplyn.com</a>.
+          <a href="mailto:support@keeplyn.com">support@keeplyn.com</a>.
         </p>
       </PolicySection>
     </PolicyPage>

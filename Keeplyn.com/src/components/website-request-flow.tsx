@@ -364,7 +364,7 @@ export function WebsiteRequestFlow({
       setError(
         submissionError instanceof Error && submissionError.message.includes("session")
           ? submissionError.message
-          : "We couldn't send your request. Please try again, or email hello@keeplyn.com.",
+          : "We couldn't send your request. Please try again, or email support@keeplyn.com.",
       );
     } finally {
       setBusy(false);
@@ -393,7 +393,7 @@ export function WebsiteRequestFlow({
                 Back to Keeplyn
                 <ArrowRight className="size-4" aria-hidden="true" />
               </Link>
-              <a href="mailto:hello@keeplyn.com" className="button-secondary">
+              <a href="mailto:support@keeplyn.com" className="button-secondary">
                 Ask a question
               </a>
             </div>

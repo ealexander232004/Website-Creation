@@ -71,7 +71,7 @@ function DemoAppointmentPicker({ kind }: { kind: AppointmentKind }) {
 
   return (
     <form
-      action="mailto:hello@keeplyn.com"
+      action="mailto:support@keeplyn.com"
       method="post"
       encType="text/plain"
       className="grid gap-7"
