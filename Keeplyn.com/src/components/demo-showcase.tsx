@@ -37,9 +37,15 @@ export function MossSite() {
               Gardens, courtyards, and outdoor rooms designed around the way you actually live.
             </p>
           </div>
-          <a href="#moss-work" className="flex items-center justify-between border-t border-[#203126]/25 pt-5 text-sm font-semibold">
-            Explore selected work <ArrowRight className="size-4" aria-hidden="true" />
-          </a>
+          <div className="relative h-40 overflow-hidden border border-[#203126]/15 sm:h-48">
+            <Image
+              src="/demos/moss-water-garden.png"
+              alt="Native grasses surrounding a stone-lined garden water feature"
+              fill
+              sizes="(min-width: 1024px) 48vw, 100vw"
+              className="object-cover object-center"
+            />
+          </div>
         </div>
         <div className="relative min-h-[36rem] overflow-hidden">
           <Image src="/demos/moss-garden.jpg" alt="Lush modern courtyard garden" fill sizes="(min-width: 1024px) 52vw, 100vw" className="object-cover" preload />
@@ -111,7 +117,7 @@ export function MossSite() {
       </section>
 
       <footer className="flex flex-col justify-between gap-4 border-t border-[#203126]/20 px-6 py-7 text-xs text-[#203126]/52 sm:flex-row sm:px-10 lg:px-14">
-        <span>Moss &amp; Mortar Landscape Studio</span><Link href="/demos">All demos</Link><span>© 2026</span>
+        <span>Moss &amp; Mortar Landscape Studio</span><span>© 2026</span>
       </footer>
     </div>
   );
@@ -198,7 +204,7 @@ export function NorthlineSite() {
       </section>
 
       <footer className="flex flex-col justify-between gap-5 bg-[#dcebf6] px-6 py-8 text-xs sm:flex-row sm:items-center sm:px-10 lg:px-14">
-        <span className="text-base font-semibold">northline<span className="text-[#ff725e]">●</span></span><Link href="/demos">All demos</Link><span>(510) 555-0144</span>
+        <span className="text-base font-semibold">northline<span className="text-[#ff725e]">●</span></span><span>(510) 555-0144</span>
       </footer>
     </div>
   );
@@ -276,7 +282,7 @@ export function SeraSite() {
       </section>
 
       <footer className="flex flex-col justify-between gap-4 bg-[#5d2d26] px-6 py-7 text-xs text-white/42 sm:flex-row sm:px-10 lg:px-14">
-        <span className="font-serif text-xl italic text-white">Sera</span><Link href="/demos">All demos</Link><span>© 2026</span>
+        <span className="font-serif text-xl italic text-white">Sera</span><span>© 2026</span>
       </footer>
     </div>
   );
