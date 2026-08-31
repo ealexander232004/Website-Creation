@@ -1,6 +1,5 @@
 import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
-import { MotionObserver } from "@/components/motion-observer";
 import "./globals.css";
 
 const geistSans = Geist({
@@ -44,7 +43,6 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
       className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}
     >
       <body className="flex min-h-full flex-col overflow-x-hidden">
-        <MotionObserver />
         {children}
       </body>
     </html>

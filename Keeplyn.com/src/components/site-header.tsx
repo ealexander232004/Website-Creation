@@ -25,16 +25,16 @@ export function SiteHeader() {
   }, []);
 
   return (
-    <header className="sticky top-0 z-50 border-b border-navy/15 bg-cream/95 backdrop-blur-xl">
+    <header className="sticky top-0 z-50 border-b border-white/10 bg-black/75 text-white backdrop-blur-2xl">
       <div className="site-container flex h-[68px] items-center justify-between">
-        <BrandLogo />
+        <BrandLogo inverse />
 
         <nav className="hidden items-center gap-8 lg:flex" aria-label="Main navigation">
           {navigation.map((item) => (
             <Link
               key={item.href}
               href={item.href}
-              className="text-xs font-semibold uppercase tracking-[0.08em] text-slate transition-colors hover:text-navy"
+              className="text-xs font-semibold uppercase tracking-[0.08em] text-white/45 transition-colors hover:text-white"
             >
               {item.label}
             </Link>
@@ -51,7 +51,7 @@ export function SiteHeader() {
         <div className="relative sm:hidden">
           <button
             type="button"
-            className="grid size-10 place-items-center border border-navy/20 bg-transparent text-navy"
+            className="grid size-10 place-items-center border border-white/20 bg-white/5 text-white"
             aria-label={mobileOpen ? "Close navigation" : "Open navigation"}
             aria-expanded={mobileOpen}
             aria-controls="mobile-navigation"
@@ -64,13 +64,13 @@ export function SiteHeader() {
             )}
           </button>
           {mobileOpen ? (
-            <div className="absolute right-0 top-12 w-[min(19rem,calc(100vw-2rem))] border border-navy/15 bg-cream p-3 shadow-[0_24px_60px_rgba(21,21,21,0.14)]">
+            <div className="absolute right-0 top-12 w-[min(19rem,calc(100vw-2rem))] border border-white/15 bg-[#090909] p-3 shadow-[0_28px_90px_rgba(0,0,0,0.65)]">
             <nav id="mobile-navigation" className="flex flex-col" aria-label="Mobile navigation">
               {navigation.map((item) => (
                 <Link
                   key={item.href}
                   href={item.href}
-                  className="px-4 py-3 text-sm font-semibold text-navy hover:bg-white"
+                  className="px-4 py-3 text-sm font-semibold text-white/70 hover:bg-white/8 hover:text-white"
                   onClick={() => setMobileOpen(false)}
                 >
                   {item.label}
