@@ -53,7 +53,7 @@ function PlanHeader({ hosting = false }: { hosting?: boolean }) {
   return (
     <div className="grid grid-cols-[minmax(0,1fr)_minmax(5.25rem,.7fr)_minmax(5.25rem,.7fr)] sm:grid-cols-[minmax(0,1.55fr)_minmax(7rem,.62fr)_minmax(7rem,.62fr)]">
       <div className="flex items-end px-4 py-6 sm:px-7 sm:py-8">
-        <p className="text-[1.875rem] font-semibold uppercase tracking-[0.05em] text-white/48">Feature</p>
+        <p className="text-xs font-semibold uppercase tracking-[0.14em] text-white/48 sm:text-[1.875rem] sm:tracking-[0.05em]">Feature</p>
       </div>
       {websitePlans.map((plan) => (
         <div
