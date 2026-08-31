@@ -310,8 +310,11 @@ export function DemoShowcase({ initialDemo = "moss", initialPage = "home" }: Dem
     }
   };
 
-  const selectDemo = (index: number, returnToTop = false) => {
-    showDemoPage(index, "home", returnToTop);
+  const selectDemo = (index: number) => {
+    showDemoPage(index, "home");
+    window.requestAnimationFrame(() => {
+      window.scrollTo({ top: 0, behavior: "auto" });
+    });
   };
 
   const handleDemoNavigation = (event: ReactMouseEvent<HTMLDivElement>) => {
@@ -345,7 +348,7 @@ export function DemoShowcase({ initialDemo = "moss", initialPage = "home" }: Dem
     else if (event.key === "End") next = demoTabs.length - 1;
     else return;
     event.preventDefault();
-    selectDemo(next, true);
+    selectDemo(next);
     tabRefs.current[next]?.focus();
   };
 
@@ -368,7 +371,7 @@ export function DemoShowcase({ initialDemo = "moss", initialPage = "home" }: Dem
                 aria-selected={activeIndex === index}
                 aria-controls="demo-panel"
                 tabIndex={activeIndex === index ? 0 : -1}
-                onClick={() => selectDemo(index, true)}
+                onClick={() => selectDemo(index)}
                 onKeyDown={handleKeyDown}
                 className={`flex min-h-14 min-w-0 flex-col justify-center border px-3 py-3 text-left transition-colors sm:px-4 ${
                   activeIndex === index
