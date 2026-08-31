@@ -3,13 +3,16 @@
 import Image from "next/image";
 import Link from "next/link";
 import { ArrowRight, ArrowUpRight, CalendarDays, Clock3, MapPin } from "lucide-react";
-import { useRef, useState, type KeyboardEvent } from "react";
+import { useRef, useState, type KeyboardEvent, type MouseEvent as ReactMouseEvent } from "react";
+import { DemoContactPage, DemoPricingPage, type DemoSlug } from "@/components/demo-detail-pages";
 
 const demoTabs = [
-  { id: "moss", name: "Moss & Mortar", type: "Landscape studio", href: "/demos/moss" },
-  { id: "northline", name: "Northline", type: "Family dentistry", href: "/demos/northline" },
-  { id: "sera", name: "Sera", type: "Neighborhood bakery", href: "/demos/sera" },
+  { id: "moss", name: "Moss & Mortar", type: "Landscape studio" },
+  { id: "northline", name: "Northline", type: "Family dentistry" },
+  { id: "sera", name: "Sera", type: "Neighborhood bakery" },
 ] as const;
+
+export type DemoPage = "home" | "pricing" | "contact";
 
 export function MossSite() {
   return (
@@ -290,16 +293,56 @@ export function SeraSite() {
   );
 }
 
-export function DemoShowcase() {
-  const [activeIndex, setActiveIndex] = useState(0);
+type DemoShowcaseProps = {
+  initialDemo?: DemoSlug;
+  initialPage?: DemoPage;
+};
+
+export function DemoShowcase({ initialDemo = "moss", initialPage = "home" }: DemoShowcaseProps) {
+  const initialIndex = Math.max(demoTabs.findIndex((demo) => demo.id === initialDemo), 0);
+  const [activeIndex, setActiveIndex] = useState(initialIndex);
+  const [activePage, setActivePage] = useState<DemoPage>(initialPage);
   const tabRefs = useRef<Array<HTMLButtonElement | null>>([]);
   const panelRef = useRef<HTMLDivElement>(null);
 
-  const selectDemo = (index: number, returnToTop = false) => {
+  const showDemoPage = (index: number, page: DemoPage, returnToTop = false) => {
     setActiveIndex(index);
+    setActivePage(page);
+    const demo = demoTabs[index];
+    window.history.replaceState(null, "", `/demos?demo=${demo.id}&page=${page}`);
     if (returnToTop && panelRef.current) {
-      window.scrollTo({ top: Math.max(panelRef.current.offsetTop - 136, 0), behavior: "smooth" });
+      window.requestAnimationFrame(() => {
+        if (!panelRef.current) return;
+        window.scrollTo({ top: Math.max(panelRef.current.offsetTop - 136, 0), behavior: "smooth" });
+      });
     }
+  };
+
+  const selectDemo = (index: number, returnToTop = false) => {
+    showDemoPage(index, "home", returnToTop);
+  };
+
+  const handleDemoNavigation = (event: ReactMouseEvent<HTMLDivElement>) => {
+    const target = event.target as HTMLElement;
+    const link = target.closest("a");
+    if (!link) return;
+
+    const href = link.getAttribute("href");
+    if (!href || href.startsWith("#") || href.startsWith("mailto:")) return;
+
+    if (href === "/demos") {
+      event.preventDefault();
+      showDemoPage(activeIndex, "home", true);
+      return;
+    }
+
+    const match = href.match(/^\/demos\/(moss|northline|sera)(?:\/(pricing|contact))?$/);
+    if (!match) return;
+
+    event.preventDefault();
+    const nextIndex = demoTabs.findIndex((demo) => demo.id === match[1]);
+    if (nextIndex < 0) return;
+    showDemoPage(nextIndex, (match[2] as DemoPage | undefined) ?? "home", true);
   };
 
   const handleKeyDown = (event: KeyboardEvent<HTMLButtonElement>) => {
@@ -356,10 +399,21 @@ export function DemoShowcase() {
           role="tabpanel"
           aria-labelledby={`demo-tab-${demoTabs[activeIndex].id}`}
           tabIndex={0}
+          onClickCapture={handleDemoNavigation}
           className="demo-switch-in scroll-mt-36 overflow-hidden border border-white/12 shadow-[0_30px_120px_rgba(0,0,0,0.42)]"
-          key={demoTabs[activeIndex].id}
+          key={`${demoTabs[activeIndex].id}-${activePage}`}
         >
-          {activeIndex === 0 ? <MossSite /> : activeIndex === 1 ? <NorthlineSite /> : <SeraSite />}
+          {activePage === "pricing" ? (
+            <DemoPricingPage demo={demoTabs[activeIndex].id} />
+          ) : activePage === "contact" ? (
+            <DemoContactPage demo={demoTabs[activeIndex].id} />
+          ) : activeIndex === 0 ? (
+            <MossSite />
+          ) : activeIndex === 1 ? (
+            <NorthlineSite />
+          ) : (
+            <SeraSite />
+          )}
         </div>
       </div>
     </section>

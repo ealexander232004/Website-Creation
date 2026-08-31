@@ -151,7 +151,7 @@ function MossPricing() {
   return (
     <div className="min-h-svh bg-[#dfe5d6] text-[#203126]">
       <MossHeader active="pricing" />
-      <main>
+      <div>
         <section className="px-6 py-20 sm:px-10 lg:px-14 lg:py-28">
           <div className="mx-auto max-w-[92rem]">
             <DemoExit className="text-[#203126]/52" />
@@ -185,7 +185,7 @@ function MossPricing() {
             </div>
           </div>
         </section>
-      </main>
+      </div>
       <footer className="flex flex-col justify-between gap-4 border-t border-[#203126]/20 px-6 py-7 text-xs text-[#203126]/52 sm:flex-row sm:px-10 lg:px-14"><span>Moss &amp; Mortar</span><Link href="/demos/moss/contact">Begin a project</Link><span>© 2026</span></footer>
     </div>
   );
@@ -195,7 +195,7 @@ function NorthlinePricing() {
   return (
     <div className="min-h-svh bg-[#f3f7fb] text-[#173a5a]">
       <NorthlineHeader active="pricing" />
-      <main className="px-5 pb-10 sm:px-9">
+      <div className="px-5 pb-10 sm:px-9">
         <section className="mx-auto max-w-[92rem] overflow-hidden rounded-[2rem] bg-[#173a5a] px-7 py-16 text-white sm:px-12 sm:py-24 lg:px-16">
           <DemoExit className="text-white/52" />
           <p className="mt-16 text-[10px] font-semibold uppercase tracking-[0.16em] text-[#ff9a89]">Self-pay pricing</p>
@@ -220,7 +220,7 @@ function NorthlinePricing() {
           <div><p className="text-[10px] uppercase tracking-[0.16em] text-[#ff725e]">Insurance and financing</p><h2 className="mt-5 text-5xl font-semibold leading-[0.92] tracking-[-0.065em] sm:text-7xl">A plan that works on paper, too.</h2></div>
           <p className="text-sm leading-7 text-[#173a5a]/62">We are in network with major PPO plans, submit claims on your behalf, and offer payment plans for restorative treatment over $750.</p>
         </section>
-      </main>
+      </div>
       <footer className="flex flex-col justify-between gap-5 bg-[#dcebf6] px-6 py-8 text-xs sm:flex-row sm:items-center sm:px-10 lg:px-14"><span className="text-base font-semibold">northline<span className="text-[#ff725e]">●</span></span><Link href="/demos/northline/contact">Request an appointment</Link><span>(510) 555-0144</span></footer>
     </div>
   );
@@ -230,7 +230,7 @@ function SeraPricing() {
   return (
     <div className="min-h-svh bg-[#f6e8d8] text-[#5d2d26]">
       <SeraHeader active="pricing" />
-      <main>
+      <div>
         <section className="px-6 py-20 sm:px-10 lg:px-14 lg:py-28">
           <div className="mx-auto max-w-[92rem]">
             <DemoExit className="text-[#5d2d26]/52" />
@@ -262,7 +262,7 @@ function SeraPricing() {
             <Link href="/demos/sera/contact" className="inline-flex items-center gap-3 border border-white/25 px-5 py-3 text-sm font-semibold">Custom order <ArrowUpRight className="size-4" aria-hidden="true" /></Link>
           </div>
         </section>
-      </main>
+      </div>
       <footer className="flex flex-col justify-between gap-4 bg-[#5d2d26] px-6 py-7 text-xs text-white/48 sm:flex-row sm:px-10 lg:px-14"><span className="font-serif text-xl italic text-white">Sera</span><Link href="/demos/sera/contact">Order inquiry</Link><span>© 2026</span></footer>
     </div>
   );
@@ -300,7 +300,7 @@ function MossContact() {
   return (
     <div className="min-h-svh bg-[#dfe5d6] text-[#203126]">
       <MossHeader active="contact" />
-      <main className="px-6 py-16 sm:px-10 lg:px-14 lg:py-24">
+      <div className="px-6 py-16 sm:px-10 lg:px-14 lg:py-24">
         <div className="mx-auto max-w-[92rem]">
           <DemoExit className="text-[#203126]/52" />
           <div className="mt-16 grid gap-14 lg:grid-cols-[0.48fr_0.52fr]">
@@ -318,7 +318,7 @@ function MossContact() {
             </div>
           </div>
         </div>
-      </main>
+      </div>
     </div>
   );
 }
@@ -327,7 +327,7 @@ function NorthlineContact() {
   return (
     <div className="min-h-svh bg-[#f3f7fb] text-[#173a5a]">
       <NorthlineHeader active="contact" />
-      <main className="px-5 pb-10 sm:px-9">
+      <div className="px-5 pb-10 sm:px-9">
         <div className="mx-auto grid max-w-[92rem] overflow-hidden rounded-[2rem] bg-white lg:grid-cols-[0.46fr_0.54fr]">
           <section className="bg-[#173a5a] p-7 text-white sm:p-12 lg:p-16">
             <DemoExit className="text-white/52" />
@@ -347,7 +347,7 @@ function NorthlineContact() {
             </div>
           </section>
         </div>
-      </main>
+      </div>
     </div>
   );
 }
@@ -356,7 +356,7 @@ function SeraContact() {
   return (
     <div className="min-h-svh bg-[#f6e8d8] text-[#5d2d26]">
       <SeraHeader active="contact" />
-      <main className="px-6 py-16 sm:px-10 lg:px-14 lg:py-24">
+      <div className="px-6 py-16 sm:px-10 lg:px-14 lg:py-24">
         <div className="mx-auto max-w-[92rem]">
           <DemoExit className="text-[#5d2d26]/52" />
           <div className="mt-16 grid gap-14 lg:grid-cols-[0.5fr_0.5fr]">
@@ -374,7 +374,7 @@ function SeraContact() {
             </div>
           </div>
         </div>
-      </main>
+      </div>
     </div>
   );
 }

@@ -1,9 +1,8 @@
-import { notFound } from "next/navigation";
-import { DemoPricingPage, isDemoSlug } from "@/components/demo-detail-pages";
+import { notFound, redirect } from "next/navigation";
+import { isDemoSlug } from "@/components/demo-detail-pages";
 
 export default async function PricingPage({ params }: { params: Promise<{ demo: string }> }) {
   const { demo } = await params;
   if (!isDemoSlug(demo)) notFound();
-
-  return <DemoPricingPage demo={demo} />;
+  redirect(`/demos?demo=${demo}&page=pricing`);
 }
