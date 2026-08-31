@@ -1,0 +1,5 @@
+# Generated files below contain the live CapSolver API key.
+capsolver.env
+capsolver.json
+__pycache__/
+*.pyc

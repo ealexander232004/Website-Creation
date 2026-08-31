@@ -1,0 +1,201 @@
+﻿name,category,phone,city,state,has_email,emails,top_email,confidence
+First Aid Plumbing Specialist,Plumber |,(832) 279-3065,,,False,[],,0.0
+NYC Plumber Co,Plumber |,(929) 717-4784,,,False,[],,0.0
+True Line Plumbing Services,Plumber |,(945) 262-8339,,,True,"['info@northpointph.com', 'service@rpmplumbers.com', 'hello@plumber-newjersey.com', 'amirsattar462@gmail.com', 'marketing@allhoursplumber.com', 'plumbingbytony@gmail.com', 'service@worldclassdrains.com', 'john@landmplumbing.com', 'admin@sunwaveplumbing.com', 'tkastrup@bbbinc.org', 'lplath@bbbinc.org', 'awebb@bbbinc.org', 'jplanos@bbbinc.org', 'mengelkamp@bbbinc.org']",info@northpointph.com,0.65
+Captain Rooter Emergency Plumbers,Plumber |,(773) 823-0199,,,True,['server@plumberssupplycoevansville.com'],server@plumberssupplycoevansville.com,0.8
+Columbus Plumbing Company,Plumber |,(614) 314-7411,,,False,[],,0.0
+24 HR Emergency Plumber Charlotte,Plumber |,(704) 703-2321,,,False,[],,0.0
+San Jose Drain and Main,Plumber |,(408) 854-2863,,,False,[],,0.0
+William & Sons Plumbing,Plumber |,(215) 826-3077,,,False,[],,0.0
+Ajax Plumbing and Water Leaks,Plumber |,(210) 434-2303,,,False,[],,0.0
+San Antonio Due South Plumbing,Plumber |,(210) 405-2379,,,False,[],,0.0
+Emmett's Speedy Plumbing Company,Plumber |,(224) 505-8069,,,False,[],,0.0
+Mateo & Sons Plumbing Services,Plumber |,(469) 652-7576,,,False,[],,0.0
+#1 DMV Plumbing,Plumber |,(202) 507-3003,,,False,[],,0.0
+Precision Flow Plumbing,Plumber |,(415) 873-3774,,,False,[],,0.0
+Good Plumbing Service Company,Plumber |,(303) 455-4307,,,False,[],,0.0
+Washington DC Plumber,Plumber |,(771) 251-1270,,,False,[],,0.0
+Puget Seattle Plumbers and Drain Cleaning Co.,Plumber |,(206) 360-0078,,,False,[],,0.0
+Donco Plumbing,Plumber |,(405) 601-0998,,,True,['contact@plumbersofamerica.com'],contact@plumbersofamerica.com,0.65
+24/7 Emergency Plumber Nashville,Plumber |,(615) 768-8780,,,False,[],,0.0
+Affordable Plumbing & Gas LLC,Plumber |,(703) 839-3910,,,False,[],,0.0
+PLOMERÍA ESTRELLA 💫,Plumber |,(656) 748-1253,,,False,[],,0.0
+Bill Brown Plumbing Co,Plumber |,(901) 276-5536,,,True,['contact@plumbersofamerica.com'],contact@plumbersofamerica.com,0.65
+A Quality Plus,Plumber |,(901) 522-9781,,,False,[],,0.0
+Wagner Plumbing & Heating Co,Plumber |,(901) 527-7120,,,False,[],,0.0
+Cordova Plumbing,Plumber | Closed |,(901) 729-9492,,,True,['ffb96741d75652c5232f343ed4455fc9@o9737.ingest.us.sentry.io'],ffb96741d75652c5232f343ed4455fc9@o9737.ingest.us.sentry.io,0.65
+Memphis Area Plumbers,Plumber,(901) 295-1555,,,False,[],,0.0
+Black Diamond Plumbing & Heating,Plumber |,(617) 987-7442,,,False,[],,0.0
+McCrone Plumbing,Plumber | Closed |,(519) 981-7059,,,False,[],,0.0
+Windsor Plumbing & Eel,Plumber,(226) 346-6310,,,False,[],,0.0
+Plumbline Plumbers & Mechanical,Plumber |,(202) 543-9515,,,True,['info@plumlineplumbersmechanical.com'],info@plumlineplumbersmechanical.com,0.9
+Candu,Plumber |,(833) 726-9450,,,False,[],,0.0
+Theodore & Sons Plumbing,Plumber |,(915) 265-0914,,,False,[],,0.0
+H & H Plumbing Co,Plumber |,(816) 231-3916,,,False,[],,0.0
+Budget Plumbing Heating & Cooling,Plumber |,(313) 778-3009,,,False,[],,0.0
+Windsor Drainage & Electric Eel,Plumber |,(519) 991-4353,,,False,[],,0.0
+Eledge Plumbing,Plumber |,(712) 310-9592,,,False,[],,0.0
+Carl's Plumbing Services Inc,Plumber |,(414) 778-1234,,,False,[],,0.0
+Big Joe's Plumbing,Plumber |,(559) 264-7089,,,False,[],,0.0
+Chase & Sons Plumbing,Plumber |,(559) 220-8200,,,False,[],,0.0
+Holliman & Laster Plumbing,Plumber |,(414) 342-7760,,,False,[],,0.0
+24/7 Drain Cleaning LLC,Plumber |,(414) 897-7034,,,False,[],,0.0
+The Happy Plumber Co,Plumber |,(719) 426-6030,,,True,"['your@email.com', 'services@jollyplumbing.net', 'info@bjcontractors.com', 'thesprinklersquad@gmail.com', 'haily@reardonplumbing.com', 'dam8127@gmail.com']",your@email.com,0.65
+Trioz Minneapolis Plumbers & Drain Clean Co.,Plumber |,(612) 464-6667,,,True,['server@plumberssupplycoevansville.com'],server@plumberssupplycoevansville.com,0.8
+Clement Plumbing Alameda CA,Plumber |,(341) 223-5261,,,False,[],,0.0
+Quick Fix Plumbers Arlington TX,Plumber |,(817) 242-5538,,,False,[],,0.0
+PS Plumbing Services LLC,Plumber |,(313) 996-9250,,,False,[],,0.0
+Bob the Plumber,Plumber |,(612) 385-7755,,,False,[],,0.0
+Prime Solutions,Plumber |,(504) 302-8728,,,True,"['info@prime-ts.com', '605a7baede844d278b89dc95ae0a9123@sentry-next.wixpress.com', '8eb368c655b84e029ed79ad7a5c1718e@sentry.wixpress.com', '2062d0a4929b45348643784b5cb39c36@sentry.wixpress.com']",info@prime-ts.com,0.8
+Belmont Plumbing,Plumber |,(562) 433-0757,,,True,"['mrgate2811@msn.com', 'reneelawler@comcast.net', 'reneeandjamielawler@comcast.net']",mrgate2811@msn.com,0.7000000000000001
+Quick Plumbing,Plumber |,(918) 744-6066,,,True,"['quickplb@att.net', 'your@email.com', 'ions56@gmail.com', 'michael.b@alisonserviceco.com', 'wayne@heatwavesupply.com', 'restoringtulsainc@att.net']",quickplb@att.net,0.8500000000000001
+Dependable Plumbing & Rooter Service LLC,Plumber |,(918) 894-7755,,,True,"['office@dependableplumbingok.com', 'your@email.com', 'pressurewashtulsa@gmail.com', 'finance@cablelock.com', 'briansheatair@gmail.com', 'richieshomeremodeling@gmail.com', 'contact@decksbylazopro.com']",office@dependableplumbingok.com,0.9
+Cunningham Plumbing Co,Plumber |,(918) 446-3730,,,False,[],,0.0
+Security Plumbing,Plumber |,(808) 593-2785,,,True,"['brandon@securityplumbinghawaii.com', '605a7baede844d278b89dc95ae0a9123@sentry-next.wixpress.com', '18d2f96d279149989b95faf0a4b41882@sentry-next.wixpress.com', '8eb368c655b84e029ed79ad7a5c1718e@sentry.wixpress.com', '5d1795a2db124a268f1e1bd88f503500@sentry.wixpress.com', 'example@mysite.com']",brandon@securityplumbinghawaii.com,0.9
+Dunrite plumbing co.,Plumber |,(216) 323-9724,,,False,[],,0.0
+A-1 Affordable Plumbing,Plumber |,(216) 688-1288,,,False,[],,0.0
+T L Plumbing,Plumber |,(361) 882-4387,,,False,[],,0.0
+John R Estes Plumbing & Heating,Plumber |,(859) 253-4766,,,False,[],,0.0
+Arlington Precision Plumbing,Plumber |,(817) 217-6452,,,False,[],,0.0
+Pro Express Plumbing,Plumber |,(361) 443-6626,,,False,[],,0.0
+Low Cost Drain Plumbing,Plumber |,(808) 753-0651,,,True,['ffb96741d75652c5232f343ed4455fc9@o9737.ingest.us.sentry.io'],ffb96741d75652c5232f343ed4455fc9@o9737.ingest.us.sentry.io,0.65
+Arlington Plumbing Co,Telemarketing service |,(682) 217-1114,,,False,[],,0.0
+Plain Plumbing in the Flesh,Plumber |,(314) 668-0535,,,True,"['tkastrup@bbbinc.org', 'lplath@bbbinc.org', 'awebb@bbbinc.org', 'jplanos@bbbinc.org', 'mengelkamp@bbbinc.org']",tkastrup@bbbinc.org,0.65
+Temperature Control Services,Plumber,(907) 230-5641,,,False,[],,0.0
+Plumber Man in a Van,Plumber |,(314) 915-2497,,,False,[],,0.0
+"Vargo Plumbing & Utilities, LLC",Plumber |,(361) 730-7381,,,False,[],,0.0
+JS & Sons Plumbing,Plumber | Closed |,(209) 594-9594,,,True,['jsplumbing07@gmail.com'],jsplumbing07@gmail.com,0.8500000000000001
+Pleasant Valley Subdivision Road and Drainage Improvements,No reviews,(907) 561-6237,,,False,[],,0.0
+SPEEDY PLUMBING & DRAINS,Plumber |,(907) 227-0337,,,True,['contact@plumbersofamerica.com'],contact@plumbersofamerica.com,0.65
+24/7 Emergency Plumber Cincinnati,Plumber |,(513) 960-4385,,,True,['ffb96741d75652c5232f343ed4455fc9@o9737.ingest.us.sentry.io'],ffb96741d75652c5232f343ed4455fc9@o9737.ingest.us.sentry.io,0.65
+Alaska Rooter,Plumber |,(907) 868-2662,,,True,['contact@plumbersofamerica.com'],contact@plumbersofamerica.com,0.65
+Dans Construction & Drain Services LLC,Plumber |,(551) 208-8366,,,True,['info@trustindex.io'],info@trustindex.io,0.65
+E L Austin Plumbing & Sewer Co,Plumber |,(314) 652-7282,,,True,"['contact@plumbersofamerica.com', 'elaustinplumbing@att.net', 'your@email.com', 'cwconcepts@gmail.com', 'lo71203@hotmail.com']",contact@plumbersofamerica.com,0.65
+Espenscheid Plumbing Inc,Plumber |,(859) 441-0950,,,True,"['espenscf@fuse.net', 'your@email.com', 'dupontplumbinginc@gmail.com', 'dlickert@greatercomfort.com']",espenscf@fuse.net,0.65
+A Budget Sewer & Drain Cleaning,Plumber,(201) 332-6400,,,True,['ffb96741d75652c5232f343ed4455fc9@o9737.ingest.us.sentry.io'],ffb96741d75652c5232f343ed4455fc9@o9737.ingest.us.sentry.io,0.65
+DrainHelp,Plumber |,(844) 586-0574,,,False,[],,0.0
+Border Plumbing Services,Plumber |,(956) 285-1540,,,False,[],,0.0
+"L.A.N.S. Plumbing, LLC",Plumber | Closed |,(956) 235-6657,,,False,[],,0.0
+Speedy Sewer & Drain,Plumber |,(973) 748-6333,,,False,[],,0.0
+Dynamic Water Heaters and Plumbing,Plumber |,(419) 320-4990,,,False,[],,0.0
+Carrizales Plumbing,Plumber,(956) 337-9296,,,True,['contact@plumbersofamerica.com'],contact@plumbersofamerica.com,0.65
+Anytime plumbing repair &Drain cleaning,Plumber |,(260) 424-1313,,,True,['customer.support@hometriangle.com'],customer.support@hometriangle.com,0.65
+T & J Plumbing & Sewer,Plumber,(419) 729-3299,,,True,"['tandjplumbing@att.net', 'your@email.com', 'shellys@rhsonline.net', 'ncls484@gmail.com']",tandjplumbing@att.net,0.8500000000000001
+Gabe Ambrozia & Sons,Plumber |,(201) 332-4611,,,False,[],,0.0
+Express Plumbing,Plumber,(956) 740-9405,,,True,"['blancac023@icloud.com', 'saalarmpermit@alliedfireprotection.com', 'buildzoomsupport@blockrenovation.com', 'data@buildzoom.com', 'bzcheckout@blockrenovation.com', 'name@email.com']",blancac023@icloud.com,0.7000000000000001
+Joseph Carino Plumbing & Heating,Plumber |,(716) 886-7378,,,False,[],,0.0
+City Plumbing Co,Plumber |,(956) 723-9513,,,True,['redman1@satx.rr.com'],redman1@satx.rr.com,0.65
+Leland Plumbing Contractors,Plumber |,(727) 381-1111,,,False,[],,0.0
+Platinum Services Plumbing,Plumber |,(602) 420-3861,,,True,"['info@lasvbbb.org', 'gus@lasvbbb.org']",info@lasvbbb.org,0.65
+Arellano's Plumbing,Plumber |,(956) 795-0751,,,False,[],,0.0
+Dennis & Sons Plumbers,Plumber |,(480) 780-3779,,,False,[],,0.0
+Walker Family Plumbing & Electric,Plumber |,(623) 300-2649,,,False,[],,0.0
+Plumbing Unlimited Inc,Plumber |,(757) 328-2337,,,True,"['tkastrup@bbbinc.org', 'lplath@bbbinc.org', 'awebb@bbbinc.org', 'jplanos@bbbinc.org', 'mengelkamp@bbbinc.org']",tkastrup@bbbinc.org,0.65
+A-Plus Plumbing Contractor,Plumber |,(956) 237-7810,,,False,[],,0.0
+Daves Plumbing & Drain Services,Plumber |,(650) 814-6323,,,False,[],,0.0
+AJ's Plumbing,Plumber |,(972) 870-1163,,,False,[],,0.0
+"Las Vegas, NV: Anthem Plumbing Services",Plumber |,(702) 350-1735,,,True,['contact@anthemplumbing.com'],contact@anthemplumbing.com,0.9
+Delta P Plumbing Heating and Air Conditioning Inc,Plumber,(716) 308-5213,,,True,"['xxxxxxxx@gmail.com', 'xxxxxxx@dttuk.com', 'xxxxxxx@dittus.com', 'xxxxxxx@gmail.com', 'xxxxxxx@dtvus.com', 'xxxxxxxx@webtv.net', 'xxxxxxxxxxxx@delta.com', 'xxxxxxxxxxx@delta.com', 'xxxxxxxx@delta.com', 'xxxxxxx@delta.com', 'xxxxxx@delta.com', 'xxxxx@delta.com']",xxxxxxxx@gmail.com,0.7000000000000001
+A Plus Plumbing Contractor,No reviews,(956) 237-7810,,,True,['your@email.com'],your@email.com,0.65
+Cogar Plumbing,Plumber |,(336) 930-3535,,,False,[],,0.0
+Union City Plumbing Water Heaters Services,Plumber |,(510) 372-3904,,,True,"['tkastrup@bbbinc.org', 'lplath@bbbinc.org', 'awebb@bbbinc.org', 'jplanos@bbbinc.org', 'mengelkamp@bbbinc.org']",tkastrup@bbbinc.org,0.65
+Plumbing Repair of the Triad,Plumber |,(336) 608-8064,,,True,"['plumbingrepairofthetriad@gmail.com', 'your@email.com', 'bingrepairofthetriad@gmail.com', 'tpeterson@palmettoinfusion.com', 'info@kitchenvision.biz', 'info@pfaffsinc.net', 'info@brytons.com', 'billy.smith@mail.rainbowintl.com', 'you@email.com', 'service@transous.com']",plumbingrepairofthetriad@gmail.com,0.9500000000000001
+Local Plumbers & Pipefitters,Association / Organization |,(225) 356-3333,,,True,['jonathan@local198.org'],jonathan@local198.org,0.8
+DAVID FRANKLIN PLUMBING,Plumber |,(225) 892-1763,,,False,[],,0.0
+Next pipe Plumbing,Plumber |,(626) 705-1126,,,False,[],,0.0
+Young's Plumbing Co,Plumber |,(225) 926-6671,,,True,['contact@plumbersofamerica.com'],contact@plumbersofamerica.com,0.65
+Deremiah Plumbing,Plumber |,(515) 710-7997,,,True,"['duelings@thebakergroup.com', 'estimationart1@gmail.com', 'buildzoomsupport@blockrenovation.com', 'data@buildzoom.com', 'bzcheckout@blockrenovation.com', 'name@email.com']",duelings@thebakergroup.com,0.65
+Boatner & Son Plumbing Repair,Plumber |,(225) 924-0133,,,False,[],,0.0
+24 Emergency Plumber Tacoma,Plumber |,(253) 285-1503,,,True,"['service@hartsservices.com', 'marketing@hartsservices.com']",service@hartsservices.com,0.65
+Pro Plumbing Birmingham Co.,Plumber |,(659) 272-0313,,,False,[],,0.0
+Des Moines Plumbing,Plumber |,(515) 346-6891,,,False,[],,0.0
+Yochim Plumbing,Plumber |,(661) 218-2299,,,False,[],,0.0
+Cobia Plumbing & Construction,Plumber |,(910) 884-8702,,,True,"['buildzoomsupport@blockrenovation.com', 'data@buildzoom.com', 'bzcheckout@blockrenovation.com', 'name@email.com']",buildzoomsupport@blockrenovation.com,0.65
+"Absolute Plumbing And Rooting, Inc.",Plumber |,(805) 223-4502,,,True,['info@absoluteplumbingandrootingca.com'],info@absoluteplumbingandrootingca.com,0.9
+Affordable Plumbing Heating & AC,Plumber |,(806) 379-6225,,,False,[],,0.0
+Always Ready Plumbing services 24 hours,Plumber |,(909) 716-8645,,,True,"['your@email.com', '1sonplumbing@gmail.com']",your@email.com,0.65
+Mr Plumber LLC,Plumber |,(616) 292-5263,,,True,['contact@plumbersofamerica.com'],contact@plumbersofamerica.com,0.8
+Petersen Plumbing Inc,Plumber |,(616) 361-6635,,,True,['petersenplbg101@gmail.com'],petersenplbg101@gmail.com,0.8500000000000001
+Osborne Co,Plumber |,(951) 418-2883,,,False,[],,0.0
+Birmingham Plumbing and Drainworks,Plumber |,(205) 862-8351,,,True,"['ly@dk3d.com', 'mmckenzie@cornerstoneengllc.com', 'cakmedicalllc@gmail.com', 'alivictoria17@gmail.com', 'dejesus.1239@gmail.com', 'plumbright17@gmail.com', 'lizmason@elmservicesll.com', 'accountservices@briscoconstruction.com', 'gbminard@globalteamstaffing.com', 'tclay@abcconsultants.com', 'darlenakelly@dk3d.com', 'charles@cwilliams-arch.com', 'choskins@hoskinsarchitecture.com', 'nolanda@studio2hd.com', 'kimbutler@hughes.net', 'karmaconstruction@bellsouth.net', 'mrugano@gmginconline.com', 'gdancy@abdllc.com', 'mokukoyi@dcseng.com', 'roderickarrington8@gmail.com', 'ldavison@tscommunication.net', 'markus.snowden@valeriuscommunications.com', 'terrellkennedy@gmail.com', 'ppinc.monika@gmail.com', 'melissa@royalconcretecontractors.com', 'tclark58@hotmail.com', 'eaconcrete@hotmail.com', 'darius@dksjanitorial.com', 'edcoleman2eddco@aol.com', 'eric@nationalflex.com', 'professional2088@bellsouth.net', 'luisrodriquez79@hotmail.com', 'selectivedemoservices@gmail.com', 'rswanson@bhamrr.com', 'tlc.demo@verizon.net', 'wwillie2@bellsouth.net', 'renom@bormonconstruction.com', 'lcconstruction@lcconstructionllc.com', 'javier0807@aol.com', 'dkanderson@diversifiedsupply.com', 'gerardwfrye@bellsouth.net', 'laceleccont@gmail.com', 'inc_lee@bellsouth.net', 'emataelectric@gmail.com', 'mcwilliamselectric1@gmail.com', 'rtelectricco@gmail.com', 'tfinc1@aol.com', 'anixon@nixonselectric.com', 'info@thomaselectric.net', 'liz@hyde-egr.com', 'jsmith@sajjadiehengineering.com', 'ebounds@esbgroup.net', 'dmontgomery@mecunlimited.com', 'sherry.snyder@edtinc.net', 'craine@khafra.com', 'smason@khafra.com', 'neileng@comcast.net', 'lenus.penkins@solution620.com', 'lslade@sladellc.com', 'wenlight@att.net', 'o.eason@spec9contractflooring.com', 'tonyw_1@msn.com', 'dennis@bhamconstruction.com', 'rickbric@hotmail.com', 'paulp@ccminc.net', 'ddiggs@diggsconstruction.com', 'john@elgconstruction.us', 'dfproperties@rocketmail.com', 'psigers@goudyconstructioninc.com', 'spaterno@hermosainc.com', 'corp@monumentalcs.com', 'info@trevinoconstruction.com', 'pca.restoration@aol.com', 'aphiad@aol.com', 'canderson@andersonpromiergroup.com', 'rmartin@rfb-contractors.com', 'moe@rpmcac.com', 'saffordbuildingco@att.net', 'rwwatts@targetmanagementllc.com', 'andrea@nicholsconstruction.com', 'ginnyf@trawickco.com', 'magicgls@bellsouth.net', 'morganmcclain@att.net', 'horizonimpressions@msn.com', 'dmptrk@bellsouth.net', 'cjventures1@gmail.com', 'ddmechanicalinc@live.com', 'vicki@epi-al.com', 'lwilliams@terniongrp.com', 'rickmm@bellsouth.net', 'aleia@3gchemicalsolutions.com', 'd.hamill@vignon.com', 'tammy@ccrarchitects.net', 'rebeccah@hatcherdesign.com', 'megomoore@gmail.com', 'eric@cssbirmingham.com', 'jane@janereedrossla.com', 'lmacknally@macknallyross.net', 'jennafer@greenspace-llc.com', 'autumngreendesign@gmail.com', 'alondon@champsinc.us', 'cjjoakes@aol.com', 'bolarjr2@charter.net', 'terry@apex-solutions.biz', 'srodgers@sarcorllc.com', 'stepko.ehunter@gmail.com', 'rmurray@vaddinc.com', 'jkelly@kellyroadbuilders.com', 'amanda@bamapainting.com', 'bishoppainting@gmail.com', 'rbrantley@brantleypainting.com', 'housedoctors205@gmail.com', 'kimropaint@aol.com', 'paintusainc@gmail.com', 'kathi@paradisopainting.com', 'paintsa@bellsouth.net', 'jkelly@kellyconstructioncompany.com', 'mcbridexavier@gmail.com', 'brandon.kennedy@gmail.com', 'chrisroper0463@icloud.com', 'munfordinc@aol.com', 'harris5556@bellsouth.net', 'johnsoncsllc@gmail.com', 'kjefferson@amerison.net', 'brenda@bphillips.com', 'info@brjassociates.com', 'malo2211@bellsouth.net', 'allaroundremodelingservices@gmail.com', 'bellr@bellsouth.net', 'mariapams@aol.com', 'gasmith@signarama-bham.com', 'tjones@jgstaffingllc.com', 'kim@2ksteel.com', 'bulletiron@bellsouth.net', 'jgreen1911@aol.com', 'dworks@bbtconsulting.com', 'bostic.trucking@att.net', 'linda.davidson@earthlink.com', 'trishadaystar@aol.com', 'globalconstruction205@gmail.com', 'info@stradaps.com', 'diane@brawco.com', 'lisa@erwinandassociates.net']",ly@dk3d.com,0.65
+"Poons Entities, LLC",Plumber |,(205) 306-8243,,,False,[],,0.0
+Hammock Plumbing Co,Plumber |,(334) 297-3747,,,True,['contact@plumbersofamerica.com'],contact@plumbersofamerica.com,0.65
+Papa Micks Plumbing,Plumber |,(330) 573-5759,,,True,['contact@plumbersofamerica.com'],contact@plumbersofamerica.com,0.65
+B & B Plumbing,Plumber |,(706) 596-0061,,,True,"['contact@plumbersofamerica.com', 'info@bandbhotwatertanks.com', 'your@email.com']",contact@plumbersofamerica.com,0.65
+Garden City Plumbers,Plumber |,(706) 267-1169,,,True,"['info@northpointph.com', 'service@rpmplumbers.com', 'hello@plumber-newjersey.com', 'amirsattar462@gmail.com', 'marketing@allhoursplumber.com', 'plumbingbytony@gmail.com', 'service@worldclassdrains.com', 'john@landmplumbing.com', 'admin@sunwaveplumbing.com']",info@northpointph.com,0.65
+Herrema Plumbing LLC,Plumber |,(616) 452-8669,,,False,[],,0.0
+Penn Plumbing Co Inc,Plumber |,(334) 244-1431,,,True,"['pennplbgci@knology.net', 'your@email.com', 'mikeh@wittichen-supply.com', 'allstaracnheating@gmail.com', 'info@uri.com', 'chastainhvac@gmail.com', 'bakeronline@bakerdist.com']",pennplbgci@knology.net,0.8
+Yonkers Plumbing On Time,Plumber |,(914) 226-5483,,,True,"['your@email.com', 'whitestonemarble@live.com', 'contact@newyorkplumbingdirectory.com']",your@email.com,0.65
+Riley Plumbing,Plumber |,(334) 298-3042,,,False,[],,0.0
+McKinney Plumbing & Drain Clean Services,Plumber,(214) 856-7674,,,False,[],,0.0
+Rusco Plumbing Co,Plumber |,(334) 297-7345,,,True,"['your@email.com', 'greenspropanegas@gmail.com']",your@email.com,0.65
+Proficient Plumbing and Drains LLC,Plumber | Closed |,(214) 532-8945,,,True,"['info@intownplumbingtx.com', 'plumbsometx@gmail.com', 'buildzoomsupport@blockrenovation.com', 'data@buildzoom.com', 'bzcheckout@blockrenovation.com', 'name@email.com']",info@intownplumbingtx.com,0.8
+Reliable USA Plumbers,Plumber |,(251) 304-9569,,,True,"['buildzoomsupport@blockrenovation.com', 'data@buildzoom.com', 'bzcheckout@blockrenovation.com', 'name@email.com']",buildzoomsupport@blockrenovation.com,0.65
+Robert’s Repair Plumbing,Plumber |,(956) 203-9993,,,True,"['service@hartsservices.com', 'marketing@hartsservices.com']",service@hartsservices.com,0.65
+Caleb's Plumbing,Plumber |,(956) 302-9210,,,True,['you@gmail.com'],you@gmail.com,0.7000000000000001
+Leos remodeling & glass,Electrical installation service |,(956) 983-2977,,,False,[],,0.0
+Ramirez Plumbing,Plumber |,(956) 466-6638,,,True,['contact@plumbersofamerica.com'],contact@plumbersofamerica.com,0.65
+QPI Services Inc. Plumbing & Gas Co.,Plumber |,(251) 609-2925,,,True,"['qpiservicesinc@gmail.com', 'your@email.com']",qpiservicesinc@gmail.com,0.8500000000000001
+Fort Lauderdale Plumbing Co,Plumber |,(954) 754-9578,,,False,[],,0.0
+Brownsville HVAC Solutions,Heating contractor |,(210) 939-6715,,,True,"['sales@hvacsolutions.biz', 'contact@acs.us', '605a7baede844d278b89dc95ae0a9123@sentry-next.wixpress.com', '18d2f96d279149989b95faf0a4b41882@sentry-next.wixpress.com', '79baaa8e09c746d2b7401643b99792e0@sentry.wixpress.com', 'ed436f5053144538958ad06a5005e99a@sentry.wixpress.com', '460ff4620fa44cba8df530afde949785@sentry.wixpress.com', 'baf30a2b91654c5a840931f0137bed30@sentry.wixpress.com', '0e6a29e4756740a8a63493e912ba2174@sentry.wixpress.com', '8eb368c655b84e029ed79ad7a5c1718e@sentry.wixpress.com', '2062d0a4929b45348643784b5cb39c36@sentry.wixpress.com', '5d1795a2db124a268f1e1bd88f503500@sentry.wixpress.com', '271e9fa3230b4eec94b02bf95780f5f2@sentry.wixpress.com']",sales@hvacsolutions.biz,0.9
+Torres Plumbing,Plumber |,(956) 542-7243,,,True,['contact@plumbersofamerica.com'],contact@plumbersofamerica.com,0.65
+Knoxville Plumbing & Drain Cleaning,Plumber |,(865) 622-3905,,,False,[],,0.0
+LOPEZ PLUMBING,Plumber |,(956) 521-5906,,,True,['contact@plumbersofamerica.com'],contact@plumbersofamerica.com,0.65
+Park Place Plumbing LLC,Plumber |,(971) 303-9322,,,False,[],,0.0
+Cain's Plumbing Inc,Plumber |,(757) 265-3000,,,False,[],,0.0
+Scenic City Plumbing,Plumber |,(423) 894-2588,,,True,['contact@plumbersofamerica.com'],contact@plumbersofamerica.com,0.65
+Top Dog Plumbing,Plumber |,(605) 261-5785,,,False,[],,0.0
+Pro Plumbing Co,Plumber,(757) 265-3830,,,False,[],,0.0
+Jason's Plumbing,Plumber |,(757) 848-8939,,,False,[],,0.0
+G D Plumbing,Plumber |,(423) 394-0915,,,True,"['g_dossett@comcast.net', 'your@email.com', 'info@kylebuild.com']",g_dossett@comcast.net,0.7000000000000001
+Master Plumbers Inc,Plumber |,(757) 244-5050,,,False,[],,0.0
+Dan White Plumbing Heating,Plumber |,(757) 238-9756,,,False,[],,0.0
+The Clean Cut Plumber,Plumber |,(858) 215-2328,,,True,['contact@scsewer.com'],contact@scsewer.com,0.65
+Barrow Plumbing & Heating Co,Plumber |,(757) 596-6912,,,True,"['your@email.com', 'stanleypotter@cox.net', 'info@ahamptonroadsplumbing.com']",your@email.com,0.65
+Prime Plumbing,Plumber |,(760) 645-8909,,,False,[],,0.0
+Barbara's Plumbing,Plumber |,(757) 262-1111,,,False,[],,0.0
+Alpha Plumbing & Rooter Service LLC,Plumber |,(541) 225-2266,,,False,[],,0.0
+Royal T Rooter Services,Plumber,(970) 224-3700,,,False,[],,0.0
+Iggy's Plumbing,Plumber |,(916) 271-5933,,,False,[],,0.0
+Water cycle plumbing,Plumber |,(916) 912-2959,,,True,"['tkastrup@bbbinc.org', 'lplath@bbbinc.org', 'awebb@bbbinc.org', 'jplanos@bbbinc.org', 'mengelkamp@bbbinc.org']",tkastrup@bbbinc.org,0.65
+Oceanside Plumbing And Drain,Plumber |,(442) 333-1606,,,False,[],,0.0
+Wright Plumbing Inc,Plumber,(601) 624-4078,,,True,['contact@plumbersofamerica.com'],contact@plumbersofamerica.com,0.65
+Sniders Plumbing,Plumber |,(541) 461-0166,,,False,[],,0.0
+Gilkey Repairs,Plumber |,(931) 278-6212,,,True,['contact@plumbersofamerica.com'],contact@plumbersofamerica.com,0.65
+Faithful Rooter CCB #240420,Plumber,(458) 210-9703,,,False,[],,0.0
+Palmdale Plumbers & Drain Pro,Plumber |,(661) 512-0789,,,True,"['tkastrup@bbbinc.org', 'lplath@bbbinc.org', 'awebb@bbbinc.org', 'jplanos@bbbinc.org', 'mengelkamp@bbbinc.org']",tkastrup@bbbinc.org,0.65
+Hannu Quality Plumbing,Plumber |,(864) 303-5317,,,False,[],,0.0
+South Central Heating & Plumbing,Plumber |,(601) 982-5351,,,False,[],,0.0
+24 Hour Rooter Inc,Plumber |,(661) 400-1002,,,False,[],,0.0
+Duane & Sons Plumbing,Plumber |,(720) 734-6296,,,False,[],,0.0
+Excellent Plumbing & Drain,Plumber,(931) 320-1677,,,False,[],,0.0
+Drollett Plumbing and Heating,Plumber |,(413) 977-8629,,,False,[],,0.0
+The Plumber,Plumber,(831) 737-9032,,,True,"['crownplumbing@sbcglobal.net', 'jose@pipethrutrenchless.com', 'buildzoomsupport@blockrenovation.com', 'data@buildzoom.com', 'bzcheckout@blockrenovation.com', 'name@email.com']",crownplumbing@sbcglobal.net,0.7000000000000001
+Gingras Plumbing & Heating,Plumber |,(413) 732-8389,,,False,[],,0.0
+Water Heaters Plumbing & Drains,Plumber |,(831) 431-9558,,,False,[],,0.0
+Hollywood Plumbing,Plumber,(786) 536-1226,,,False,[],,0.0
+Outhouse Plumbing & Heating,Plumber |,(413) 781-3353,,,True,"['your@email.com', 'tomcarp99@aol.com', 'whitney.wyatt-kovar@dwyergroup.com', 'b.shiner@prima-na.com']",your@email.com,0.65
+Absolute Plumbing Services,Plumber |,(832) 429-3801,,,False,[],,0.0
+Sheffield Plumbing,Plumber |,(281) 677-3536,,,False,[],,0.0
+Alexandria Plumbers & Drain Cleaning Co.,Plumber |,(571) 506-0102,,,False,[],,0.0
+Felipe’s Plumbing,Plumber | Closed |,(661) 526-8570,,,False,[],,0.0
+Expert Plumbing Solutions LLC,Plumber,(478) 407-4014,,,True,"['kenny.smith31066@gmail.com', 'info@epls-usa.com']",kenny.smith31066@gmail.com,0.7000000000000001
+Crawford Brothers Plumbing,Plumber |,(281) 315-9712,,,False,[],,0.0
+Sconyers Plumbing Co,Plumber |,(478) 746-0858,,,False,[],,0.0
+Bay Cam Plumbing,Plumber |,(281) 884-8001,,,False,[],,0.0
+Judd Plumbing,Plumber,(254) 290-0787,,,False,[],,0.0
+Billy & Sons Plumbing,Plumber |,(408) 762-1431,,,False,[],,0.0
+Alsop Plumbing,Plumber |,(254) 699-6647,,,False,[],,0.0
+Owens Family Plumbers,Plumber |,(408) 550-1784,,,False,[],,0.0
+GNR Plumbing Co,Plumber,(478) 474-7892,,,False,[],,0.0
+Eaton Family Plumbers,Plumber |,(909) 415-5429,,,False,[],,0.0
+Curtis & Sons Plumbing,Plumber |,(254) 271-0541,,,False,[],,0.0
+Platinum Plumbing,Plumber |,(413) 378-2419,,,True,['platinumplumbing19@gmail.com'],platinumplumbing19@gmail.com,0.9500000000000001
+My Plumbing,Plumber |,(254) 371-5657,,,False,[],,0.0
+"Pride Plumbing, Inc.",Plumber |,(815) 723-5103,,,False,[],,0.0
+Aspect Plumbing & Heating,Plumber |,(630) 504-0256,,,True,"['your@email.com', 'stoneillusionz@gmail.com', 'gk@katsheating.com', 'admin@napervilleroofingandconstruction.com', 'americanmechanicalsystems@gmail.com', 'philwalzplumbing@sbcglobal.net']",your@email.com,0.65
+Next Plumbing & Heating,Plumber |,(615) 278-9626,,,False,[],,0.0
+M & M Affordable Plumbing,Plumber |,(815) 744-0836,,,True,"['fowlerr@masonichomeny.org', 'your@email.com', 'tfelter@superiorambulance.com', 'dkaluzny2@aol.com', 'plumbers911joliet@gmail.com', 'bfox@omegaplumbing.com']",fowlerr@masonichomeny.org,0.65
+T. Lenard Plumbing & Drain Inc.,Plumber |,(615) 904-4046,,,True,"['tlenard7777777@gmail.com', 'your@email.com', 'artie.wright@31w.com', 'welcome@bestquotehvac.com', 'freds_flooring@comcast.net']",tlenard7777777@gmail.com,0.8500000000000001
+Ellis & Sons Plumbing Heating,Air conditioning contractor |,(432) 683-2679,,,False,[],,0.0
+"Viking Plumbing & Sewer, LLC",Plumber |,(630) 546-1627,,,False,[],,0.0

@@ -1,0 +1,5 @@
+# These generated files contain live proxy credentials.
+proxy-urls.txt
+proxies.env
+proxies.json
+
