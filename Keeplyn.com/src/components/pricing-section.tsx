@@ -13,11 +13,6 @@ export function PricingSection() {
         className="pointer-events-none absolute left-1/2 top-[28%] h-[66%] w-[min(88%,68rem)] -translate-x-1/2 bg-[radial-gradient(ellipse_at_center,rgba(5,5,7,0.84)_0%,rgba(5,5,7,0.5)_48%,transparent_76%)]"
         aria-hidden="true"
       />
-      <div
-        className="pointer-events-none absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-white/14 to-transparent"
-        aria-hidden="true"
-      />
-
       <div className="site-container relative z-10">
         <div className="flex flex-col justify-between gap-7 sm:flex-row sm:items-end">
           <h2 className="max-w-5xl text-[clamp(4.5rem,10vw,9rem)] font-semibold leading-[0.78] tracking-[-0.09em]">
@@ -61,12 +56,6 @@ export function PricingSection() {
               </div>
             </Link>
           ))}
-        </div>
-
-        <div className="mx-auto mt-10 flex max-w-5xl items-center gap-4 text-[10px] uppercase tracking-[0.18em] text-white/28" aria-hidden="true">
-          <span className="h-px flex-1 bg-gradient-to-r from-transparent to-white/15" />
-          Built around your business
-          <span className="h-px flex-1 bg-gradient-to-l from-transparent to-white/15" />
         </div>
       </div>
     </section>

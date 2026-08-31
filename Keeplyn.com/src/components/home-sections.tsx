@@ -1,4 +1,4 @@
-import { ArrowDown, ArrowUpRight } from "lucide-react";
+import { ArrowUpRight } from "lucide-react";
 import Link from "next/link";
 import { BrandLogo } from "./brand-logo";
 
@@ -20,10 +20,6 @@ export function HeroSection() {
             </Link>
           </div>
         </div>
-
-        <a href="#pricing" className="mx-auto flex w-fit items-center gap-3 text-[10px] font-semibold uppercase tracking-[0.16em] text-white/40 hover:text-white">
-          Plans <ArrowDown className="size-4 animate-bounce" aria-hidden="true" />
-        </a>
       </div>
     </section>
   );
