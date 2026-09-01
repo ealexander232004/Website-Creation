@@ -161,7 +161,7 @@ function MossPricing() {
           <div className="mx-auto grid max-w-[92rem] gap-5 lg:grid-cols-3">
             {mossPackages.map((plan, index) => (
               <article key={plan.name} className={`moss-depth-card flex min-h-[34rem] flex-col border border-[#203126]/20 p-7 sm:p-9 ${index === 1 ? "bg-[#203126] text-[#edf1e9]" : "bg-[#dfe5d6]"}`}>
-                <p className={`text-[10px] uppercase tracking-[0.16em] ${index === 1 ? "text-[#c9ff3b]" : "text-[#203126]/45"}`}>0{index + 1}</p>
+                <p className={`text-[10px] uppercase tracking-[0.16em] ${index === 1 ? "text-[#c9ff3b]" : "text-[#203126]/45"}`}>Design offering</p>
                 <h2 className="mt-10 text-4xl font-semibold tracking-[-0.06em]">{plan.name}</h2>
                 <p className={`mt-4 text-sm leading-6 ${index === 1 ? "text-white/58" : "text-[#203126]/58"}`}>{plan.detail}</p>
                 <p className="mt-9 text-6xl font-semibold tracking-[-0.08em]">{plan.price}</p>
@@ -201,7 +201,7 @@ function NorthlinePricing() {
         <section className="mx-auto grid max-w-[92rem] gap-5 py-20 lg:grid-cols-3 lg:py-28">
           {northlinePrices.map((plan, index) => (
             <article key={plan.name} className={`northline-depth-card flex min-h-[33rem] flex-col rounded-[1.75rem] border p-7 sm:p-9 ${index === 2 ? "border-[#ff725e] bg-[#fff0ec]" : "border-[#173a5a]/12 bg-white"}`}>
-              <span className="grid size-10 place-items-center rounded-full bg-[#dbeaf6] text-xs font-semibold">0{index + 1}</span>
+              <span className="inline-flex w-fit items-center rounded-full bg-[#dbeaf6] px-4 py-2 text-[10px] font-semibold uppercase tracking-[0.12em]">Care option</span>
               <h2 className="mt-10 text-3xl font-semibold tracking-[-0.055em]">{plan.name}</h2>
               <p className="mt-4 text-sm leading-6 text-[#173a5a]/58">{plan.detail}</p>
               <p className="mt-9 text-6xl font-semibold tracking-[-0.08em]">{plan.price}</p>
@@ -239,7 +239,7 @@ function SeraPricing() {
           <div className="mx-auto grid max-w-[92rem] gap-5 lg:grid-cols-3">
             {seraPackages.map((plan, index) => (
               <article key={plan.name} className={`sera-depth-card flex min-h-[34rem] flex-col border border-[#5d2d26]/18 p-7 sm:p-9 ${index === 1 ? "bg-[#ff765f] text-[#fff6ec]" : "bg-[#f6e8d8]"}`}>
-                <p className={`font-serif text-2xl italic ${index === 1 ? "text-white" : "text-[#ff765f]"}`}>0{index + 1}</p>
+                <p className={`font-serif text-2xl italic ${index === 1 ? "text-white" : "text-[#ff765f]"}`}>For the table</p>
                 <h2 className="mt-10 text-4xl font-semibold tracking-[-0.06em]">{plan.name}</h2>
                 <p className={`mt-4 text-sm leading-6 ${index === 1 ? "text-white/68" : "text-[#5d2d26]/58"}`}>{plan.detail}</p>
                 <p className="mt-9 font-serif text-6xl italic tracking-[-0.06em]">{plan.price}</p>
