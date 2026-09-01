@@ -117,8 +117,8 @@ export function PricingDetails() {
           <div className="mb-10 flex flex-col justify-between gap-5 sm:flex-row sm:items-end">
             <div>
               <p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-[#c9ff3b]">Optional service</p>
-              <h2 className="mt-4 max-w-4xl text-[clamp(3.5rem,8vw,7.5rem)] font-semibold leading-[0.82] tracking-[-0.085em]">
-                Hosting &amp; updates.
+              <h2 className="-ml-[0.065em] mt-4 max-w-4xl text-[clamp(3.5rem,8vw,7.5rem)] font-semibold leading-[0.82] tracking-[-0.085em]">
+                Hosting &amp; updates
               </h2>
             </div>
             <p className="max-w-sm text-sm leading-6 text-white/44">
