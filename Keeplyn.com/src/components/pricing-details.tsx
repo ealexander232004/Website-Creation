@@ -114,14 +114,12 @@ export function PricingDetails() {
         </div>
 
         <div className="mt-24 sm:mt-32">
-          <div className="mb-10 flex flex-col justify-between gap-5 sm:flex-row sm:items-end">
-            <div>
-              <p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-[#c9ff3b]">Optional service</p>
-              <h2 className="-ml-[0.065em] mt-4 max-w-4xl text-[clamp(3.5rem,8vw,7.5rem)] font-semibold leading-[0.82] tracking-[-0.085em]">
-                Hosting &amp; updates
-              </h2>
-            </div>
-            <p className="max-w-sm text-sm leading-6 text-white/44">
+          <div className="mb-10 max-w-4xl">
+            <p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-[#c9ff3b]">Optional service</p>
+            <h2 className="-ml-[0.065em] mt-4 max-w-4xl text-[clamp(3.5rem,8vw,7.5rem)] font-semibold leading-[0.82] tracking-[-0.085em]">
+              Hosting &amp; updates
+            </h2>
+            <p className="mt-6 max-w-md text-sm leading-6 text-white/44 sm:text-base sm:leading-7">
               Keep your site fast, current, and completely hands-off.
             </p>
           </div>
