@@ -3,7 +3,7 @@
 import Image from "next/image";
 import Link from "next/link";
 import { ArrowRight, ArrowUpRight, CalendarDays, Clock3, MapPin } from "lucide-react";
-import { useEffect, useRef, useState, type KeyboardEvent, type MouseEvent as ReactMouseEvent } from "react";
+import { useEffect, useRef, useState, type CSSProperties, type KeyboardEvent, type MouseEvent as ReactMouseEvent } from "react";
 import {
   DemoBookingPage,
   DemoContactPage,
@@ -22,108 +22,121 @@ const demoTabs = [
 
 export type DemoPage = "home" | "pricing" | "contact" | "booking";
 
+const visualLayers = [0, 1, 2, 3, 4, 5, 6, 7, 8] as const;
+const visualParticles = [0, 1, 2, 3, 4, 5] as const;
+
+function visualStyle(index: number) {
+  return { "--visual-index": index } as CSSProperties;
+}
+
+function MossKineticField() {
+  return (
+    <div className="moss-kinetic-field" aria-hidden="true">
+      <div className="moss-kinetic-glow" />
+      {visualLayers.map((index) => <span key={index} className="moss-contour" style={visualStyle(index)} />)}
+      {visualParticles.map((index) => <span key={index} className="moss-seed" style={visualStyle(index)} />)}
+      <div className="moss-axis"><span /><span /><span /><span /><span /></div>
+    </div>
+  );
+}
+
+function NorthlineKineticField() {
+  return (
+    <div className="northline-kinetic-field" aria-hidden="true">
+      <div className="northline-dot-grid" />
+      {visualLayers.slice(0, 5).map((index) => <span key={index} className="northline-orbit" style={visualStyle(index)} />)}
+      {visualParticles.map((index) => <span key={index} className="northline-pulse" style={visualStyle(index)} />)}
+      <div className="northline-smile"><span /><span /></div>
+      <div className="northline-cross"><span /><span /></div>
+    </div>
+  );
+}
+
+function SeraKineticField() {
+  return (
+    <div className="sera-kinetic-field" aria-hidden="true">
+      <div className="sera-sunburst" />
+      <div className="sera-ferment-ring"><span>07</span></div>
+      {visualParticles.map((index) => <span key={index} className="sera-bubble" style={visualStyle(index)} />)}
+      <div className="sera-stripes" />
+    </div>
+  );
+}
+
 export function MossSite() {
   return (
     <div className="bg-[#dfe5d6] text-[#203126]">
       <MossHeader active="home" />
 
-      <section id="moss-top" className="grid min-h-[48rem] lg:grid-cols-[48%_52%]">
-        <div className="flex flex-col">
-          <div className="my-auto px-6 py-20 sm:px-10 lg:px-14">
-            <h2 className="text-[clamp(4rem,7vw,6.6rem)] font-semibold leading-[0.78] tracking-[-0.085em]">
-              Outside,
-              <span className="block font-serif font-normal italic">considered.</span>
-            </h2>
-            <p className="mt-8 max-w-md text-base leading-7 text-[#203126]/66">
-              Gardens, courtyards, and outdoor rooms designed around the way you actually live.
-            </p>
+      <section id="moss-top" className="grid min-h-[52rem] overflow-hidden bg-[#17261c] text-[#f3f5ed] lg:grid-cols-[0.46fr_0.54fr]">
+        <div className="relative z-10 flex flex-col justify-between p-6 sm:p-10 lg:p-14">
+          <div className="flex items-start justify-between gap-6">
+            <p className="text-[10px] uppercase tracking-[0.18em] text-[#c9ff3b]">Landscape / California</p>
+            <p className="text-right font-mono text-[10px] leading-5 tracking-[0.12em] text-white/35">38.57° N<br />121.47° W</p>
           </div>
-          <div className="relative h-48 overflow-hidden sm:h-56 lg:h-64">
-            <Image
-              src="/demos/moss-water-garden.png"
-              alt="Native grasses surrounding a stone-lined garden water feature"
-              fill
-              sizes="(min-width: 1024px) 48vw, 100vw"
-              className="!h-full !w-full object-cover object-center"
-            />
+          <div className="py-20 lg:py-0">
+            <h2 className="text-[clamp(5rem,9vw,9rem)] font-semibold leading-[0.7] tracking-[-0.09em]">Wild,<span className="block font-serif font-normal italic text-[#c9ff3b]">with intent.</span></h2>
+            <a href="#moss-work" className="group mt-12 flex w-fit items-center gap-4 border-b border-white/35 pb-3 text-sm font-semibold">Explore the ground <ArrowRight className="size-4 transition-transform group-hover:translate-x-2" aria-hidden="true" /></a>
           </div>
+          <p className="text-xs uppercase tracking-[0.16em] text-white/32">Land · light · water</p>
         </div>
-        <div className="grid min-h-[36rem] overflow-hidden sm:grid-cols-2">
-          <div className="relative min-h-[30rem] overflow-hidden sm:min-h-0">
-            <Image src="/demos/moss-garden.jpg" alt="Lush modern courtyard garden" fill sizes="(min-width: 1024px) 26vw, (min-width: 640px) 50vw, 100vw" className="!h-full !w-full object-cover" preload />
-            <div className="absolute inset-0 bg-gradient-to-t from-[#203126]/28 via-transparent to-transparent" />
-            <div className="absolute bottom-6 left-6 border border-white/35 bg-black/20 px-4 py-3 text-xs text-white backdrop-blur-md">Courtyard No. 08 · 2026</div>
+        <div className="demo-film-grain relative min-h-[32rem] overflow-hidden border-t border-white/12 lg:min-h-0 lg:border-t-0 lg:border-l">
+          <MossKineticField />
+          <div className="absolute bottom-6 right-6 z-10 grid size-24 place-items-center rounded-full border border-[#c9ff3b]/55 text-center text-[10px] uppercase tracking-[0.14em] text-[#c9ff3b] sm:bottom-10 sm:right-10">Growing<br />system 01</div>
+        </div>
+      </section>
+
+      <section id="moss-work" className="px-5 py-20 sm:px-8 lg:px-12 lg:py-28">
+        <div className="flex items-end justify-between gap-8 pb-8">
+          <div>
+            <p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-[#203126]/48">Selected ground · 24—26</p>
+            <h3 className="mt-4 text-5xl font-semibold tracking-[-0.07em] sm:text-7xl">Three landscapes.</h3>
           </div>
-          <div className="relative min-h-[30rem] overflow-hidden sm:min-h-0">
-            <Image
-              src="/demos/moss-garden-passage.png"
-              alt="A fern-lined garden passage beside a dark stone wall"
-              fill
-              sizes="(min-width: 1024px) 26vw, (min-width: 640px) 50vw, 100vw"
-              className="!h-full !w-full object-cover object-center"
-            />
+          <span className="hidden font-serif text-4xl italic text-[#203126]/32 sm:block">One point of view.</span>
+        </div>
+        <div className="grid auto-rows-[15rem] gap-3 sm:grid-cols-12 sm:auto-rows-[13rem] lg:auto-rows-[16rem]">
+          <figure className="group relative overflow-hidden sm:col-span-8 sm:row-span-2">
+            <Image src="/demos/moss-water-garden.png" alt="Native grasses surrounding a stone-lined water garden" fill sizes="(min-width: 640px) 66vw, 100vw" className="demo-gallery-image object-cover" />
+            <div className="absolute inset-0 bg-gradient-to-t from-[#101d14]/70 via-transparent to-transparent" />
+            <figcaption className="absolute bottom-5 left-5 text-sm font-semibold text-white">South Slope <span className="ml-2 font-normal text-white/55">01</span></figcaption>
+          </figure>
+          <figure className="group relative overflow-hidden sm:col-span-4 sm:row-span-3">
+            <Image src="/demos/moss-garden-passage.png" alt="Fern-lined stone garden passage" fill sizes="(min-width: 640px) 34vw, 100vw" className="demo-gallery-image object-cover" />
+            <div className="absolute inset-0 bg-gradient-to-t from-[#101d14]/72 via-transparent to-transparent" />
+            <figcaption className="absolute bottom-5 left-5 text-sm font-semibold text-white">Night Passage <span className="ml-2 font-normal text-white/55">02</span></figcaption>
+          </figure>
+          <figure className="group relative overflow-hidden sm:col-span-5 sm:row-span-2">
+            <Image src="/demos/moss-garden.jpg" alt="Lush courtyard garden illuminated at dusk" fill sizes="(min-width: 640px) 42vw, 100vw" className="demo-gallery-image object-cover" />
+            <div className="absolute inset-0 bg-gradient-to-t from-[#101d14]/72 via-transparent to-transparent" />
+            <figcaption className="absolute bottom-5 left-5 text-sm font-semibold text-white">River House <span className="ml-2 font-normal text-white/55">03</span></figcaption>
+          </figure>
+          <div className="relative flex overflow-hidden bg-[#203126] p-6 text-[#edf1e9] sm:col-span-3 sm:row-span-2">
+            <div className="absolute -right-12 -top-12 size-44 rounded-full border border-[#c9ff3b]/45" />
+            <div className="absolute right-7 top-7 size-14 rounded-full bg-[#c9ff3b]" />
+            <p className="mt-auto font-serif text-3xl italic leading-none">Land.<br />Light.<br />Water.</p>
           </div>
         </div>
       </section>
 
-      <div className="grid border-y border-[#203126]/20 sm:grid-cols-3 sm:divide-x sm:divide-[#203126]/20">
-        {[['18', 'gardens completed'], ['11', 'native plant palettes'], ['07', 'design awards']].map(([value, label]) => (
-          <div key={label} className="p-7 sm:p-9">
-            <p className="text-5xl font-semibold tracking-[-0.07em]">{value}</p>
-            <p className="mt-2 text-xs text-[#203126]/55">{label}</p>
-          </div>
-        ))}
-      </div>
-
-      <section id="moss-work" className="px-6 py-24 sm:px-10 lg:px-14 lg:py-32">
-        <div className="flex items-end justify-between gap-8 border-b border-[#203126]/20 pb-6">
-          <h3 className="text-4xl font-semibold tracking-[-0.06em] sm:text-6xl">Selected ground.</h3>
-          <span className="text-[10px] uppercase tracking-[0.16em] text-[#203126]/45">2024—2026</span>
-        </div>
-        <div className="mt-8 grid gap-5 lg:grid-cols-3">
-          {[
-            ["River House", "A shaded family garden built around a 70-year-old oak.", "#a8b99b"],
-            ["South Slope", "Dry-climate terraces that get better with every season.", "#c4c6a1"],
-            ["Night Garden", "A small urban courtyard shaped by scent, sound, and low light.", "#708174"],
-          ].map(([name, detail, color], index) => (
-            <article key={name} className="group flex min-h-[28rem] flex-col justify-between overflow-hidden p-6" style={{ background: color }}>
-              <div className="relative h-44 overflow-hidden border border-[#203126]/15">
-                <div className="absolute -right-10 -top-12 size-52 rounded-full border border-[#203126]/35 transition-transform duration-700 group-hover:scale-125" />
-                <div className="absolute bottom-6 left-6 size-20 rounded-full bg-[#203126]/85 transition-transform duration-700 group-hover:translate-x-8" />
-                <span className="absolute right-4 top-4 text-[10px]">0{index + 1}</span>
-              </div>
-              <div>
-                <h4 className="text-3xl font-semibold tracking-[-0.055em]">{name}</h4>
-                <p className="mt-3 max-w-xs text-sm leading-6 text-[#203126]/62">{detail}</p>
-              </div>
-            </article>
-          ))}
-        </div>
-      </section>
-
-      <section id="moss-approach" className="grid border-y border-[#203126]/20 bg-[#203126] text-[#edf1e9] lg:grid-cols-2">
+      <section id="moss-approach" className="grid bg-[#17261c] text-[#edf1e9] lg:grid-cols-[0.64fr_0.36fr]">
         <div className="p-7 sm:p-12 lg:p-16">
-          <p className="text-[10px] uppercase tracking-[0.16em] text-[#c9ff3b]">Our approach</p>
-          <h3 className="mt-10 text-5xl font-semibold leading-[0.9] tracking-[-0.07em] sm:text-7xl">Start with the life. Then shape the land.</h3>
+          <p className="text-[10px] uppercase tracking-[0.18em] text-[#c9ff3b]">The method</p>
+          <h3 className="mt-12 text-[clamp(4rem,8vw,8rem)] font-semibold leading-[0.78] tracking-[-0.08em]">Listen.<br />Shape.<br /><span className="font-serif font-normal italic text-[#c9ff3b]">Let grow.</span></h3>
         </div>
-        <ol className="divide-y divide-white/15 border-t border-white/15 lg:border-t-0 lg:border-l">
-          {[
-            ["01", "Listen", "We map the rituals, constraints, and seasons that matter."],
-            ["02", "Compose", "Materials, plants, light, water, and movement become one system."],
-            ["03", "Grow", "We stay through installation and the garden's first year."],
-          ].map(([number, title, detail]) => (
-            <li key={number} className="grid grid-cols-[3rem_1fr] gap-4 p-7 sm:p-10">
-              <span className="text-xs text-white/35">{number}</span>
-              <div><h4 className="text-xl font-semibold">{title}</h4><p className="mt-2 text-sm leading-6 text-white/52">{detail}</p></div>
-            </li>
-          ))}
-        </ol>
+        <div className="grid min-h-[28rem] grid-cols-2 grid-rows-2 lg:min-h-0">
+          <div className="bg-[#6f806e]" />
+          <div className="bg-[#d8decf]" />
+          <div className="bg-[#9daa8b]" />
+          <div className="relative overflow-hidden">
+            <Image src="/demos/moss-garden-passage.png" alt="Deep green fern texture" fill sizes="(min-width: 1024px) 18vw, 50vw" className="object-cover transition-transform duration-1000 hover:scale-110" />
+          </div>
+        </div>
       </section>
 
-      <section id="moss-contact" className="px-6 py-24 sm:px-10 lg:px-14 lg:py-32">
-        <p className="text-[10px] uppercase tracking-[0.16em] text-[#203126]/45">Now booking autumn 2026</p>
-        <Link href="/demos/moss/contact" className="group mt-6 flex items-end justify-between border-y border-[#203126]/20 py-8">
-          <span className="text-5xl font-semibold tracking-[-0.07em] sm:text-8xl">Grow something lasting.</span>
+      <section id="moss-contact" className="px-6 py-20 sm:px-10 lg:px-14 lg:py-28">
+        <p className="text-[10px] uppercase tracking-[0.18em] text-[#203126]/45">Autumn 2026</p>
+        <Link href="/demos/moss/contact" className="group mt-5 flex items-end justify-between border-y border-[#203126]/20 py-8">
+          <span className="text-5xl font-semibold tracking-[-0.07em] sm:text-8xl">Grow with us.</span>
           <ArrowUpRight className="mb-2 size-9 transition-transform group-hover:-translate-y-2 group-hover:translate-x-2" aria-hidden="true" />
         </Link>
       </section>
@@ -140,70 +153,82 @@ export function NorthlineSite() {
     <div className="bg-[#f3f7fb] text-[#173a5a]">
       <NorthlineHeader active="home" />
 
-      <section id="northline-top" className="px-5 pb-8 sm:px-9">
-        <div className="relative min-h-[46rem] overflow-hidden rounded-[2rem] bg-[#bfd9ef]">
-          <Image src="/demos/northline-clinic.jpg" alt="Dentist speaking with a patient in a modern clinic" fill sizes="100vw" className="object-cover object-center" preload />
-          <div className="absolute inset-0 bg-[linear-gradient(90deg,rgba(23,58,90,.88)_0%,rgba(23,58,90,.46)_42%,rgba(23,58,90,.05)_72%)]" />
-          <div className="absolute inset-x-0 bottom-0 p-7 text-white sm:p-12 lg:p-16">
-            <h2 className="max-w-4xl text-[clamp(4rem,9vw,8.6rem)] font-semibold leading-[0.82] tracking-[-0.085em]">
-              Care, without the rush.
-            </h2>
-            <div className="mt-8 flex flex-wrap gap-3">
-              <Link href="/demos/northline/booking" className="rounded-full bg-[#ff725e] px-6 py-3 text-sm font-semibold text-white">New patient visit</Link>
+      <section id="northline-top" className="px-4 pb-5 sm:px-7 sm:pb-8">
+        <div className="grid min-h-[52rem] overflow-hidden rounded-[2rem] bg-[#dceef8] lg:grid-cols-[0.47fr_0.53fr]">
+          <div className="relative z-10 flex flex-col justify-between p-7 sm:p-12 lg:p-14">
+            <div className="flex items-center justify-between gap-4">
+              <span className="text-[10px] font-semibold uppercase tracking-[0.18em] text-[#173a5a]/55">Oakland · CA</span>
+              <span className="rounded-full border border-[#173a5a]/15 bg-white/45 px-4 py-2 text-[10px]">Accepting patients</span>
+            </div>
+            <div className="py-20 lg:py-0">
+              <h2 className="text-[clamp(4.5rem,8vw,8rem)] font-semibold leading-[0.75] tracking-[-0.085em]">Care feels<br /><span className="text-[#ff725e]">different</span> here.</h2>
+              <div className="mt-9 flex flex-wrap items-center gap-4"><Link href="/demos/northline/booking" className="rounded-full bg-[#ff725e] px-6 py-3 text-sm font-semibold text-white shadow-[0_16px_50px_rgba(255,114,94,.3)]">Book a first visit</Link><span className="text-xs text-[#173a5a]/45">40 minutes · no rush</span></div>
+            </div>
+            <p className="text-xs uppercase tracking-[0.16em] text-[#173a5a]/35">Talk · see · plan</p>
+          </div>
+          <div className="demo-film-grain relative min-h-[34rem] overflow-hidden border-t border-[#173a5a]/10 lg:min-h-0 lg:border-t-0 lg:border-l">
+            <NorthlineKineticField />
+            <div className="absolute bottom-7 right-7 z-10 rounded-[1.5rem] bg-white/72 p-5 shadow-[0_20px_80px_rgba(23,58,90,.18)] backdrop-blur-xl sm:bottom-10 sm:right-10">
+              <div className="flex items-center gap-3"><CalendarDays className="size-5 text-[#ff725e]" /><span className="text-xs font-semibold">Next opening</span></div>
+              <p className="mt-3 text-3xl font-semibold tracking-[-0.055em]">Tue · 9:30</p>
             </div>
           </div>
         </div>
       </section>
 
-      <section id="northline-services" className="px-6 py-24 sm:px-10 lg:px-14 lg:py-32">
-        <div className="grid gap-12 lg:grid-cols-[0.34fr_0.66fr]">
+      <section id="northline-services" className="px-5 py-20 sm:px-9 lg:py-28">
+        <div className="flex flex-col justify-between gap-5 sm:flex-row sm:items-end">
           <div>
-            <p className="text-[10px] font-semibold uppercase tracking-[0.16em] text-[#ff725e]">Whole-person dentistry</p>
-            <h3 className="mt-5 text-4xl font-semibold leading-[0.96] tracking-[-0.06em] sm:text-5xl">Everything your smile needs. Nothing it doesn&apos;t.</h3>
+            <p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-[#ff725e]">Whole-person dentistry</p>
+            <h3 className="mt-4 max-w-3xl text-5xl font-semibold leading-[0.9] tracking-[-0.07em] sm:text-7xl">Everything you need.<br />Nothing you don&apos;t.</h3>
           </div>
-          <div className="grid gap-4 sm:grid-cols-3">
-            {[
-              ["01", "Everyday care", "Exams, cleanings, fillings, and practical prevention."],
-              ["02", "Restorative", "Natural-looking crowns, bridges, and implant restoration."],
-              ["03", "Cosmetic", "Whitening and subtle changes planned around your face."],
-            ].map(([number, title, detail]) => (
-              <article key={number} className="rounded-[1.5rem] border border-[#173a5a]/12 bg-white p-6 shadow-[0_18px_50px_rgba(23,58,90,.08)]">
-                <span className="grid size-9 place-items-center rounded-full bg-[#dbeaf6] text-xs font-semibold">{number}</span>
-                <h4 className="mt-16 text-xl font-semibold tracking-[-0.035em]">{title}</h4>
-                <p className="mt-3 text-sm leading-6 text-[#173a5a]/58">{detail}</p>
-              </article>
-            ))}
-          </div>
+          <span className="text-sm text-[#173a5a]/45">01—03</span>
+        </div>
+        <div className="mt-12 grid gap-4 sm:grid-cols-3">
+          {[
+            ["01", "Everyday", "bg-[#d9edf8]"],
+            ["02", "Restore", "bg-[#173a5a] text-white"],
+            ["03", "Refine", "bg-[#ff725e] text-white"],
+          ].map(([number, title, color], index) => (
+            <article key={number} className={`group relative min-h-[27rem] overflow-hidden rounded-[2rem] p-6 ${color}`}>
+              <span className="relative z-10 text-xs font-semibold opacity-55">{number}</span>
+              <div className="absolute inset-0 grid place-items-center">
+                <div className={`demo-smile-arc demo-smile-arc-${index + 1}`} />
+              </div>
+              <h4 className="absolute bottom-6 left-6 text-3xl font-semibold tracking-[-0.055em]">{title}</h4>
+            </article>
+          ))}
         </div>
       </section>
 
-      <section id="northline-visit" className="mx-5 overflow-hidden rounded-[2rem] bg-[#173a5a] text-white sm:mx-9">
-        <div className="grid lg:grid-cols-[0.45fr_0.55fr]">
-          <div className="p-7 sm:p-12 lg:p-16">
-            <p className="text-[10px] uppercase tracking-[0.16em] text-[#ffb0a3]">Your first visit</p>
-            <h3 className="mt-6 text-5xl font-semibold leading-[0.9] tracking-[-0.07em] sm:text-7xl">Clear from the start.</h3>
-            <p className="mt-6 max-w-md text-sm leading-7 text-white/58">We leave room for questions, explain every option, and never turn a conversation into a sales pitch.</p>
+      <section id="northline-visit" className="mx-4 overflow-hidden rounded-[2rem] bg-[#173a5a] text-white sm:mx-7">
+        <div className="grid lg:grid-cols-[0.58fr_0.42fr]">
+          <div className="relative min-h-[34rem] overflow-hidden lg:min-h-[44rem]">
+            <Image src="/demos/northline-clinic.jpg" alt="A relaxed conversation in the Northline clinic" fill sizes="(min-width: 1024px) 58vw, 100vw" className="demo-gallery-image object-cover" />
+            <div className="absolute inset-0 bg-gradient-to-t from-[#173a5a]/70 via-transparent to-transparent" />
+            <p className="absolute bottom-7 left-7 text-sm font-semibold sm:bottom-10 sm:left-10">Real conversation. Clear choices.</p>
           </div>
-          <ol className="divide-y divide-white/14 border-t border-white/14 lg:border-t-0 lg:border-l">
-            {[
-              ["01", "Talk first", "Tell us what feels good, what doesn't, and what you want next."],
-              ["02", "Look together", "Digital imaging and a gentle exam, explained in real time."],
-              ["03", "Leave with a plan", "Priorities, timing, and cost—written in plain language."],
-            ].map(([number, title, detail]) => (
-              <li key={number} className="grid grid-cols-[3rem_1fr] gap-4 p-7 sm:p-10">
-                <span className="text-xs text-[#ff8f7d]">{number}</span>
-                <div><h4 className="text-xl font-semibold">{title}</h4><p className="mt-2 text-sm leading-6 text-white/55">{detail}</p></div>
-              </li>
-            ))}
-          </ol>
+          <div className="flex flex-col justify-between p-7 sm:p-12 lg:p-14">
+            <div>
+              <p className="text-[10px] uppercase tracking-[0.18em] text-[#ff9a89]">Your first visit</p>
+              <h3 className="mt-6 text-5xl font-semibold leading-[0.88] tracking-[-0.07em] sm:text-7xl">Clear from<br />the start.</h3>
+            </div>
+            <ol className="mt-16 space-y-3">
+              {["Talk", "See", "Plan"].map((title, index) => (
+                <li key={title} className="flex items-center justify-between rounded-full border border-white/18 px-5 py-4">
+                  <span className="text-sm font-semibold">{title}</span><span className="text-xs text-[#ff8f7d]">0{index + 1}</span>
+                </li>
+              ))}
+            </ol>
+          </div>
         </div>
       </section>
 
       <section id="northline-contact" className="px-6 py-24 sm:px-10 lg:px-14 lg:py-32">
         <div className="grid gap-10 lg:grid-cols-[0.62fr_0.38fr] lg:items-end">
           <div>
-            <p className="text-[10px] uppercase tracking-[0.16em] text-[#ff725e]">Accepting new patients</p>
-            <h3 className="mt-5 text-5xl font-semibold leading-[0.9] tracking-[-0.07em] sm:text-8xl">Your calmer visit starts here.</h3>
+            <p className="text-[10px] uppercase tracking-[0.18em] text-[#ff725e]">Next opening</p>
+            <h3 className="mt-5 text-5xl font-semibold leading-[0.9] tracking-[-0.07em] sm:text-8xl">Ready when you are.</h3>
           </div>
           <div className="rounded-[1.5rem] border border-[#173a5a]/12 bg-white p-6">
             <div className="flex items-center gap-3 border-b border-[#173a5a]/12 pb-4"><CalendarDays className="size-5 text-[#ff725e]" /><span className="text-sm font-semibold">Next available</span></div>
@@ -226,56 +251,53 @@ export function SeraSite() {
     <div className="bg-[#f6e8d8] text-[#5d2d26]">
       <SeraHeader active="home" />
 
-      <section id="sera-top" className="grid min-h-[48rem] lg:grid-cols-2">
-        <div className="relative min-h-[34rem] overflow-hidden lg:order-2">
-          <Image src="/demos/sera-bread.jpg" alt="Freshly baked artisan bread on display" fill sizes="(min-width: 1024px) 50vw, 100vw" className="object-cover" preload />
-          <div className="absolute inset-0 bg-gradient-to-t from-[#5d2d26]/28 to-transparent" />
-          <div className="absolute right-6 top-6 grid size-28 place-items-center rounded-full bg-[#ff765f] text-center text-xs font-semibold uppercase tracking-[0.1em] text-white shadow-xl">Baked<br />today</div>
+      <section id="sera-top" className="grid min-h-[52rem] overflow-hidden bg-[#f6e8d8] lg:grid-cols-[0.54fr_0.46fr]">
+        <div className="demo-film-grain relative min-h-[36rem] overflow-hidden bg-[#5d2d26] lg:min-h-0">
+          <SeraKineticField />
+          <div className="absolute left-6 top-6 z-10 flex size-24 rotate-[-9deg] items-center justify-center rounded-full bg-[#ff765f] text-center text-[10px] font-bold uppercase tracking-[0.14em] text-white shadow-2xl sm:left-10 sm:top-10 sm:size-28">First light<br />First batch</div>
         </div>
-        <div className="flex flex-col p-6 sm:p-10 lg:p-14">
-          <div className="my-auto py-20">
-            <h2 className="text-[clamp(4.8rem,11vw,10rem)] font-semibold leading-[0.72] tracking-[-0.09em]">Fresh by <span className="font-serif font-normal italic text-[#ff765f]">seven.</span></h2>
-            <p className="mt-8 max-w-sm text-base leading-7 text-[#5d2d26]/62">Small-batch bread, laminated pastry, and really good coffee. Until sold out.</p>
+        <div className="relative z-10 flex flex-col justify-between p-6 sm:p-10 lg:p-14">
+          <p className="font-serif text-3xl italic text-[#ff765f] sm:text-4xl">Doors at seven.</p>
+          <div className="py-20 lg:py-0">
+            <h2 className="text-[clamp(5rem,9vw,9rem)] font-semibold leading-[0.68] tracking-[-0.095em]">Come<br />hungry.</h2>
+            <a href="#sera-menu" className="group mt-10 flex w-fit items-center gap-4 border-b border-[#5d2d26]/35 pb-3 text-sm font-semibold">See today&apos;s bake <ArrowRight className="size-4 transition-transform group-hover:translate-x-2" aria-hidden="true" /></a>
           </div>
-          <a href="#sera-menu" className="flex items-center justify-between border-t border-[#5d2d26]/20 pt-5 text-sm font-semibold">Today&apos;s bake <ArrowRight className="size-4" /></a>
-        </div>
-      </section>
-
-      <section id="sera-menu" className="border-y border-[#5d2d26]/18 bg-[#fff6ec] px-6 py-24 sm:px-10 lg:px-14 lg:py-32">
-        <div className="grid gap-12 lg:grid-cols-[0.34fr_0.66fr]">
-          <div>
-            <p className="text-[10px] uppercase tracking-[0.16em] text-[#ff765f]">Today · while it lasts</p>
-            <h3 className="mt-5 font-serif text-6xl italic tracking-[-0.05em] sm:text-7xl">The bake.</h3>
-          </div>
-          <div className="divide-y divide-[#5d2d26]/16 border-y border-[#5d2d26]/16">
-            {[
-              ["Country sourdough", "Stone-milled wheat · 900g", "$12"],
-              ["Morning bun", "Brown sugar · orange · cardamom", "$6"],
-              ["Olive loaf", "Castelvetrano olive · rosemary", "$14"],
-              ["Seasonal danish", "Plum · almond cream", "$7"],
-              ["Focaccia slice", "Tomato · sea salt · oregano", "$8"],
-            ].map(([item, detail, price]) => (
-              <div key={item} className="grid grid-cols-[1fr_auto] gap-4 py-5">
-                <div><h4 className="text-lg font-semibold tracking-[-0.025em]">{item}</h4><p className="mt-1 text-xs text-[#5d2d26]/52">{detail}</p></div>
-                <span className="font-mono text-sm">{price}</span>
-              </div>
-            ))}
-          </div>
+          <p className="text-xs uppercase tracking-[0.16em] text-[#5d2d26]/38">Bread · pastry · coffee</p>
         </div>
       </section>
 
-      <section id="sera-story" className="grid lg:grid-cols-2">
-        <div className="bg-[#ff765f] p-7 text-[#fff6ec] sm:p-12 lg:p-16">
-          <p className="text-[10px] uppercase tracking-[0.16em] text-white/68">Since 2019</p>
-          <blockquote className="mt-16 font-serif text-4xl italic leading-[1.08] tracking-[-0.04em] sm:text-6xl">“Flour, water, salt, time. Nothing to hide behind.”</blockquote>
-          <p className="mt-10 text-sm text-white/62">Mara Sera · Baker and owner</p>
+      <section id="sera-menu" className="bg-[#fff6ec] px-5 py-20 sm:px-9 lg:py-28">
+        <div className="flex items-end justify-between gap-8">
+          <div><p className="text-[10px] uppercase tracking-[0.18em] text-[#ff765f]">Today · while it lasts</p><h3 className="mt-4 font-serif text-6xl italic tracking-[-0.06em] sm:text-8xl">The bake.</h3></div>
+          <span className="hidden text-sm text-[#5d2d26]/42 sm:block">Tuesday / 01 September</span>
         </div>
-        <div className="flex flex-col justify-between p-7 sm:p-12 lg:p-16">
-          <h3 className="text-5xl font-semibold leading-[0.92] tracking-[-0.065em] sm:text-7xl">Made slowly. Eaten immediately.</h3>
-          <div className="mt-20 grid gap-5 border-t border-[#5d2d26]/18 pt-6 sm:grid-cols-2">
-            <p className="text-sm leading-7 text-[#5d2d26]/62">Every loaf starts with our six-year starter and ferments overnight for flavor, texture, and a crust worth fighting over.</p>
-            <p className="text-sm leading-7 text-[#5d2d26]/62">We work with regional grain, seasonal fruit, and producers whose names we know.</p>
+        <div className="mt-10 grid gap-3 lg:grid-cols-12 lg:grid-rows-[18rem_18rem]">
+          <figure className="group relative min-h-[32rem] overflow-hidden lg:col-span-5 lg:row-span-2 lg:min-h-0">
+            <Image src="/demos/sera-bread.jpg" alt="A bakery counter filled with artisan sourdough" fill sizes="(min-width: 1024px) 42vw, 100vw" className="demo-gallery-image object-cover" />
+            <div className="absolute inset-0 bg-gradient-to-t from-[#4b201a]/82 via-transparent to-transparent" />
+            <figcaption className="absolute bottom-6 left-6 text-[#fff6ec]"><span className="font-serif text-4xl italic">Country</span><span className="ml-3 font-mono text-sm text-white/65">$12</span></figcaption>
+          </figure>
+          <div className="relative flex min-h-[18rem] overflow-hidden bg-[#ff765f] p-6 text-[#fff6ec] lg:col-span-4">
+            <div className="absolute -right-8 -top-8 size-48 rotate-12 rounded-[2.5rem] border-[18px] border-[#ffb09e]/55 transition-transform duration-700 hover:rotate-45" />
+            <p className="mt-auto font-serif text-4xl italic">Morning bun <span className="font-mono text-sm not-italic text-white/68">$6</span></p>
           </div>
+          <div className="relative flex min-h-[18rem] overflow-hidden bg-[#5d2d26] p-6 text-[#fff6ec] lg:col-span-3">
+            <div className="absolute right-6 top-6 size-28 rounded-full bg-[#f4c96f] shadow-[0_0_0_20px_rgba(244,201,111,.14)]" />
+            <p className="mt-auto font-serif text-4xl italic">Danish <span className="font-mono text-sm not-italic text-white/60">$7</span></p>
+          </div>
+          <div className="relative flex min-h-[18rem] overflow-hidden bg-[#f4c96f] p-6 lg:col-span-7">
+            <div className="sera-menu-wave" aria-hidden="true" />
+            <p className="relative z-10 mt-auto font-serif text-4xl italic">Olive loaf <span className="font-mono text-sm not-italic text-[#5d2d26]/58">$14</span></p>
+          </div>
+        </div>
+      </section>
+
+      <section id="sera-story" className="grid bg-[#ff765f] text-[#fff6ec] lg:grid-cols-[0.32fr_0.68fr]">
+        <div className="flex min-h-[18rem] items-center justify-center border-b border-white/20 p-7 lg:min-h-0 lg:border-r lg:border-b-0">
+          <div className="grid size-40 place-items-center rounded-full border border-white/35 text-center font-mono text-xs leading-5">FERMENTED<br />18 HOURS</div>
+        </div>
+        <div className="p-7 sm:p-12 lg:p-16">
+          <blockquote className="max-w-5xl font-serif text-5xl italic leading-[0.98] tracking-[-0.05em] sm:text-7xl">“Flour, water, salt, time.”</blockquote>
         </div>
       </section>
 
@@ -283,7 +305,7 @@ export function SeraSite() {
         <div className="grid gap-12 lg:grid-cols-[1fr_0.8fr] lg:items-end">
           <div>
             <p className="font-serif text-3xl italic text-[#ff9a86]">Come early.</p>
-            <h3 className="mt-5 text-6xl font-semibold leading-[0.82] tracking-[-0.08em] sm:text-9xl">See you at seven.</h3>
+            <h3 className="mt-5 text-6xl font-semibold leading-[0.82] tracking-[-0.08em] sm:text-9xl">Seven sharp.</h3>
           </div>
           <div className="grid gap-5 sm:grid-cols-2">
             <div className="border-t border-white/20 pt-5"><MapPin className="size-5 text-[#ff765f]" /><p className="mt-5 text-sm leading-6 text-white/65">207 Pine Avenue<br />Long Beach, CA</p></div>
