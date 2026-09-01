@@ -1,12 +1,47 @@
+# JavaScript and framework output
 node_modules/
+.next/
+*.tsbuildinfo
+
+# Python caches and build output
 __pycache__/
-*.pyc
+*.py[cod]
+*.egg-info/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.venv/
+build/
+dist/
+
+# Local configuration and deployment state
 .env
-*.db-wal
-*.db-shm
+.env.*
+!.env.example
+.vercel/
+
+# Local databases and resumable-run state
+*.db
+*.db-*
+*.duckdb
+*.duckdb.wal
+*.sqlite
+*.sqlite3
+*.progress.json
+*.pid
+
+# Runtime logs and generated lead data
+*.log
+Google Maps Scraping/exports/
+Google Maps Scraping/experiments/
+Google Maps Scraping/logs/
+Google Maps Scraping/outputs/
+Google Maps Scraping/diagnostics/*.html
+Google Maps Scraping/diagnostics/*.json
+FMCSA/*.csv
+Foursquare/exports/
+Overture/*.csv
+
+# OS metadata
 .DS_Store
 Thumbs.db
-
-.vercel
-.env*
-!.env.example
