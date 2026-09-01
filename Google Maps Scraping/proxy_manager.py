@@ -101,7 +101,7 @@ class ProxyManager:
         custom_urls: Optional[List[str]] = None,
         global_failure_threshold: int = 8,
     ) -> None:
-        self._lock = threading.Lock()
+        self._lock = threading.RLock()
         self._routes: List[ProxyRoute] = []
         self._index: int = 0
         self.global_consecutive_failures: int = 0

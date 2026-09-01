@@ -1,0 +1,3 @@
+*.progress.json
+*.stdout.log
+*.stderr.log
