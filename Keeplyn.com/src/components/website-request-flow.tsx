@@ -355,7 +355,9 @@ export function WebsiteRequestFlow({
 
       if (requestError) throw requestError;
 
-      setRequestId(Number(data));
+      const createdRequestId = Number(data);
+      setRequestId(createdRequestId);
+      void fetch(`/api/requests/${createdRequestId}/received-email`, { method: "POST" });
     } catch (submissionError) {
       if (uploadedPaths.length) {
         await supabase.storage.from(WEBSITE_REQUEST_PHOTO_BUCKET).remove(uploadedPaths);
@@ -389,9 +391,12 @@ export function WebsiteRequestFlow({
               Your brief is safely in our hands. Keeplyn will review everything and send your custom demo within two business days.
             </p>
             <div className="mt-10 flex flex-wrap gap-3">
-              <Link href="/" className="button-primary">
-                Back to Keeplyn
+              <Link href={`/portal/requests/${requestId}`} className="button-primary">
+                Open request details
                 <ArrowRight className="size-4" aria-hidden="true" />
+              </Link>
+              <Link href="/portal" className="button-secondary">
+                Customer portal
               </Link>
               <a href="mailto:support@keeplyn.com" className="button-secondary">
                 Ask a question
