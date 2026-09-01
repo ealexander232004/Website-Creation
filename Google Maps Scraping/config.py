@@ -10,6 +10,7 @@ import os
 from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Optional
+from urllib.parse import quote
 
 from dotenv import load_dotenv
 
@@ -18,6 +19,18 @@ BASE_DIR = Path(__file__).resolve().parent
 WORKSPACE_DIR = BASE_DIR.parent
 PROXIES_DIR = WORKSPACE_DIR / "Proxies"
 CAPTCHA_DIR = WORKSPACE_DIR / "Captcha Solver"
+
+
+def _database_url_from_environment() -> str:
+    explicit_url = os.getenv("DATABASE_URL")
+    if explicit_url:
+        return explicit_url
+    user = quote(os.getenv("POSTGRES_USER", "gmaps_scraper"), safe="")
+    password = quote(os.getenv("POSTGRES_PASSWORD", "gmaps_scraper"), safe="")
+    host = os.getenv("POSTGRES_HOST", "localhost")
+    port = os.getenv("POSTGRES_PORT", "5432")
+    database = quote(os.getenv("POSTGRES_DB", "gmaps_scraper"), safe="")
+    return f"postgresql://{user}:{password}@{host}:{port}/{database}"
 
 # Attempt loading environment variables from known sibling bundles if available
 if (PROXIES_DIR / "proxies.env").is_file():
@@ -58,7 +71,7 @@ class ScraperConfig:
     no_website_only: bool = True
     include_social_media_as_no_website: bool = True
     include_deprecated_google_sites: bool = True
-    include_free_builders_as_no_website: bool = True
+    include_free_builders_as_no_website: bool = False
     min_reviews: int = 0
     min_rating: float = 0.0
     unclaimed_only: bool = False
@@ -78,8 +91,13 @@ class ScraperConfig:
     capsolver_api_key: Optional[str] = os.getenv("CAPSOLVER_API_KEY")
     auto_solve_captchas: bool = True
 
+    # Integrated Email Enrichment
+    email_extraction_enabled: bool = True
+    email_workers: int = 10
+    email_poll_seconds: float = 2.0
+
     # Database & Storage
-    database_path: Path = BASE_DIR / "gmaps_leads.db"
+    database_url: str = field(default_factory=_database_url_from_environment)
     export_dir: Path = BASE_DIR / "exports"
 
     def __post_init__(self) -> None:

@@ -47,7 +47,7 @@ class CampaignRunner:
             scroll_delay_max=1.5,
             detail_extraction=False,
         )
-        self.db = Database(self.config.database_path)
+        self.db = Database(self.config.database_url)
         self.proxy_manager = ProxyManager(proxy_urls_file=PROXIES_DIR / "proxy-urls.txt")
         self.captcha_handler = CaptchaHandler(api_key=self.config.capsolver_api_key)
         self.exporter = LeadExporter(self.db)
