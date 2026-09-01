@@ -13,6 +13,9 @@ import {
   SeraHeader,
   type DemoSlug,
 } from "@/components/demo-detail-pages";
+import { DemoAboutPage, DemoFaqPage } from "@/components/demo-info-pages";
+import { MossVines, SeraProofingField } from "@/components/demo-visual-systems";
+import { NorthlineCareCore } from "@/components/northline-care-core";
 
 const demoTabs = [
   { id: "moss", name: "Moss & Mortar", type: "Landscape studio" },
@@ -20,7 +23,7 @@ const demoTabs = [
   { id: "sera", name: "Sera", type: "Local bakery" },
 ] as const;
 
-export type DemoPage = "home" | "pricing" | "contact" | "booking";
+export type DemoPage = "home" | "about" | "faq" | "pricing" | "contact" | "booking";
 
 const visualLayers = [0, 1, 2, 3, 4, 5, 6, 7, 8] as const;
 const visualParticles = [0, 1, 2, 3, 4, 5] as const;
@@ -65,52 +68,54 @@ function SeraKineticField() {
 
 export function MossSite() {
   return (
-    <div className="bg-[#dfe5d6] text-[#203126]">
+    <div className="moss-world relative overflow-hidden bg-[#dfe5d6] text-[#203126]">
       <MossHeader active="home" />
 
-      <section id="moss-top" className="grid min-h-[52rem] overflow-hidden bg-[#17261c] text-[#f3f5ed] lg:grid-cols-[0.46fr_0.54fr]">
+      <section id="moss-top" className="moss-hero relative isolate grid min-h-[54rem] overflow-hidden bg-[#17261c] text-[#f3f5ed] shadow-[0_44px_100px_rgba(15,28,20,.28)] lg:grid-cols-[0.46fr_0.54fr]">
+        <MossVines variant="hero" className="absolute inset-0 z-[6] size-full" />
         <div className="relative z-10 flex flex-col justify-between p-6 sm:p-10 lg:p-14">
           <div className="flex items-start justify-between gap-6">
             <p className="text-[10px] uppercase tracking-[0.18em] text-[#c9ff3b]">Landscape / California</p>
-            <p className="text-right font-mono text-[10px] leading-5 tracking-[0.12em] text-white/35">38.57° N<br />121.47° W</p>
+            <p className="text-right font-mono text-[10px] leading-5 tracking-[0.12em] text-white/58">38.57° N<br />121.47° W</p>
           </div>
           <div className="py-20 lg:py-0">
             <h2 className="text-[clamp(5rem,9vw,9rem)] font-semibold leading-[0.7] tracking-[-0.09em]">Wild,<span className="block font-serif font-normal italic text-[#c9ff3b]">with intent.</span></h2>
-            <a href="#moss-work" className="group mt-12 flex w-fit items-center gap-4 border-b border-white/35 pb-3 text-sm font-semibold">Explore the ground <ArrowRight className="size-4 transition-transform group-hover:translate-x-2" aria-hidden="true" /></a>
+            <Link href="/demos/moss/about" className="group mt-12 flex w-fit items-center gap-4 border-b border-white/35 pb-3 text-sm font-semibold">Meet the studio <ArrowRight className="size-4 transition-transform group-hover:translate-x-2" aria-hidden="true" /></Link>
           </div>
-          <p className="text-xs uppercase tracking-[0.16em] text-white/32">Land · light · water</p>
+          <p className="text-xs uppercase tracking-[0.16em] text-white/58">Land · light · water</p>
         </div>
-        <div className="demo-film-grain relative min-h-[32rem] overflow-hidden border-t border-white/12 lg:min-h-0 lg:border-t-0 lg:border-l">
+        <div className="demo-film-grain relative min-h-[32rem] overflow-hidden border-t border-white/12 shadow-[-32px_0_90px_rgba(3,12,6,.34)] lg:min-h-0 lg:border-t-0 lg:border-l">
           <MossKineticField />
           <div className="absolute bottom-6 right-6 z-10 grid size-24 place-items-center rounded-full border border-[#c9ff3b]/55 text-center text-[10px] uppercase tracking-[0.14em] text-[#c9ff3b] sm:bottom-10 sm:right-10">Growing<br />system 01</div>
         </div>
       </section>
 
-      <section id="moss-work" className="px-5 py-20 sm:px-8 lg:px-12 lg:py-28">
-        <div className="flex items-end justify-between gap-8 pb-8">
+      <section id="moss-work" className="relative isolate px-5 py-20 sm:px-8 lg:px-12 lg:py-28">
+        <MossVines variant="thread" className="absolute -right-[20%] top-[8%] z-[3] h-[86%] w-[78%] opacity-55" />
+        <div className="relative z-10 flex items-end justify-between gap-8 pb-8">
           <div>
-            <p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-[#203126]/48">Selected ground · 24—26</p>
+            <p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-[#203126]/72">Selected ground · 24—26</p>
             <h3 className="mt-4 text-5xl font-semibold tracking-[-0.07em] sm:text-7xl">Three landscapes.</h3>
           </div>
-          <span className="hidden font-serif text-4xl italic text-[#203126]/32 sm:block">One point of view.</span>
+          <span className="hidden font-serif text-4xl italic text-[#203126]/62 sm:block">One point of view.</span>
         </div>
-        <div className="grid auto-rows-[15rem] gap-3 sm:grid-cols-12 sm:auto-rows-[13rem] lg:auto-rows-[16rem]">
-          <figure className="group relative overflow-hidden sm:col-span-8 sm:row-span-2">
+        <div className="relative z-[4] grid auto-rows-[15rem] gap-4 sm:grid-cols-12 sm:auto-rows-[13rem] lg:auto-rows-[16rem]">
+          <figure className="moss-depth-card group relative overflow-hidden rounded-[1.75rem] sm:col-span-8 sm:row-span-2">
             <Image src="/demos/moss-water-garden.png" alt="Native grasses surrounding a stone-lined water garden" fill sizes="(min-width: 640px) 66vw, 100vw" className="demo-gallery-image object-cover" />
             <div className="absolute inset-0 bg-gradient-to-t from-[#101d14]/70 via-transparent to-transparent" />
             <figcaption className="absolute bottom-5 left-5 text-sm font-semibold text-white">South Slope <span className="ml-2 font-normal text-white/55">01</span></figcaption>
           </figure>
-          <figure className="group relative overflow-hidden sm:col-span-4 sm:row-span-3">
+          <figure className="moss-depth-card group relative overflow-hidden rounded-[1.75rem] sm:col-span-4 sm:row-span-3">
             <Image src="/demos/moss-garden-passage.png" alt="Fern-lined stone garden passage" fill sizes="(min-width: 640px) 34vw, 100vw" className="demo-gallery-image object-cover" />
             <div className="absolute inset-0 bg-gradient-to-t from-[#101d14]/72 via-transparent to-transparent" />
             <figcaption className="absolute bottom-5 left-5 text-sm font-semibold text-white">Night Passage <span className="ml-2 font-normal text-white/55">02</span></figcaption>
           </figure>
-          <figure className="group relative overflow-hidden sm:col-span-5 sm:row-span-2">
+          <figure className="moss-depth-card group relative overflow-hidden rounded-[1.75rem] sm:col-span-5 sm:row-span-2">
             <Image src="/demos/moss-garden.jpg" alt="Lush courtyard garden illuminated at dusk" fill sizes="(min-width: 640px) 42vw, 100vw" className="demo-gallery-image object-cover" />
             <div className="absolute inset-0 bg-gradient-to-t from-[#101d14]/72 via-transparent to-transparent" />
             <figcaption className="absolute bottom-5 left-5 text-sm font-semibold text-white">River House <span className="ml-2 font-normal text-white/55">03</span></figcaption>
           </figure>
-          <div className="relative flex overflow-hidden bg-[#203126] p-6 text-[#edf1e9] sm:col-span-3 sm:row-span-2">
+          <div className="moss-depth-card relative flex overflow-hidden rounded-[1.75rem] bg-[#203126] p-6 text-[#edf1e9] sm:col-span-3 sm:row-span-2">
             <div className="absolute -right-12 -top-12 size-44 rounded-full border border-[#c9ff3b]/45" />
             <div className="absolute right-7 top-7 size-14 rounded-full bg-[#c9ff3b]" />
             <p className="mt-auto font-serif text-3xl italic leading-none">Land.<br />Light.<br />Water.</p>
@@ -118,12 +123,13 @@ export function MossSite() {
         </div>
       </section>
 
-      <section id="moss-approach" className="grid bg-[#17261c] text-[#edf1e9] lg:grid-cols-[0.64fr_0.36fr]">
-        <div className="p-7 sm:p-12 lg:p-16">
+      <section id="moss-approach" className="relative isolate grid overflow-hidden bg-[#17261c] text-[#edf1e9] shadow-[0_42px_100px_rgba(15,28,20,.24)] lg:grid-cols-[0.64fr_0.36fr]">
+        <MossVines variant="canopy" className="absolute inset-0 z-0 size-full opacity-45" />
+        <div className="relative z-10 p-7 sm:p-12 lg:p-16">
           <p className="text-[10px] uppercase tracking-[0.18em] text-[#c9ff3b]">The method</p>
           <h3 className="mt-12 text-[clamp(4rem,8vw,8rem)] font-semibold leading-[0.78] tracking-[-0.08em]">Listen.<br />Shape.<br /><span className="font-serif font-normal italic text-[#c9ff3b]">Let grow.</span></h3>
         </div>
-        <div className="grid min-h-[28rem] grid-cols-2 grid-rows-2 lg:min-h-0">
+        <div className="relative z-[2] grid min-h-[28rem] grid-cols-2 grid-rows-2 shadow-[-30px_0_80px_rgba(4,14,8,.42)] lg:min-h-0">
           <div className="bg-[#6f806e]" />
           <div className="bg-[#d8decf]" />
           <div className="bg-[#9daa8b]" />
@@ -141,7 +147,7 @@ export function MossSite() {
         </Link>
       </section>
 
-      <footer className="flex flex-col justify-between gap-4 border-t border-[#203126]/20 px-6 py-7 text-xs text-[#203126]/52 sm:flex-row sm:px-10 lg:px-14">
+      <footer className="flex flex-col justify-between gap-4 border-t border-[#203126]/20 px-6 py-7 text-xs text-[#203126]/72 sm:flex-row sm:px-10 lg:px-14">
         <span>Moss &amp; Mortar Landscape Studio</span><span>© 2026</span>
       </footer>
     </div>
@@ -150,25 +156,27 @@ export function MossSite() {
 
 export function NorthlineSite() {
   return (
-    <div className="bg-[#f3f7fb] text-[#173a5a]">
+    <div className="northline-world bg-[#f3f7fb] text-[#173a5a]">
       <NorthlineHeader active="home" />
 
       <section id="northline-top" className="px-4 pb-5 sm:px-7 sm:pb-8">
-        <div className="grid min-h-[52rem] overflow-hidden rounded-[2rem] bg-[#dceef8] lg:grid-cols-[0.47fr_0.53fr]">
+        <div className="northline-depth-card grid min-h-[54rem] overflow-hidden rounded-[2.5rem] bg-[#dceef8] lg:grid-cols-[0.47fr_0.53fr]">
           <div className="relative z-10 flex flex-col justify-between p-7 sm:p-12 lg:p-14">
             <div className="flex items-center justify-between gap-4">
               <span className="text-[10px] font-semibold uppercase tracking-[0.18em] text-[#173a5a]/55">Oakland · CA</span>
               <span className="rounded-full border border-[#173a5a]/15 bg-white/45 px-4 py-2 text-[10px]">Accepting patients</span>
             </div>
             <div className="py-20 lg:py-0">
-              <h2 className="text-[clamp(4.5rem,8vw,8rem)] font-semibold leading-[0.75] tracking-[-0.085em]">Care feels<br /><span className="text-[#ff725e]">different</span> here.</h2>
+              <h2 className="text-[clamp(4.5rem,8vw,8rem)] font-semibold leading-[0.75] tracking-[-0.085em]">Care feels<br /><span className="text-[#c9483c]">different</span> here.</h2>
               <div className="mt-9 flex flex-wrap items-center gap-4"><Link href="/demos/northline/booking" className="rounded-full bg-[#ff725e] px-6 py-3 text-sm font-semibold text-white shadow-[0_16px_50px_rgba(255,114,94,.3)]">Book a first visit</Link><span className="text-xs text-[#173a5a]/45">40 minutes · no rush</span></div>
             </div>
             <p className="text-xs uppercase tracking-[0.16em] text-[#173a5a]/35">Talk · see · plan</p>
           </div>
-          <div className="demo-film-grain relative min-h-[34rem] overflow-hidden border-t border-[#173a5a]/10 lg:min-h-0 lg:border-t-0 lg:border-l">
-            <NorthlineKineticField />
-            <div className="absolute bottom-7 right-7 z-10 rounded-[1.5rem] bg-white/72 p-5 shadow-[0_20px_80px_rgba(23,58,90,.18)] backdrop-blur-xl sm:bottom-10 sm:right-10">
+          <div className="demo-film-grain northline-3d-stage relative min-h-[34rem] overflow-hidden border-t border-[#173a5a]/10 lg:min-h-0 lg:border-t-0 lg:border-l">
+            <div className="absolute inset-0 opacity-65"><NorthlineKineticField /></div>
+            <div className="absolute inset-0 z-[2]"><NorthlineCareCore /></div>
+            <div className="absolute right-6 top-6 z-10 rounded-full border border-[#173a5a]/12 bg-white/60 px-4 py-2 text-[9px] font-semibold uppercase tracking-[0.14em] text-[#173a5a]/65 shadow-lg backdrop-blur-xl">Live 3D</div>
+            <div className="absolute bottom-7 right-7 z-10 rounded-[1.5rem] bg-white/72 p-5 shadow-[0_24px_90px_rgba(23,58,90,.24)] backdrop-blur-xl sm:bottom-10 sm:right-10">
               <div className="flex items-center gap-3"><CalendarDays className="size-5 text-[#ff725e]" /><span className="text-xs font-semibold">Next opening</span></div>
               <p className="mt-3 text-3xl font-semibold tracking-[-0.055em]">Tue · 9:30</p>
             </div>
@@ -190,7 +198,7 @@ export function NorthlineSite() {
             ["02", "Restore", "bg-[#173a5a] text-white"],
             ["03", "Refine", "bg-[#ff725e] text-white"],
           ].map(([number, title, color], index) => (
-            <article key={number} className={`group relative min-h-[27rem] overflow-hidden rounded-[2rem] p-6 ${color}`}>
+            <article key={number} className={`northline-depth-card group relative min-h-[27rem] overflow-hidden rounded-[2rem] p-6 ${color}`}>
               <span className="relative z-10 text-xs font-semibold opacity-55">{number}</span>
               <div className="absolute inset-0 grid place-items-center">
                 <div className={`demo-smile-arc demo-smile-arc-${index + 1}`} />
@@ -201,7 +209,7 @@ export function NorthlineSite() {
         </div>
       </section>
 
-      <section id="northline-visit" className="mx-4 overflow-hidden rounded-[2rem] bg-[#173a5a] text-white sm:mx-7">
+      <section id="northline-visit" className="northline-depth-card mx-4 overflow-hidden rounded-[2.5rem] bg-[#173a5a] text-white sm:mx-7">
         <div className="grid lg:grid-cols-[0.58fr_0.42fr]">
           <div className="relative min-h-[34rem] overflow-hidden lg:min-h-[44rem]">
             <Image src="/demos/northline-clinic.jpg" alt="A relaxed conversation in the Northline clinic" fill sizes="(min-width: 1024px) 58vw, 100vw" className="demo-gallery-image object-cover" />
@@ -230,7 +238,7 @@ export function NorthlineSite() {
             <p className="text-[10px] uppercase tracking-[0.18em] text-[#ff725e]">Next opening</p>
             <h3 className="mt-5 text-5xl font-semibold leading-[0.9] tracking-[-0.07em] sm:text-8xl">Ready when you are.</h3>
           </div>
-          <div className="rounded-[1.5rem] border border-[#173a5a]/12 bg-white p-6">
+          <div className="northline-depth-card rounded-[1.5rem] border border-[#173a5a]/12 bg-white p-6">
             <div className="flex items-center gap-3 border-b border-[#173a5a]/12 pb-4"><CalendarDays className="size-5 text-[#ff725e]" /><span className="text-sm font-semibold">Next available</span></div>
             <p className="mt-7 text-4xl font-semibold tracking-[-0.06em]">Tuesday 14</p>
             <p className="mt-2 text-sm text-[#173a5a]/55">9:30am · New patient exam</p>
@@ -248,21 +256,21 @@ export function NorthlineSite() {
 
 export function SeraSite() {
   return (
-    <div className="bg-[#f6e8d8] text-[#5d2d26]">
+    <div className="sera-world bg-[#f6e8d8] text-[#5d2d26]">
       <SeraHeader active="home" />
 
-      <section id="sera-top" className="grid min-h-[52rem] overflow-hidden bg-[#f6e8d8] lg:grid-cols-[0.54fr_0.46fr]">
-        <div className="demo-film-grain relative min-h-[36rem] overflow-hidden bg-[#5d2d26] lg:min-h-0">
+      <section id="sera-top" className="sera-hero grid min-h-[54rem] overflow-hidden bg-[#f6e8d8] shadow-[0_42px_100px_rgba(93,45,38,.20)] lg:grid-cols-[0.54fr_0.46fr]">
+        <div className="demo-film-grain relative min-h-[36rem] overflow-hidden bg-[#5d2d26] shadow-[32px_0_90px_rgba(93,45,38,.25)] lg:min-h-0">
           <SeraKineticField />
           <div className="absolute left-6 top-6 z-10 flex size-24 rotate-[-9deg] items-center justify-center rounded-full bg-[#ff765f] text-center text-[10px] font-bold uppercase tracking-[0.14em] text-white shadow-2xl sm:left-10 sm:top-10 sm:size-28">First light<br />First batch</div>
         </div>
         <div className="relative z-10 flex flex-col justify-between p-6 sm:p-10 lg:p-14">
-          <p className="font-serif text-3xl italic text-[#ff765f] sm:text-4xl">Doors at seven.</p>
+          <p className="font-serif text-3xl italic text-[#b94a3d] sm:text-4xl">Doors at seven.</p>
           <div className="py-20 lg:py-0">
             <h2 className="text-[clamp(5rem,9vw,9rem)] font-semibold leading-[0.68] tracking-[-0.095em]">Come<br />hungry.</h2>
-            <a href="#sera-menu" className="group mt-10 flex w-fit items-center gap-4 border-b border-[#5d2d26]/35 pb-3 text-sm font-semibold">See today&apos;s bake <ArrowRight className="size-4 transition-transform group-hover:translate-x-2" aria-hidden="true" /></a>
+            <Link href="/demos/sera/about" className="group mt-10 flex w-fit items-center gap-4 border-b border-[#5d2d26]/35 pb-3 text-sm font-semibold">Meet the bakehouse <ArrowRight className="size-4 transition-transform group-hover:translate-x-2" aria-hidden="true" /></Link>
           </div>
-          <p className="text-xs uppercase tracking-[0.16em] text-[#5d2d26]/38">Bread · pastry · coffee</p>
+          <p className="text-xs uppercase tracking-[0.16em] text-[#5d2d26]/68">Bread · pastry · coffee</p>
         </div>
       </section>
 
@@ -272,36 +280,37 @@ export function SeraSite() {
           <span className="hidden text-sm text-[#5d2d26]/42 sm:block">Tuesday / 01 September</span>
         </div>
         <div className="mt-10 grid gap-3 lg:grid-cols-12 lg:grid-rows-[18rem_18rem]">
-          <figure className="group relative min-h-[32rem] overflow-hidden lg:col-span-5 lg:row-span-2 lg:min-h-0">
+          <figure className="sera-depth-card group relative min-h-[32rem] overflow-hidden lg:col-span-5 lg:row-span-2 lg:min-h-0">
             <Image src="/demos/sera-bread.jpg" alt="A bakery counter filled with artisan sourdough" fill sizes="(min-width: 1024px) 42vw, 100vw" className="demo-gallery-image object-cover" />
             <div className="absolute inset-0 bg-gradient-to-t from-[#4b201a]/82 via-transparent to-transparent" />
             <figcaption className="absolute bottom-6 left-6 text-[#fff6ec]"><span className="font-serif text-4xl italic">Country</span><span className="ml-3 font-mono text-sm text-white/65">$12</span></figcaption>
           </figure>
-          <div className="relative flex min-h-[18rem] overflow-hidden bg-[#ff765f] p-6 text-[#fff6ec] lg:col-span-4">
+          <div className="sera-depth-card relative flex min-h-[18rem] overflow-hidden bg-[#ff765f] p-6 text-[#fff6ec] lg:col-span-4">
             <div className="absolute -right-8 -top-8 size-48 rotate-12 rounded-[2.5rem] border-[18px] border-[#ffb09e]/55 transition-transform duration-700 hover:rotate-45" />
             <p className="mt-auto font-serif text-4xl italic">Morning bun <span className="font-mono text-sm not-italic text-white/68">$6</span></p>
           </div>
-          <div className="relative flex min-h-[18rem] overflow-hidden bg-[#5d2d26] p-6 text-[#fff6ec] lg:col-span-3">
+          <div className="sera-depth-card relative flex min-h-[18rem] overflow-hidden bg-[#5d2d26] p-6 text-[#fff6ec] lg:col-span-3">
             <div className="absolute right-6 top-6 size-28 rounded-full bg-[#f4c96f] shadow-[0_0_0_20px_rgba(244,201,111,.14)]" />
             <p className="mt-auto font-serif text-4xl italic">Danish <span className="font-mono text-sm not-italic text-white/60">$7</span></p>
           </div>
-          <div className="relative flex min-h-[18rem] overflow-hidden bg-[#f4c96f] p-6 lg:col-span-7">
+          <div className="sera-depth-card relative flex min-h-[18rem] overflow-hidden bg-[#f4c96f] p-6 lg:col-span-7">
             <div className="sera-menu-wave" aria-hidden="true" />
             <p className="relative z-10 mt-auto font-serif text-4xl italic">Olive loaf <span className="font-mono text-sm not-italic text-[#5d2d26]/58">$14</span></p>
           </div>
         </div>
       </section>
 
-      <section id="sera-story" className="grid bg-[#ff765f] text-[#fff6ec] lg:grid-cols-[0.32fr_0.68fr]">
+      <section id="sera-story" className="relative isolate grid overflow-hidden bg-[#ff765f] text-[#fff6ec] shadow-[0_34px_90px_rgba(93,45,38,.22)] lg:grid-cols-[0.32fr_0.68fr]">
+        <SeraProofingField className="absolute -right-[18%] -top-[60%] z-0 h-[220%] w-[76%] opacity-30" />
         <div className="flex min-h-[18rem] items-center justify-center border-b border-white/20 p-7 lg:min-h-0 lg:border-r lg:border-b-0">
           <div className="grid size-40 place-items-center rounded-full border border-white/35 text-center font-mono text-xs leading-5">FERMENTED<br />18 HOURS</div>
         </div>
-        <div className="p-7 sm:p-12 lg:p-16">
+        <div className="relative z-10 p-7 sm:p-12 lg:p-16">
           <blockquote className="max-w-5xl font-serif text-5xl italic leading-[0.98] tracking-[-0.05em] sm:text-7xl">“Flour, water, salt, time.”</blockquote>
         </div>
       </section>
 
-      <section id="sera-visit" className="border-t border-[#5d2d26]/18 bg-[#5d2d26] px-6 py-24 text-[#fff6ec] sm:px-10 lg:px-14 lg:py-28">
+      <section id="sera-visit" className="relative border-t border-[#5d2d26]/18 bg-[#5d2d26] px-6 py-24 text-[#fff6ec] sm:px-10 lg:px-14 lg:py-28">
         <div className="grid gap-12 lg:grid-cols-[1fr_0.8fr] lg:items-end">
           <div>
             <p className="font-serif text-3xl italic text-[#ff9a86]">Come early.</p>
@@ -368,7 +377,7 @@ export function DemoShowcase({ initialDemo = "moss", initialPage = "home" }: Dem
       return;
     }
 
-    const match = href.match(/^\/demos\/(moss|northline|sera)(?:\/(pricing|contact|booking))?$/);
+    const match = href.match(/^\/demos\/(moss|northline|sera)(?:\/(about|faq|pricing|contact|booking))?$/);
     if (!match) return;
 
     event.preventDefault();
@@ -414,7 +423,7 @@ export function DemoShowcase({ initialDemo = "moss", initialPage = "home" }: Dem
                 }`}
               >
                 <span className="block truncate text-xs font-semibold">{demo.name}</span>
-                <span className={`mt-1 hidden text-[9px] uppercase tracking-[0.1em] sm:block ${activeIndex === index ? "text-black/50" : "text-white/28"}`}>{demo.type}</span>
+                <span className={`mt-1 hidden text-[9px] uppercase tracking-[0.1em] sm:block ${activeIndex === index ? "text-black/72" : "text-white/58"}`}>{demo.type}</span>
               </button>
             ))}
           </div>
@@ -432,7 +441,11 @@ export function DemoShowcase({ initialDemo = "moss", initialPage = "home" }: Dem
           className="demo-switch-in scroll-mt-36 overflow-hidden border border-white/12 shadow-[0_30px_120px_rgba(0,0,0,0.42)]"
           key={`${demoTabs[activeIndex].id}-${activePage}`}
         >
-          {activePage === "pricing" ? (
+          {activePage === "about" ? (
+            <DemoAboutPage demo={demoTabs[activeIndex].id} />
+          ) : activePage === "faq" ? (
+            <DemoFaqPage demo={demoTabs[activeIndex].id} />
+          ) : activePage === "pricing" ? (
             <DemoPricingPage demo={demoTabs[activeIndex].id} />
           ) : activePage === "contact" ? (
             <DemoContactPage demo={demoTabs[activeIndex].id} />

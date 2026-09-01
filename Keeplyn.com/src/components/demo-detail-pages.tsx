@@ -14,7 +14,7 @@ export const demoSlugs = ["moss", "northline", "sera"] as const;
 
 export type DemoSlug = (typeof demoSlugs)[number];
 
-type DemoHeaderPage = "home" | "pricing" | "contact" | "booking";
+export type DemoHeaderPage = "home" | "about" | "faq" | "pricing" | "contact" | "booking";
 
 export function isDemoSlug(value: string): value is DemoSlug {
   return demoSlugs.includes(value as DemoSlug);
@@ -85,10 +85,12 @@ const seraPackages = [
 
 export function MossHeader({ active }: { active: DemoHeaderPage }) {
   return (
-    <header className="flex flex-wrap items-center justify-between gap-4 border-b border-[#203126]/20 px-5 py-5 sm:px-9">
+    <header className="demo-brand-header relative z-30 flex flex-wrap items-center justify-between gap-4 border-b border-[#203126]/15 bg-[#dfe5d6]/92 px-5 py-5 shadow-[0_14px_44px_rgba(23,38,28,.10)] backdrop-blur-xl sm:px-9">
         <Link href="/demos/moss" className="text-lg font-semibold tracking-[-0.04em]">Moss &amp; Mortar</Link>
-        <nav className="order-3 flex w-full items-center gap-6 text-[10px] font-semibold uppercase tracking-[0.14em] sm:order-none sm:w-auto sm:gap-7" aria-label="Moss & Mortar navigation">
+        <nav className="order-3 flex w-full items-center gap-5 overflow-x-auto pb-1 text-[10px] font-semibold uppercase tracking-[0.14em] sm:order-none sm:w-auto sm:gap-6 sm:pb-0" aria-label="Moss & Mortar navigation">
           <Link href="/demos/moss" aria-current={active === "home" ? "page" : undefined} className={active === "home" ? "underline underline-offset-4" : ""}>Home</Link>
+          <Link href="/demos/moss/about" aria-current={active === "about" ? "page" : undefined} className={active === "about" ? "underline underline-offset-4" : ""}>About</Link>
+          <Link href="/demos/moss/faq" aria-current={active === "faq" ? "page" : undefined} className={active === "faq" ? "underline underline-offset-4" : ""}>FAQ</Link>
           <Link href="/demos/moss/pricing" aria-current={active === "pricing" ? "page" : undefined} className={active === "pricing" ? "underline underline-offset-4" : ""}>Pricing</Link>
           <Link href="/demos/moss/contact" aria-current={active === "contact" ? "page" : undefined} className={active === "contact" ? "underline underline-offset-4" : ""}>Contact</Link>
         </nav>
@@ -99,26 +101,30 @@ export function MossHeader({ active }: { active: DemoHeaderPage }) {
 
 export function NorthlineHeader({ active }: { active: DemoHeaderPage }) {
   return (
-    <header className="flex flex-wrap items-center justify-between gap-4 px-5 py-5 sm:px-9">
+    <header className="demo-brand-header relative z-30 flex flex-wrap items-center justify-between gap-4 bg-[#f3f7fb]/92 px-5 py-5 shadow-[0_16px_50px_rgba(23,58,90,.10)] backdrop-blur-xl sm:px-9">
         <Link href="/demos/northline" className="text-lg font-semibold tracking-[-0.04em]">northline<span className="text-[#ff725e]">●</span></Link>
-        <nav className="order-3 flex w-full items-center gap-6 text-[10px] font-semibold uppercase tracking-[0.13em] md:order-none md:w-auto md:gap-7" aria-label="Northline navigation">
-          <Link href="/demos/northline" aria-current={active === "home" ? "page" : undefined} className={active === "home" ? "text-[#ff725e]" : ""}>Home</Link>
-          <Link href="/demos/northline/pricing" aria-current={active === "pricing" ? "page" : undefined} className={active === "pricing" ? "text-[#ff725e]" : ""}>Pricing</Link>
-          <Link href="/demos/northline/contact" aria-current={active === "contact" ? "page" : undefined} className={active === "contact" ? "text-[#ff725e]" : ""}>Contact</Link>
+        <nav className="order-3 flex w-full items-center gap-5 overflow-x-auto pb-1 text-[10px] font-semibold uppercase tracking-[0.13em] md:order-none md:w-auto md:gap-6 md:pb-0" aria-label="Northline navigation">
+          <Link href="/demos/northline" aria-current={active === "home" ? "page" : undefined} className={active === "home" ? "text-[#b8372d]" : ""}>Home</Link>
+          <Link href="/demos/northline/about" aria-current={active === "about" ? "page" : undefined} className={active === "about" ? "text-[#b8372d]" : ""}>About</Link>
+          <Link href="/demos/northline/faq" aria-current={active === "faq" ? "page" : undefined} className={active === "faq" ? "text-[#b8372d]" : ""}>FAQ</Link>
+          <Link href="/demos/northline/pricing" aria-current={active === "pricing" ? "page" : undefined} className={active === "pricing" ? "text-[#b8372d]" : ""}>Pricing</Link>
+          <Link href="/demos/northline/contact" aria-current={active === "contact" ? "page" : undefined} className={active === "contact" ? "text-[#b8372d]" : ""}>Contact</Link>
         </nav>
         <Link href="/demos/northline/booking" aria-current={active === "booking" ? "page" : undefined} className={`rounded-full px-5 py-2.5 text-xs font-semibold ${active === "booking" ? "bg-[#ff725e] text-white" : "bg-[#173a5a] text-white"}`}>Book appointment</Link>
     </header>
   );
 }
 
-export function SeraHeader({ active }: { active: "home" | "pricing" | "contact" }) {
+export function SeraHeader({ active }: { active: DemoHeaderPage }) {
   return (
-    <header className="flex flex-wrap items-center justify-between gap-4 border-b border-[#5d2d26]/18 px-5 py-5 sm:px-9">
+    <header className="demo-brand-header relative z-30 flex flex-wrap items-center justify-between gap-4 border-b border-[#5d2d26]/12 bg-[#f6e8d8]/92 px-5 py-5 shadow-[0_16px_50px_rgba(93,45,38,.10)] backdrop-blur-xl sm:px-9">
         <Link href="/demos/sera" className="font-serif text-3xl italic">Sera</Link>
-        <nav className="order-3 flex w-full items-center gap-6 text-[10px] font-semibold uppercase tracking-[0.14em] sm:order-none sm:w-auto sm:gap-7" aria-label="Sera navigation">
-          <Link href="/demos/sera" aria-current={active === "home" ? "page" : undefined} className={active === "home" ? "text-[#ff765f]" : ""}>Home</Link>
-          <Link href="/demos/sera/pricing" aria-current={active === "pricing" ? "page" : undefined} className={active === "pricing" ? "text-[#ff765f]" : ""}>Pricing</Link>
-          <Link href="/demos/sera/contact" aria-current={active === "contact" ? "page" : undefined} className={active === "contact" ? "text-[#ff765f]" : ""}>Contact</Link>
+        <nav className="order-3 flex w-full items-center gap-5 overflow-x-auto pb-1 text-[10px] font-semibold uppercase tracking-[0.14em] sm:order-none sm:w-auto sm:gap-6 sm:pb-0" aria-label="Sera navigation">
+          <Link href="/demos/sera" aria-current={active === "home" ? "page" : undefined} className={active === "home" ? "text-[#a74337]" : ""}>Home</Link>
+          <Link href="/demos/sera/about" aria-current={active === "about" ? "page" : undefined} className={active === "about" ? "text-[#a74337]" : ""}>About</Link>
+          <Link href="/demos/sera/faq" aria-current={active === "faq" ? "page" : undefined} className={active === "faq" ? "text-[#a74337]" : ""}>FAQ</Link>
+          <Link href="/demos/sera/pricing" aria-current={active === "pricing" ? "page" : undefined} className={active === "pricing" ? "text-[#a74337]" : ""}>Pricing</Link>
+          <Link href="/demos/sera/contact" aria-current={active === "contact" ? "page" : undefined} className={active === "contact" ? "text-[#a74337]" : ""}>Contact</Link>
         </nav>
         <p className="text-[10px] font-semibold uppercase tracking-[0.13em]">Open 7—2</p>
     </header>
@@ -140,7 +146,7 @@ function PackageFeatures({ features, iconClassName }: { features: string[]; icon
 
 function MossPricing() {
   return (
-    <div className="min-h-svh bg-[#dfe5d6] text-[#203126]">
+    <div className="moss-world min-h-svh bg-[#dfe5d6] text-[#203126]">
       <MossHeader active="pricing" />
       <div>
         <section className="px-6 py-20 sm:px-10 lg:px-14 lg:py-28">
@@ -154,7 +160,7 @@ function MossPricing() {
         <section className="border-y border-[#203126]/20 bg-[#edf1e9] px-6 py-20 sm:px-10 lg:px-14 lg:py-28">
           <div className="mx-auto grid max-w-[92rem] gap-5 lg:grid-cols-3">
             {mossPackages.map((plan, index) => (
-              <article key={plan.name} className={`flex min-h-[34rem] flex-col border border-[#203126]/20 p-7 sm:p-9 ${index === 1 ? "bg-[#203126] text-[#edf1e9]" : "bg-[#dfe5d6]"}`}>
+              <article key={plan.name} className={`moss-depth-card flex min-h-[34rem] flex-col border border-[#203126]/20 p-7 sm:p-9 ${index === 1 ? "bg-[#203126] text-[#edf1e9]" : "bg-[#dfe5d6]"}`}>
                 <p className={`text-[10px] uppercase tracking-[0.16em] ${index === 1 ? "text-[#c9ff3b]" : "text-[#203126]/45"}`}>0{index + 1}</p>
                 <h2 className="mt-10 text-4xl font-semibold tracking-[-0.06em]">{plan.name}</h2>
                 <p className={`mt-4 text-sm leading-6 ${index === 1 ? "text-white/58" : "text-[#203126]/58"}`}>{plan.detail}</p>
@@ -183,10 +189,10 @@ function MossPricing() {
 
 function NorthlinePricing() {
   return (
-    <div className="min-h-svh bg-[#f3f7fb] text-[#173a5a]">
+    <div className="northline-world min-h-svh bg-[#f3f7fb] text-[#173a5a]">
       <NorthlineHeader active="pricing" />
       <div className="px-5 pb-10 sm:px-9">
-        <section className="mx-auto max-w-[92rem] overflow-hidden rounded-[2rem] bg-[#173a5a] px-7 py-16 text-white sm:px-12 sm:py-24 lg:px-16">
+        <section className="northline-depth-card mx-auto max-w-[92rem] overflow-hidden rounded-[2rem] bg-[#173a5a] px-7 py-16 text-white sm:px-12 sm:py-24 lg:px-16">
           <p className="text-[10px] font-semibold uppercase tracking-[0.16em] text-[#ff9a89]">Self-pay pricing</p>
           <h1 className="mt-6 max-w-5xl text-[clamp(4rem,9vw,8.5rem)] font-semibold leading-[0.82] tracking-[-0.085em]">Clear costs. No surprises.</h1>
           <p className="mt-8 max-w-2xl text-base leading-7 text-white/62">We review every cost before care begins and help you use insurance benefits without letting them drive the plan.</p>
@@ -194,7 +200,7 @@ function NorthlinePricing() {
 
         <section className="mx-auto grid max-w-[92rem] gap-5 py-20 lg:grid-cols-3 lg:py-28">
           {northlinePrices.map((plan, index) => (
-            <article key={plan.name} className={`flex min-h-[33rem] flex-col rounded-[1.75rem] border p-7 sm:p-9 ${index === 2 ? "border-[#ff725e] bg-[#fff0ec]" : "border-[#173a5a]/12 bg-white"}`}>
+            <article key={plan.name} className={`northline-depth-card flex min-h-[33rem] flex-col rounded-[1.75rem] border p-7 sm:p-9 ${index === 2 ? "border-[#ff725e] bg-[#fff0ec]" : "border-[#173a5a]/12 bg-white"}`}>
               <span className="grid size-10 place-items-center rounded-full bg-[#dbeaf6] text-xs font-semibold">0{index + 1}</span>
               <h2 className="mt-10 text-3xl font-semibold tracking-[-0.055em]">{plan.name}</h2>
               <p className="mt-4 text-sm leading-6 text-[#173a5a]/58">{plan.detail}</p>
@@ -205,7 +211,7 @@ function NorthlinePricing() {
           ))}
         </section>
 
-        <section className="mx-auto mb-10 grid max-w-[92rem] gap-8 rounded-[2rem] bg-[#bfd9ef] p-7 sm:p-12 lg:grid-cols-[0.55fr_0.45fr] lg:items-end lg:p-16">
+        <section className="northline-depth-card mx-auto mb-10 grid max-w-[92rem] gap-8 rounded-[2rem] bg-[#bfd9ef] p-7 sm:p-12 lg:grid-cols-[0.55fr_0.45fr] lg:items-end lg:p-16">
           <div><p className="text-[10px] uppercase tracking-[0.16em] text-[#ff725e]">Insurance and financing</p><h2 className="mt-5 text-5xl font-semibold leading-[0.92] tracking-[-0.065em] sm:text-7xl">A plan that works on paper, too.</h2></div>
           <p className="text-sm leading-7 text-[#173a5a]/62">We are in network with major PPO plans, submit claims on your behalf, and offer payment plans for restorative treatment over $750.</p>
         </section>
@@ -217,7 +223,7 @@ function NorthlinePricing() {
 
 function SeraPricing() {
   return (
-    <div className="min-h-svh bg-[#f6e8d8] text-[#5d2d26]">
+    <div className="sera-world min-h-svh bg-[#f6e8d8] text-[#5d2d26]">
       <SeraHeader active="pricing" />
       <div>
         <section className="px-6 py-20 sm:px-10 lg:px-14 lg:py-28">
@@ -232,7 +238,7 @@ function SeraPricing() {
         <section className="border-y border-[#5d2d26]/18 bg-[#fff6ec] px-6 py-20 sm:px-10 lg:px-14 lg:py-28">
           <div className="mx-auto grid max-w-[92rem] gap-5 lg:grid-cols-3">
             {seraPackages.map((plan, index) => (
-              <article key={plan.name} className={`flex min-h-[34rem] flex-col border border-[#5d2d26]/18 p-7 sm:p-9 ${index === 1 ? "bg-[#ff765f] text-[#fff6ec]" : "bg-[#f6e8d8]"}`}>
+              <article key={plan.name} className={`sera-depth-card flex min-h-[34rem] flex-col border border-[#5d2d26]/18 p-7 sm:p-9 ${index === 1 ? "bg-[#ff765f] text-[#fff6ec]" : "bg-[#f6e8d8]"}`}>
                 <p className={`font-serif text-2xl italic ${index === 1 ? "text-white" : "text-[#ff765f]"}`}>0{index + 1}</p>
                 <h2 className="mt-10 text-4xl font-semibold tracking-[-0.06em]">{plan.name}</h2>
                 <p className={`mt-4 text-sm leading-6 ${index === 1 ? "text-white/68" : "text-[#5d2d26]/58"}`}>{plan.detail}</p>
@@ -286,7 +292,7 @@ function ContactForm({ subject, serviceLabel, services, inputClassName, buttonCl
 
 function MossContact() {
   return (
-    <div className="min-h-svh bg-[#dfe5d6] text-[#203126]">
+    <div className="moss-world min-h-svh bg-[#dfe5d6] text-[#203126]">
       <MossHeader active="contact" />
       <div className="px-6 py-16 sm:px-10 lg:px-14 lg:py-24">
         <div className="mx-auto max-w-[92rem]">
@@ -300,7 +306,7 @@ function MossContact() {
                 <div className="border-t border-[#203126]/20 pt-5"><Mail className="size-5" /><p className="mt-4 text-sm leading-6 text-[#203126]/62">studio@mossandmortar.example<br />Replies in 2 working days</p></div>
               </div>
             </div>
-            <div className="border border-[#203126]/20 bg-[#edf1e9] p-6 sm:p-9 lg:p-12">
+            <div className="moss-depth-card border border-[#203126]/20 bg-[#edf1e9] p-6 sm:p-9 lg:p-12">
               <ContactForm subject="Moss & Mortar demo inquiry" serviceLabel="What are you considering?" services={["Planting plan", "Garden design", "Full landscape", "Not sure yet"]} inputClassName="min-h-12 w-full border border-[#203126]/22 bg-transparent px-4 py-3 text-sm outline-none placeholder:text-[#203126]/35 focus:border-[#203126]" buttonClassName="bg-[#203126] text-[#edf1e9]" />
             </div>
           </div>
@@ -312,10 +318,10 @@ function MossContact() {
 
 function NorthlineContact() {
   return (
-    <div className="min-h-svh bg-[#f3f7fb] text-[#173a5a]">
+    <div className="northline-world min-h-svh bg-[#f3f7fb] text-[#173a5a]">
       <NorthlineHeader active="contact" />
       <div className="px-5 pb-10 sm:px-9">
-        <div className="mx-auto grid max-w-[92rem] overflow-hidden rounded-[2rem] bg-white lg:grid-cols-[0.46fr_0.54fr]">
+        <div className="northline-depth-card mx-auto grid max-w-[92rem] overflow-hidden rounded-[2rem] bg-white lg:grid-cols-[0.46fr_0.54fr]">
           <section className="bg-[#173a5a] p-7 text-white sm:p-12 lg:p-16">
             <p className="text-[10px] uppercase tracking-[0.16em] text-[#ff9a89]">Accepting new patients</p>
             <h1 className="mt-6 text-[clamp(4rem,8vw,7.5rem)] font-semibold leading-[0.82] tracking-[-0.085em]">Let&apos;s make your next visit easier.</h1>
@@ -340,10 +346,10 @@ function NorthlineContact() {
 
 function MossBooking() {
   return (
-    <div className="min-h-svh bg-[#dfe5d6] text-[#203126]">
+    <div className="moss-world min-h-svh bg-[#dfe5d6] text-[#203126]">
       <MossHeader active="booking" />
       <div className="px-6 py-16 sm:px-10 lg:px-14 lg:py-24">
-        <div className="mx-auto grid max-w-[92rem] overflow-hidden border border-[#203126]/20 bg-[#edf1e9] lg:grid-cols-[0.46fr_0.54fr]">
+        <div className="moss-depth-card mx-auto grid max-w-[92rem] overflow-hidden border border-[#203126]/20 bg-[#edf1e9] lg:grid-cols-[0.46fr_0.54fr]">
           <section className="bg-[#203126] p-7 text-[#edf1e9] sm:p-12 lg:p-16">
             <p className="text-[10px] uppercase tracking-[0.16em] text-[#c9ff3b]">Complimentary first conversation</p>
             <h1 className="mt-6 text-[clamp(4rem,8vw,7.5rem)] font-semibold leading-[0.82] tracking-[-0.085em]">Start with the way you want to live outside.</h1>
@@ -362,10 +368,10 @@ function MossBooking() {
 
 function NorthlineBooking() {
   return (
-    <div className="min-h-svh bg-[#f3f7fb] text-[#173a5a]">
+    <div className="northline-world min-h-svh bg-[#f3f7fb] text-[#173a5a]">
       <NorthlineHeader active="booking" />
       <div className="px-5 pb-10 sm:px-9">
-        <div className="mx-auto grid max-w-[92rem] overflow-hidden rounded-[2rem] bg-white lg:grid-cols-[0.46fr_0.54fr]">
+        <div className="northline-depth-card mx-auto grid max-w-[92rem] overflow-hidden rounded-[2rem] bg-white lg:grid-cols-[0.46fr_0.54fr]">
           <section className="bg-[#173a5a] p-7 text-white sm:p-12 lg:p-16">
             <p className="text-[10px] uppercase tracking-[0.16em] text-[#ff9a89]">Accepting new patients</p>
             <h1 className="mt-6 text-[clamp(4rem,8vw,7.5rem)] font-semibold leading-[0.82] tracking-[-0.085em]">Let&apos;s make your next visit easier.</h1>
@@ -388,7 +394,7 @@ function NorthlineBooking() {
 
 function SeraContact() {
   return (
-    <div className="min-h-svh bg-[#f6e8d8] text-[#5d2d26]">
+    <div className="sera-world min-h-svh bg-[#f6e8d8] text-[#5d2d26]">
       <SeraHeader active="contact" />
       <div className="px-6 py-16 sm:px-10 lg:px-14 lg:py-24">
         <div className="mx-auto max-w-[92rem]">
@@ -402,7 +408,7 @@ function SeraContact() {
                 <div className="border-t border-[#5d2d26]/18 pt-5"><Clock3 className="size-5 text-[#ff765f]" /><p className="mt-4 text-sm leading-6 text-[#5d2d26]/62">Tuesday—Sunday<br />7am—2pm</p></div>
               </div>
             </div>
-            <div className="border border-[#5d2d26]/18 bg-[#fff6ec] p-6 sm:p-9 lg:p-12">
+            <div className="sera-depth-card border border-[#5d2d26]/18 bg-[#fff6ec] p-6 sm:p-9 lg:p-12">
               <ContactForm subject="Sera demo order inquiry" serviceLabel="What are you planning?" services={["Morning table", "Office spread", "Celebration bake", "Custom order"]} inputClassName="min-h-12 w-full border border-[#5d2d26]/20 bg-transparent px-4 py-3 text-sm outline-none placeholder:text-[#5d2d26]/35 focus:border-[#ff765f]" buttonClassName="bg-[#ff765f] text-white" />
             </div>
           </div>
