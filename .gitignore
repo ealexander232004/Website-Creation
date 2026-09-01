@@ -15,6 +15,7 @@ build/
 dist/
 
 # Local configuration and deployment state
+Facebook Last Post/private/
 .env
 .env.*
 !.env.example
