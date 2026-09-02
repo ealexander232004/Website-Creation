@@ -15,6 +15,7 @@ import threading
 import time
 import uuid
 from concurrent.futures import FIRST_COMPLETED, ThreadPoolExecutor, wait
+from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
 
@@ -53,9 +54,9 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--website-max-attempts", type=int, default=1)
     parser.add_argument("--maps-rps-per-proxy", type=float, default=3.0)
     parser.add_argument("--max-attempts", type=int, default=3)
-    parser.add_argument("--monitor-interval", type=float, default=15.0)
     parser.add_argument("--hard-throttle-window", type=int, default=100)
     parser.add_argument("--hard-throttle-min-events", type=int, default=30)
+    parser.add_argument("--monitor-interval", type=float, default=2.0)
     parser.add_argument("--hard-throttle-rate", type=float, default=0.35)
     parser.add_argument("--hard-throttle-consecutive", type=int, default=15)
     parser.add_argument("--review-api-key-env", default="GOOGLE_MAPS_API_KEY")
@@ -95,6 +96,35 @@ def apply_migration(connection_kwargs: dict[str, Any], migration: Path) -> None:
         raise FileNotFoundError(f"Migration does not exist: {migration}")
     with psycopg.connect(**connection_kwargs) as connection:
         connection.execute(migration.read_text(encoding="utf-8"))
+
+def format_progress_line(progress: dict[str, Any], total: int, elapsed: float) -> str:
+    statuses = progress.get("statuses", {})
+    matched = statuses.get("matched", 0)
+    not_found = statuses.get("not_found", 0)
+    failed = statuses.get("failed", 0)
+    in_progress = statuses.get("in_progress", 0)
+    queued = statuses.get("queued", 0)
+    done = matched + not_found + failed
+    pct = (done / total * 100) if total > 0 else 0.0
+    rate = (done / elapsed) if elapsed > 0 else 0.0
+
+    web_statuses = progress.get("website_statuses", {})
+    no_web = web_statuses.get("not_listed_on_google", 0)
+    live_web = web_statuses.get("live", 0)
+    broken_web = sum(
+        v for k, v in web_statuses.items()
+        if k not in ("not_listed_on_google", "live", "business_not_found_on_google")
+    )
+
+    m, s = divmod(int(elapsed), 60)
+    time_str = f"{m:02d}:{s:02d}"
+
+    return (
+        f"[{time_str}] {done:,}/{total:,} ({pct:5.1f}%) | "
+        f"Rate: {rate:6.1f} leads/s | "
+        f"Matched: {matched:,} | No-Web: {no_web:,} | Broken: {broken_web:,} | Live: {live_web:,} | "
+        f"Flight: {in_progress:,} | Queue: {queued:,} | Failed: {failed:,}"
+    )
 
 def run_multi_process(
     args: argparse.Namespace,
@@ -158,13 +188,22 @@ def run_multi_process(
         subprocesses.append(p)
         current_offset += maps_per_proc[i] + web_per_proc[i]
 
+        log_dir = Path(__file__).resolve().parent / "logs"
+        log_dir.mkdir(parents=True, exist_ok=True)
+        live_log_file = log_dir / "enrichment_live.log"
+
         def drain_output(proc=p, idx=i):
             for line in iter(proc.stdout.readline, ""):
                 line_str = line.strip()
+                if not line_str:
+                    continue
                 if line_str.startswith("child_result="):
                     child_outputs[idx].append(line_str)
-                elif "error" in line_str.lower() or "aborted" in line_str.lower() or "crashed" in line_str.lower():
-                    print(f"[proc-{idx}] {line_str}", flush=True)
+                else:
+                    with open(live_log_file, "a", encoding="utf-8") as f:
+                        f.write(f"{datetime.now(timezone.utc).isoformat()} [proc-{idx}] {line_str}\n")
+                    if "error" in line_str.lower() or "aborted" in line_str.lower() or "crashed" in line_str.lower():
+                        print(f"[proc-{idx}] {line_str}", flush=True)
             proc.stdout.close()
 
         t = threading.Thread(target=drain_output, daemon=True)
@@ -172,23 +211,45 @@ def run_multi_process(
         threads.append(t)
 
     last_monitor = 0.0
+    start_time = time.monotonic()
+    stopped_by_user = False
+    stop_files = [
+        Path("STOP"),
+        Path(".stop"),
+        Path(__file__).resolve().parent / "STOP",
+        Path(__file__).resolve().parent / ".stop",
+    ]
+
     try:
         while any(p.poll() is None for p in subprocesses):
-            time.sleep(min(2.0, args.monitor_interval))
+            for sf in stop_files:
+                if sf.exists():
+                    stop_msg = f"[STOP TRIGGER] File '{sf.name}' detected! Gracefully stopping all processes..."
+                    print(f"\n{stop_msg}", flush=True)
+                    with open(live_log_file, "a", encoding="utf-8") as f:
+                        f.write(f"{datetime.now(timezone.utc).isoformat()} {stop_msg}\n")
+                    try:
+                        sf.unlink()
+                    except OSError:
+                        pass
+                    for p in subprocesses:
+                        p.terminate()
+                    for p in subprocesses:
+                        p.wait()
+                    stopped_by_user = True
+                    break
+            if stopped_by_user:
+                break
+
+            time.sleep(min(1.0, args.monitor_interval))
             now = time.monotonic()
+            elapsed = now - start_time
             if now - last_monitor >= args.monitor_interval:
                 progress = repository.progress(run_id)
-                print(
-                    "progress="
-                    + format_summary(
-                        {
-                            "statuses": progress["statuses"],
-                            "website_statuses": progress["website_statuses"],
-                            "website_check_states": progress["website_check_states"],
-                        }
-                    ),
-                    flush=True,
-                )
+                ticker = format_progress_line(progress, args.limit, elapsed)
+                print(ticker, flush=True)
+                with open(live_log_file, "a", encoding="utf-8") as f:
+                    f.write(f"{datetime.now(timezone.utc).isoformat()} {ticker}\n")
                 last_monitor = now
     except KeyboardInterrupt:
         print("master_interrupted=true terminating_child_processes=true", flush=True)
@@ -451,6 +512,13 @@ def main() -> int:
         pending = set(future_kinds)
         maps_pending = set(map_futures)
         last_monitor = 0.0
+        start_time = time.monotonic()
+        stop_files = [
+            Path("STOP"),
+            Path(".stop"),
+            Path(__file__).resolve().parent / "STOP",
+            Path(__file__).resolve().parent / ".stop",
+        ]
         try:
             while pending:
                 completed, pending = wait(
@@ -494,21 +562,23 @@ def main() -> int:
                 if not maps_pending:
                     maps_done.set()
 
+                for sf in stop_files:
+                    if sf.exists():
+                        print(f"\n[STOP TRIGGER] File '{sf.name}' detected! Gracefully stopping workers...", flush=True)
+                        throttle_controller.abort("stop file detected")
+                        maps_done.set()
+                        try:
+                            sf.unlink()
+                        except OSError:
+                            pass
+                        break
+
                 now = time.monotonic()
-                if now - last_monitor >= args.monitor_interval or not pending:
+                elapsed = now - start_time
+                if not args.child_run and (now - last_monitor >= args.monitor_interval or not pending):
                     progress = repository.progress(run_id)
-                    print(
-                        "progress="
-                        + format_summary(
-                            {
-                                "statuses": progress["statuses"],
-                                "website_statuses": progress["website_statuses"],
-                                "website_check_states": progress["website_check_states"],
-                                "throttle": throttle_controller.snapshot(),
-                            }
-                        ),
-                        flush=True,
-                    )
+                    ticker = format_progress_line(progress, args.limit, elapsed)
+                    print(ticker, flush=True)
                     last_monitor = now
         except KeyboardInterrupt:
             throttle_controller.abort("operator interrupted run")
