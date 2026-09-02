@@ -2,19 +2,32 @@ from __future__ import annotations
 
 import unittest
 from dataclasses import dataclass
+from datetime import datetime, timezone
 
 from google_maps_enrichment import (
+    EnrichmentRepository,
     EnrichmentJob,
+    MATCH_POLICY_VERSION,
+    MATCH_THRESHOLD,
+    ReviewMetadata,
     ThrottleController,
+    WebsiteVerification,
+    assess_candidate,
     build_search_query,
     choose_match,
+    fetch_internal_review_metadata,
     fetch_official_review_metadata,
     name_similarity,
     verify_website,
 )
 from models import Lead
 from proxy_manager import ProxyRoute
-from rpc_client import GoogleMapsRpcClient, GoogleMapsThrottleError
+from rpc_client import (
+    GoogleMapsPayloadDiscoveryError,
+    GoogleMapsReviewPage,
+    GoogleMapsRpcClient,
+    GoogleMapsThrottleError,
+)
 
 
 def job(**overrides) -> EnrichmentJob:
@@ -46,6 +59,7 @@ def lead(**overrides) -> Lead:
         "latitude": 28.00190,
         "longitude": -97.08305,
         "website_raw": None,
+        "review_count_available": True,
     }
     values.update(overrides)
     return Lead(**values)
@@ -72,7 +86,7 @@ class MatchingTests(unittest.TestCase):
         self.assertEqual(decision.status, "matched")
         self.assertGreater(decision.best.name_score, 0.78)
 
-    def test_exact_generic_name_far_away_is_ambiguous(self) -> None:
+    def test_exact_generic_name_far_away_matches_under_recall_bias(self) -> None:
         source = job(
             canonical_name="Main Street Auto",
             city="Rockport",
@@ -89,13 +103,13 @@ class MatchingTests(unittest.TestCase):
             latitude=32.7767,
             longitude=-96.7970,
         )
-        self.assertEqual(choose_match(source, [candidate]).status, "ambiguous")
+        self.assertEqual(choose_match(source, [candidate]).status, "matched")
 
     def test_nearby_different_business_is_not_a_match(self) -> None:
         candidate = lead(name="Coastal Veterinary Hospital")
         self.assertEqual(choose_match(job(), [candidate]).status, "not_found")
 
-    def test_two_close_candidates_are_ambiguous(self) -> None:
+    def test_two_close_candidates_choose_the_highest_score(self) -> None:
         candidates = [
             lead(name="Robason Farm Pet Salon", place_id="ChIJ-one"),
             lead(
@@ -105,14 +119,16 @@ class MatchingTests(unittest.TestCase):
                 longitude=-97.08308,
             ),
         ]
-        self.assertEqual(choose_match(job(), candidates).status, "ambiguous")
+        decision = choose_match(job(), candidates)
+        self.assertEqual(decision.status, "matched")
+        self.assertEqual(decision.best, decision.candidates[0])
 
-    def test_same_address_but_materially_different_name_is_ambiguous(self) -> None:
+    def test_same_address_and_similar_name_crosses_binary_line(self) -> None:
         source = job(canonical_name="Port A Food Hut")
         candidate = lead(name="Port A Beer Hut")
-        self.assertEqual(choose_match(source, [candidate]).status, "ambiguous")
+        self.assertEqual(choose_match(source, [candidate]).status, "matched")
 
-    def test_expanded_generic_name_with_bad_coordinate_is_ambiguous(self) -> None:
+    def test_expanded_name_and_rough_location_cross_binary_line(self) -> None:
         source = job(
             canonical_name="Owl's Nest",
             street_address=None,
@@ -130,9 +146,9 @@ class MatchingTests(unittest.TestCase):
             latitude=34.0,
             longitude=-97.0,
         )
-        self.assertEqual(choose_match(source, [candidate]).status, "ambiguous")
+        self.assertEqual(choose_match(source, [candidate]).status, "matched")
 
-    def test_possible_nearby_branch_with_weak_address_is_ambiguous(self) -> None:
+    def test_possible_nearby_branch_with_rough_location_is_matched(self) -> None:
         candidate = lead(
             name="Robason Farms Pet Salon II",
             full_address="3140 Another Ave, Rockport, TX 70000",
@@ -141,7 +157,73 @@ class MatchingTests(unittest.TestCase):
             latitude=28.008,
             longitude=-97.083,
         )
-        self.assertEqual(choose_match(job(), [candidate]).status, "ambiguous")
+        self.assertEqual(choose_match(job(), [candidate]).status, "matched")
+
+    def test_high_name_similarity_tolerates_rough_location_only(self) -> None:
+        candidate = lead(
+            name="Robason Farm Pet Salon",
+            full_address="900 Harbor Rd, Aransas Pass, TX 78336",
+            street="900 Harbor Rd",
+            city="Aransas Pass",
+            state="TX",
+            zip_code="78336",
+            latitude=27.91,
+            longitude=-97.15,
+        )
+        self.assertEqual(choose_match(job(), [candidate]).status, "matched")
+
+    def test_rough_location_cannot_override_a_different_name(self) -> None:
+        candidate = lead(
+            name="Coastal Veterinary Hospital",
+            full_address="1935 Monkey Rd, Rockport, TX 78382",
+        )
+        self.assertEqual(choose_match(job(), [candidate]).status, "not_found")
+
+    def test_no_candidates_is_a_binary_not_found(self) -> None:
+        decision = choose_match(job(), [])
+        self.assertEqual(decision.status, "not_found")
+        self.assertIsNone(decision.best)
+
+    def test_decision_uses_the_documented_hard_threshold(self) -> None:
+        assessment = assess_candidate(job(), lead())
+        decision = choose_match(job(), [lead()])
+        self.assertGreaterEqual(assessment.composite_score, MATCH_THRESHOLD)
+        self.assertEqual(decision.reason, "binary_score_at_or_above_threshold")
+
+
+class FakeDatabaseConnection:
+    def __init__(self) -> None:
+        self.query = None
+        self.params = None
+        self.committed = False
+
+    def execute(self, query, params):
+        self.query = query
+        self.params = params
+
+    def commit(self) -> None:
+        self.committed = True
+
+
+class PersistenceTests(unittest.TestCase):
+    def test_binary_confidence_and_policy_are_written(self) -> None:
+        source = job()
+        decision = choose_match(source, [lead(website_raw="https://example.com/")])
+        connection = FakeDatabaseConnection()
+        EnrichmentRepository.finish(
+            connection,
+            source,
+            build_search_query(source),
+            decision,
+            ReviewMetadata(None, None, None, "unavailable_no_api_key"),
+        )
+        self.assertIn("match_policy_version = %s", connection.query)
+        self.assertEqual(connection.query.count("%s"), len(connection.params))
+        self.assertIn(decision.best.composite_score, connection.params)
+        self.assertIn(MATCH_POLICY_VERSION, connection.params)
+        self.assertIn(MATCH_THRESHOLD, connection.params)
+        self.assertIn("queued", connection.params)
+        self.assertTrue(connection.committed)
 
 
 class ReviewMetadataTests(unittest.TestCase):
@@ -150,6 +232,75 @@ class ReviewMetadataTests(unittest.TestCase):
         self.assertIsNone(metadata.review_count)
         self.assertIsNone(metadata.latest_review_at)
         self.assertEqual(metadata.source, "unavailable_no_api_key")
+
+    def test_internal_zero_count_skips_review_request(self) -> None:
+        metadata = fetch_internal_review_metadata(
+            object(),
+            lead(reviews_count=0),
+        )
+        self.assertEqual(metadata.review_count, 0)
+        self.assertIsNone(metadata.latest_review_at)
+        self.assertEqual(metadata.source, "maps_search_count_zero_reviews")
+
+    def test_internal_newest_review_preserves_count(self) -> None:
+        expected = datetime(2025, 7, 3, 12, 30, tzinfo=timezone.utc)
+
+        class FakeReviewClient:
+            def fetch_latest_review(self, cid):
+                self.cid = cid
+                return GoogleMapsReviewPage(expected, "a year ago", True, True)
+
+        client = FakeReviewClient()
+        metadata = fetch_internal_review_metadata(
+            client,
+            lead(cid="12345", reviews_count=47),
+        )
+        self.assertEqual(client.cid, "12345")
+        self.assertEqual(metadata.review_count, 47)
+        self.assertEqual(metadata.latest_review_at, expected)
+        self.assertEqual(metadata.source, "maps_search_count_qv9_newest")
+
+
+class ReviewRpcTests(unittest.TestCase):
+    def test_search_parser_uses_review_count_not_photo_count(self) -> None:
+        place = [None] * 179
+        place[4] = [None] * 9
+        place[4][7] = 4.8
+        place[4][8] = 103
+        place[9] = [None, None, 28.0019, -97.083]
+        place[10] = "0x0:0x7b"
+        place[11] = "Robason Farms Pet Salon"
+        place[37] = [None, 25]
+        place[39] = "1935 Monkey Rd, Rockport, TX 78382"
+        place[78] = "ChIJ-test"
+
+        client = object.__new__(GoogleMapsRpcClient)
+        parsed = client._parse_place_array(place, "test", 28.0, -97.0)
+        self.assertIsNotNone(parsed)
+        self.assertEqual(parsed.reviews_count, 103)
+        self.assertTrue(parsed.review_count_available)
+        self.assertEqual(parsed.cid, "123")
+
+    def test_qv9_payload_extracts_microsecond_timestamp(self) -> None:
+        micros = 1_752_227_400_000_000
+        metadata = [None, None, None, micros, None, None, "2 months ago"]
+        payload = [None, None, [[[None, metadata]]], None, None, True]
+        page = GoogleMapsRpcClient._parse_review_rpc_payload(payload)
+        self.assertTrue(page.has_reviews)
+        self.assertEqual(
+            page.latest_review_at,
+            datetime.fromtimestamp(micros / 1_000_000, tz=timezone.utc),
+        )
+        self.assertEqual(page.relative_date, "2 months ago")
+
+    def test_qv9_request_uses_cid_and_newest_sort(self) -> None:
+        client = object.__new__(GoogleMapsRpcClient)
+        inner = client._review_rpc_inner("123", "session-id", 81)
+        self.assertEqual(inner[0][0][0], "0x0:0x7b")
+        self.assertEqual(inner[0][5], [None, None, None, [[1]]])
+        self.assertEqual(inner[4][0], "session-id")
+        self.assertEqual(inner[4][6], 81)
+        self.assertEqual(inner[12], [2])
 
 
 @dataclass
@@ -162,12 +313,15 @@ class FakeResponse:
 class FakeWebsiteClient:
     def __init__(self, result) -> None:
         self.result = result
+        self.calls = 0
 
     def _get(self, _url, headers):
         del headers
-        if isinstance(self.result, Exception):
-            raise self.result
-        return self.result
+        self.calls += 1
+        result = self.result.pop(0) if isinstance(self.result, list) else self.result
+        if isinstance(result, Exception):
+            raise result
+        return result
 
 
 class WebsiteVerificationTests(unittest.TestCase):
@@ -195,13 +349,28 @@ class WebsiteVerificationTests(unittest.TestCase):
         self.assertEqual(verification.status, "http_404")
 
     def test_timeout_is_not_reported_as_live(self) -> None:
+        client = FakeWebsiteClient(TimeoutError("timed out"))
         verification = verify_website(
-            FakeWebsiteClient(TimeoutError("timed out")),
+            client,
             "https://example.com/",
-            max_attempts=1,
+            max_attempts=2,
         )
         self.assertFalse(verification.verified)
         self.assertEqual(verification.status, "timeout")
+        self.assertEqual(client.calls, 2)
+
+    def test_deterministic_network_error_is_not_retried(self) -> None:
+        client = FakeWebsiteClient(OSError("connection refused"))
+        verification = verify_website(client, "https://example.com/", max_attempts=2)
+        self.assertFalse(verification.verified)
+        self.assertEqual(verification.status, "network_error")
+        self.assertEqual(client.calls, 1)
+
+    def test_transient_http_error_is_retried_once(self) -> None:
+        client = FakeWebsiteClient([FakeResponse(503), FakeResponse(200)])
+        verification = verify_website(client, "https://example.com/", max_attempts=2)
+        self.assertTrue(verification.verified)
+        self.assertEqual(client.calls, 2)
 
 
 class ThrottleControllerTests(unittest.TestCase):
@@ -218,6 +387,18 @@ class ThrottleControllerTests(unittest.TestCase):
         controller.record_failure(route, GoogleMapsThrottleError("HTTP 429"))
         self.assertTrue(controller.stop_requested)
         self.assertIn("hard throttle", controller.abort_reason)
+
+    def test_payload_discovery_miss_resets_session_without_proxy_cooldown(self) -> None:
+        controller = ThrottleController()
+        route = ProxyRoute.from_url("http://proxy.example:8080")
+        throttled = controller.record_failure(
+            route,
+            GoogleMapsPayloadDiscoveryError("missing payload URL"),
+        )
+        self.assertFalse(throttled)
+        self.assertEqual(route.failure_count, 0)
+        self.assertEqual(route.cooldown_until, 0.0)
+        self.assertFalse(controller.stop_requested)
 
 
 class FakeCaptchaHandler:

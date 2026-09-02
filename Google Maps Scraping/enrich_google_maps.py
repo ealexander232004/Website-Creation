@@ -8,6 +8,7 @@ from __future__ import annotations
 
 import argparse
 import os
+import threading
 import time
 import uuid
 from concurrent.futures import FIRST_COMPLETED, ThreadPoolExecutor, wait
@@ -19,9 +20,11 @@ import psycopg
 from config import BASE_DIR, ScraperConfig
 from google_maps_enrichment import (
     EnrichmentRepository,
+    ProxyRateLimiter,
     ThrottleController,
     format_summary,
-    run_worker,
+    run_maps_worker,
+    run_website_worker,
 )
 from captcha_handler import CaptchaHandler
 from proxy_manager import ProxyManager
@@ -38,9 +41,14 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--limit", type=int, default=500)
     parser.add_argument("--workers", type=int, default=30)
     parser.add_argument("--workers-per-proxy", type=int, default=3)
+    parser.add_argument("--website-workers", type=int, default=30)
+    parser.add_argument("--website-workers-per-proxy", type=int, default=3)
+    parser.add_argument("--postgres-pool-size", type=int, default=25)
     parser.add_argument("--database", default="lead_warehouse")
     parser.add_argument("--timeout", type=float, default=45.0)
-    parser.add_argument("--request-delay", type=float, default=0.35)
+    parser.add_argument("--website-timeout", type=float, default=12.0)
+    parser.add_argument("--website-max-attempts", type=int, default=2)
+    parser.add_argument("--maps-rps-per-proxy", type=float, default=3.0)
     parser.add_argument("--max-attempts", type=int, default=3)
     parser.add_argument("--monitor-interval", type=float, default=15.0)
     parser.add_argument("--hard-throttle-window", type=int, default=100)
@@ -57,7 +65,7 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument(
         "--backfill-reviews",
         action="store_true",
-        help="With --resume-run and an API key, requeue matched rows missing review metadata.",
+        help="With --resume-run, requeue matched rows missing review metadata.",
     )
     parser.add_argument("--migration", type=Path, default=DEFAULT_MIGRATION)
     parser.add_argument("--no-migrate", action="store_true")
@@ -93,6 +101,18 @@ def main() -> int:
         raise SystemExit("--max-attempts must be greater than zero")
     if args.workers_per_proxy <= 0:
         raise SystemExit("--workers-per-proxy must be greater than zero")
+    if args.website_workers <= 0:
+        raise SystemExit("--website-workers must be greater than zero")
+    if args.website_workers_per_proxy <= 0:
+        raise SystemExit("--website-workers-per-proxy must be greater than zero")
+    if args.postgres_pool_size <= 0:
+        raise SystemExit("--postgres-pool-size must be greater than zero")
+    if args.website_timeout <= 0:
+        raise SystemExit("--website-timeout must be greater than zero")
+    if args.website_max_attempts <= 0:
+        raise SystemExit("--website-max-attempts must be greater than zero")
+    if args.maps_rps_per_proxy <= 0:
+        raise SystemExit("--maps-rps-per-proxy must be greater than zero")
     if args.monitor_interval <= 0:
         raise SystemExit("--monitor-interval must be greater than zero")
     if not 0 < args.hard_throttle_rate <= 1:
@@ -110,6 +130,12 @@ def main() -> int:
             f"--workers ({args.workers}) exceeds proxy capacity ({proxy_capacity}) at "
             f"{args.workers_per_proxy} workers per proxy"
         )
+    website_proxy_capacity = proxy_manager.total_proxies * args.website_workers_per_proxy
+    if args.website_workers > website_proxy_capacity:
+        raise SystemExit(
+            f"--website-workers ({args.website_workers}) exceeds proxy capacity "
+            f"({website_proxy_capacity}) at {args.website_workers_per_proxy} workers per proxy"
+        )
 
     captcha_preflight = CaptchaHandler(api_key=config.capsolver_api_key)
     if not captcha_preflight.enabled:
@@ -122,12 +148,27 @@ def main() -> int:
     if not args.no_migrate:
         apply_migration(connection_kwargs, args.migration)
 
+    with psycopg.connect(**connection_kwargs) as capacity_connection:
+        max_connections = int(capacity_connection.execute("show max_connections").fetchone()[0])
+        existing_connections = int(
+            capacity_connection.execute("select count(*) from pg_stat_activity").fetchone()[0]
+        )
+    projected_connections = existing_connections - 1 + args.postgres_pool_size + 2
+    if projected_connections > max_connections - 3:
+        raise SystemExit(
+            "Worker configuration would leave fewer than three Postgres connections free: "
+            f"projected={projected_connections} max={max_connections}"
+        )
+
     api_key = os.getenv(args.review_api_key_env) if args.review_api_key_env else None
-    review_provider = "places_api_legacy_newest" if api_key else "unavailable_no_api_key"
-    repository = EnrichmentRepository(connection_kwargs)
+    review_provider = "maps_search_count_qv9_newest"
+    if api_key:
+        review_provider += "+places_api_legacy_fallback"
+    repository = EnrichmentRepository(
+        connection_kwargs,
+        pool_size=args.postgres_pool_size,
+    )
     if args.resume_run:
-        if args.backfill_reviews and not api_key:
-            raise SystemExit("--backfill-reviews requires a configured review API key")
         run_id = args.resume_run
         enqueued = repository.prepare_resume(
             run_id,
@@ -138,12 +179,21 @@ def main() -> int:
     else:
         if args.retry_failed or args.backfill_reviews:
             raise SystemExit("--retry-failed and --backfill-reviews require --resume-run")
-        run_id = repository.create_run(args.limit, args.workers, review_provider)
+        run_id = repository.create_run(
+            args.limit,
+            args.workers,
+            args.website_workers,
+            review_provider,
+        )
         enqueued = repository.enqueue(run_id, args.limit)
     print(
-        f"run_id={run_id} enqueued={enqueued} workers={args.workers} "
+        f"run_id={run_id} enqueued={enqueued} maps_workers={args.workers} "
+        f"website_workers={args.website_workers} "
+        f"postgres_pool_size={args.postgres_pool_size} "
         f"proxy_routes={proxy_manager.total_proxies} "
-        f"workers_per_proxy={args.workers_per_proxy} captcha_enabled=true "
+        f"maps_workers_per_proxy={args.workers_per_proxy} "
+        f"website_workers_per_proxy={args.website_workers_per_proxy} "
+        f"maps_rps_per_proxy={args.maps_rps_per_proxy} captcha_enabled=true "
         f"review_provider={review_provider}",
         flush=True,
     )
@@ -154,29 +204,60 @@ def main() -> int:
         rate_threshold=args.hard_throttle_rate,
         consecutive_limit=args.hard_throttle_consecutive,
     )
-    worker_stats = []
-    with ThreadPoolExecutor(max_workers=args.workers, thread_name_prefix="gmaps-enrichment") as executor:
-        futures = []
+    maps_worker_stats = []
+    website_worker_stats = []
+    maps_done = threading.Event()
+    rate_limiters: dict[int, ProxyRateLimiter] = {}
+    total_workers = args.workers + args.website_workers
+    with ThreadPoolExecutor(
+        max_workers=total_workers,
+        thread_name_prefix="gmaps-enrichment",
+    ) as executor:
+        future_kinds = {}
+        map_futures = set()
         for worker_number in range(1, args.workers + 1):
             route = proxy_manager.get_route_for_worker(worker_number)
             if route is None:
                 raise RuntimeError(f"Worker {worker_number} has no proxy route")
-            futures.append(
-                executor.submit(
-                    run_worker,
-                    repository,
-                    run_id,
-                    worker_number,
-                    route,
-                    api_key,
-                    config.capsolver_api_key,
-                    throttle_controller,
-                    args.timeout,
-                    args.request_delay,
-                    args.max_attempts,
-                )
+            rate_limiter = rate_limiters.setdefault(
+                id(route),
+                ProxyRateLimiter(args.maps_rps_per_proxy),
             )
-        pending = set(futures)
+            future = executor.submit(
+                run_maps_worker,
+                repository,
+                run_id,
+                worker_number,
+                route,
+                api_key,
+                config.capsolver_api_key,
+                throttle_controller,
+                rate_limiter,
+                args.timeout,
+                args.max_attempts,
+            )
+            future_kinds[future] = ("maps", worker_number)
+            map_futures.add(future)
+
+        for worker_number in range(1, args.website_workers + 1):
+            route = proxy_manager.get_route_for_worker(worker_number)
+            if route is None:
+                raise RuntimeError(f"Website worker {worker_number} has no proxy route")
+            future = executor.submit(
+                run_website_worker,
+                repository,
+                run_id,
+                worker_number,
+                route,
+                maps_done,
+                throttle_controller,
+                args.website_timeout,
+                args.website_max_attempts,
+            )
+            future_kinds[future] = ("website", worker_number)
+
+        pending = set(future_kinds)
+        maps_pending = set(map_futures)
         last_monitor = 0.0
         try:
             while pending:
@@ -186,22 +267,40 @@ def main() -> int:
                     return_when=FIRST_COMPLETED,
                 )
                 for future in completed:
+                    worker_kind, worker_number = future_kinds[future]
+                    maps_pending.discard(future)
                     try:
                         stats = future.result()
                     except Exception as error:
                         throttle_controller.abort(
-                            f"worker crashed: {type(error).__name__}: {str(error)[:500]}"
+                            f"{worker_kind} worker {worker_number} crashed: "
+                            f"{type(error).__name__}: {str(error)[:500]}"
                         )
-                        print(f"worker_error={type(error).__name__}: {error}", flush=True)
+                        print(
+                            f"{worker_kind}_worker_error={type(error).__name__}: {error}",
+                            flush=True,
+                        )
                         continue
-                    worker_stats.append(stats)
-                    print(
-                        f"worker={stats.worker_number} processed={stats.processed} "
-                        f"matched={stats.matched} ambiguous={stats.ambiguous} "
-                        f"not_found={stats.not_found} failed={stats.failed} "
-                        f"throttled={stats.throttled_searches}",
-                        flush=True,
-                    )
+                    if worker_kind == "maps":
+                        maps_worker_stats.append(stats)
+                        print(
+                            f"maps_worker={stats.worker_number} processed={stats.processed} "
+                            f"matched={stats.matched} not_found={stats.not_found} "
+                            f"failed={stats.failed} resets={stats.payload_session_resets} "
+                            f"throttled={stats.throttled_searches}",
+                            flush=True,
+                        )
+                    else:
+                        website_worker_stats.append(stats)
+                        print(
+                            f"website_worker={stats.worker_number} processed={stats.processed} "
+                            f"live={stats.live} errors={stats.errors} "
+                            f"requeued={stats.requeued}",
+                            flush=True,
+                        )
+
+                if not maps_pending:
+                    maps_done.set()
 
                 now = time.monotonic()
                 if now - last_monitor >= args.monitor_interval or not pending:
@@ -212,6 +311,7 @@ def main() -> int:
                             {
                                 "statuses": progress["statuses"],
                                 "website_statuses": progress["website_statuses"],
+                                "website_check_states": progress["website_check_states"],
                                 "throttle": throttle_controller.snapshot(),
                             }
                         ),
@@ -220,16 +320,30 @@ def main() -> int:
                     last_monitor = now
         except KeyboardInterrupt:
             throttle_controller.abort("operator interrupted run")
+            maps_done.set()
             print("operator_interrupt=true stopping_workers=true", flush=True)
             wait(pending)
 
-    workers_payload = [
-        stats.__dict__ for stats in sorted(worker_stats, key=lambda item: item.worker_number)
+    maps_workers_payload = [
+        stats.__dict__ for stats in sorted(maps_worker_stats, key=lambda item: item.worker_number)
+    ]
+    website_workers_payload = [
+        stats.__dict__
+        for stats in sorted(website_worker_stats, key=lambda item: item.worker_number)
     ]
     throttle_snapshot = throttle_controller.snapshot()
     runtime = {
-        "workers": workers_payload,
-        "workers_per_proxy": args.workers_per_proxy,
+        "maps_workers": maps_workers_payload,
+        "website_workers": website_workers_payload,
+        "maps_worker_count": args.workers,
+        "website_worker_count": args.website_workers,
+        "maps_workers_per_proxy": args.workers_per_proxy,
+        "website_workers_per_proxy": args.website_workers_per_proxy,
+        "maps_rps_per_proxy": args.maps_rps_per_proxy,
+        "website_timeout_seconds": args.website_timeout,
+        "website_max_attempts": args.website_max_attempts,
+        "postgres_pool_size": args.postgres_pool_size,
+        "postgres_pool_stats": repository.pool_stats(),
         "proxy_routes": proxy_manager.total_proxies,
         "captcha_balance_at_start": captcha_balance,
         "throttle": throttle_snapshot,
@@ -241,10 +355,12 @@ def main() -> int:
             throttle_snapshot,
             runtime,
         )
+        repository.close()
         print(format_summary(summary), flush=True)
         return 2
 
     summary = repository.complete_run(run_id, runtime)
+    repository.close()
     print(format_summary(summary), flush=True)
     return 0
 

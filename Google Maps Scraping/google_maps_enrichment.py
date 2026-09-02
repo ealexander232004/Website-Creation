@@ -1,10 +1,10 @@
 """Focused Google Maps enrichment for the no-website, yes-email warehouse.
 
 The search phase reuses :class:`GoogleMapsRpcClient`, whose Google requests are
-proxy-enforced.  Matching is deliberately conservative and combines fuzzy name,
-address/locality, and coordinate evidence.  Review metadata is only persisted
-when it comes from a verified provider; the current anonymous Maps search payload
-does not reliably expose it and one of its nearby counters is the photo count.
+proxy-enforced. Matching uses a high-recall, name-dominant policy: normalized
+business name contributes 85% and coarse locality contributes 15%. Review count
+comes from the structured search entity and newest-review time comes from Maps'
+structured qv9Egd review RPC.
 """
 
 from __future__ import annotations
@@ -25,6 +25,7 @@ from difflib import SequenceMatcher
 from typing import Any, Iterable, Optional, Sequence
 
 import psycopg
+from psycopg_pool import ConnectionPool
 from psycopg.rows import dict_row
 from psycopg.types.json import Jsonb
 
@@ -34,6 +35,7 @@ from proxy_manager import ProxyRoute
 from rpc_client import (
     DEFAULT_HEADERS,
     GoogleMapsChallengeError,
+    GoogleMapsPayloadDiscoveryError,
     GoogleMapsRpcClient,
     GoogleMapsThrottleError,
 )
@@ -54,37 +56,34 @@ LEGAL_SUFFIXES = {
     "pc",
     "pllc",
 }
-ADDRESS_STOP_WORDS = {
-    "avenue",
-    "ave",
-    "boulevard",
-    "blvd",
-    "circle",
-    "court",
-    "ct",
-    "drive",
-    "dr",
-    "highway",
-    "hwy",
-    "lane",
-    "ln",
-    "north",
-    "n",
-    "parkway",
-    "pkwy",
-    "road",
-    "rd",
-    "south",
-    "s",
-    "street",
-    "st",
-    "suite",
-    "unit",
-    "west",
-    "w",
-    "east",
-    "e",
+GENERIC_NAME_TOKENS = LEGAL_SUFFIXES | {
+    "and",
+    "at",
+    "by",
+    "center",
+    "centre",
+    "company",
+    "group",
+    "home",
+    "market",
+    "of",
+    "realty",
+    "realtor",
+    "salon",
+    "service",
+    "services",
+    "shop",
+    "solutions",
+    "spa",
+    "store",
+    "the",
 }
+
+# Binary, deliberately recall-favoring policy selected by replaying the prior
+# 5,000-row run. The version and cutoff are stored with every new decision so
+# downstream consumers can reproduce the decision from match_score.
+MATCH_POLICY_VERSION = "binary_name85_location15_v1"
+MATCH_THRESHOLD = 0.65
 
 
 @dataclass(frozen=True)
@@ -101,6 +100,12 @@ class EnrichmentJob:
 
 
 @dataclass(frozen=True)
+class WebsiteJob:
+    entity_id: int
+    website_url: str
+
+
+@dataclass(frozen=True)
 class CandidateAssessment:
     lead: Lead
     name_score: float
@@ -109,6 +114,8 @@ class CandidateAssessment:
     composite_score: float
     location_evidence: bool
     strong_location_evidence: bool
+    meaningful_name_overlap: float
+    meaningful_name_containment: bool
     reason: str
 
 
@@ -137,6 +144,24 @@ class WebsiteVerification:
 
 class RunAborted(RuntimeError):
     """Raised inside a worker after the shared throttle controller aborts."""
+
+
+class ProxyRateLimiter:
+    """Spaces logical Maps searches across every worker sharing one proxy."""
+
+    def __init__(self, requests_per_second: float) -> None:
+        if requests_per_second <= 0:
+            raise ValueError("requests_per_second must be greater than zero")
+        self.interval_seconds = 1.0 / requests_per_second
+        self._lock = threading.Lock()
+        self._next_allowed = 0.0
+
+    def acquire(self, controller: "ThrottleController") -> bool:
+        with self._lock:
+            now = time.monotonic()
+            scheduled = max(now, self._next_allowed)
+            self._next_allowed = scheduled + self.interval_seconds
+        return controller.wait(scheduled - now)
 
 
 class ThrottleController:
@@ -227,8 +252,10 @@ class ThrottleController:
             error,
             (GoogleMapsThrottleError, GoogleMapsChallengeError),
         )
+        payload_discovery_miss = isinstance(error, GoogleMapsPayloadDiscoveryError)
         with self._lock:
-            route.mark_failure(base_cooldown=30.0 if throttled else 5.0)
+            if not payload_discovery_miss:
+                route.mark_failure(base_cooldown=30.0 if throttled else 5.0)
             self._record_outcome(throttled)
         return throttled
 
@@ -251,20 +278,34 @@ class WorkerStats:
     worker_number: int
     processed: int = 0
     matched: int = 0
-    ambiguous: int = 0
     not_found: int = 0
     failed: int = 0
     requeued: int = 0
     search_attempts: int = 0
     retries: int = 0
+    payload_session_resets: int = 0
     throttled_searches: int = 0
-    websites_checked: int = 0
-    websites_live: int = 0
-    website_errors: int = 0
+    review_attempts: int = 0
+    review_retries: int = 0
+    review_counts_found: int = 0
+    latest_reviews_found: int = 0
+    empty_review_payloads: int = 0
+    failed_review_requests: int = 0
+    throttled_review_requests: int = 0
     captchas_detected: int = 0
     captchas_solved: int = 0
     captchas_failed: int = 0
     errors: list[str] = field(default_factory=list)
+
+
+@dataclass
+class WebsiteWorkerStats:
+    worker_number: int
+    processed: int = 0
+    live: int = 0
+    errors: int = 0
+    requeued: int = 0
+    error_samples: list[str] = field(default_factory=list)
 
 
 def _ascii_fold(value: Optional[str]) -> str:
@@ -286,10 +327,6 @@ def normalize_business_name(value: Optional[str]) -> str:
     while tokens and tokens[-1] in LEGAL_SUFFIXES:
         tokens.pop()
     return " ".join(tokens)
-
-
-def _tokens(value: Optional[str]) -> set[str]:
-    return set(normalize_text(value).split())
 
 
 def _jaccard(left: Iterable[str], right: Iterable[str]) -> float:
@@ -328,16 +365,32 @@ def name_similarity(left: Optional[str], right: Optional[str]) -> float:
     )
 
 
+def _meaningful_name_tokens(value: Optional[str]) -> set[str]:
+    return {
+        token
+        for token in normalize_business_name(value).split()
+        if len(token) >= 3 and token not in GENERIC_NAME_TOKENS
+    }
+
+
+def _meaningful_name_agreement(
+    source_name: Optional[str],
+    candidate_name: Optional[str],
+) -> tuple[float, bool]:
+    source_tokens = _meaningful_name_tokens(source_name)
+    candidate_tokens = _meaningful_name_tokens(candidate_name)
+    if not source_tokens or not candidate_tokens:
+        return 0.0, False
+    overlap = len(source_tokens & candidate_tokens) / len(source_tokens | candidate_tokens)
+    containment = source_tokens <= candidate_tokens or candidate_tokens <= source_tokens
+    return overlap, containment
+
+
 def _postcode_root(value: Optional[str]) -> str:
     normalized = re.sub(r"[^A-Za-z0-9]", "", value or "").upper()
     if len(normalized) >= 5 and normalized[:5].isdigit():
         return normalized[:5]
     return normalized
-
-
-def _street_number(value: Optional[str]) -> Optional[str]:
-    match = re.search(r"\b\d+[A-Za-z]?\b", value or "")
-    return match.group(0).lower() if match else None
 
 
 def _haversine_meters(
@@ -373,13 +426,14 @@ def build_search_query(job: EnrichmentJob) -> str:
 
 
 def _address_assessment(job: EnrichmentJob, lead: Lead) -> tuple[float, bool, bool, list[str]]:
+    """Scores only coarse locality; street-level evidence is intentionally ignored."""
     score = 0.0
     reasons: list[str] = []
     source_postcode = _postcode_root(job.postcode)
     candidate_postcode = _postcode_root(lead.zip_code)
     postcode_match = bool(source_postcode and candidate_postcode and source_postcode == candidate_postcode)
     if postcode_match:
-        score += 0.40
+        score += 0.45
         reasons.append("postcode")
 
     source_city = normalize_text(job.city)
@@ -387,38 +441,27 @@ def _address_assessment(job: EnrichmentJob, lead: Lead) -> tuple[float, bool, bo
     candidate_address = normalize_text(lead.full_address)
     city_match = bool(source_city and (source_city == candidate_city or source_city in candidate_address))
     if city_match:
-        score += 0.25
+        score += 0.35
         reasons.append("city")
 
     source_region = normalize_text(job.region)
     candidate_region = normalize_text(lead.state)
     region_match = bool(source_region and (source_region == candidate_region or source_region in candidate_address))
     if region_match:
-        score += 0.10
+        score += 0.20
         reasons.append("region")
 
-    source_number = _street_number(job.street_address)
-    candidate_number = _street_number(lead.full_address)
-    street_number_match = bool(source_number and candidate_number and source_number == candidate_number)
-    if street_number_match:
-        score += 0.15
-        reasons.append("street_number")
-
-    source_street_tokens = _tokens(job.street_address) - ADDRESS_STOP_WORDS
-    candidate_street_tokens = _tokens(lead.street or lead.full_address) - ADDRESS_STOP_WORDS
-    street_overlap = _jaccard(source_street_tokens, candidate_street_tokens)
-    if street_overlap:
-        score += min(0.10, 0.10 * street_overlap)
-        if street_overlap >= 0.5:
-            reasons.append("street_tokens")
-
-    location_evidence = postcode_match or city_match or region_match or street_number_match
-    strong_location = postcode_match or (city_match and region_match) or street_number_match
+    location_evidence = postcode_match or city_match or region_match
+    strong_location = postcode_match or (city_match and region_match)
     return min(score, 1.0), location_evidence, strong_location, reasons
 
 
 def assess_candidate(job: EnrichmentJob, lead: Lead) -> CandidateAssessment:
     name_score = name_similarity(job.canonical_name, lead.name)
+    meaningful_overlap, meaningful_containment = _meaningful_name_agreement(
+        job.canonical_name,
+        lead.name,
+    )
     address_score, location_evidence, strong_location, reasons = _address_assessment(job, lead)
     distance = _haversine_meters(job.latitude, job.longitude, lead.latitude, lead.longitude)
 
@@ -443,56 +486,20 @@ def assess_candidate(job: EnrichmentJob, lead: Lead) -> CandidateAssessment:
     else:
         geo_score = 0.0
 
-    composite = 0.65 * name_score + 0.20 * address_score + 0.15 * geo_score
+    rough_location_score = max(address_score, geo_score)
+    composite = min(1.0, 0.85 * name_score + 0.15 * rough_location_score)
     return CandidateAssessment(
         lead=lead,
         name_score=name_score,
         address_score=address_score,
         distance_meters=distance,
-        composite_score=min(1.0, composite),
+        composite_score=composite,
         location_evidence=location_evidence,
         strong_location_evidence=strong_location,
+        meaningful_name_overlap=meaningful_overlap,
+        meaningful_name_containment=meaningful_containment,
         reason=",".join(reasons) or "name_only",
     )
-
-
-def _is_confident(assessment: CandidateAssessment) -> bool:
-    distance = assessment.distance_meters
-    # A fuzzy/expanded name plus only broad locality evidence is not enough when
-    # the coordinates disagree. Exact-address evidence can override bad source
-    # coordinates, but otherwise these cases stay in the ambiguous review lane.
-    if distance is not None and distance > 100_000 and assessment.address_score < 0.65:
-        return False
-    if (
-        assessment.name_score < 0.97
-        and distance is not None
-        and distance > 500
-        and assessment.address_score < 0.65
-    ):
-        return False
-    if assessment.name_score >= 0.97 and (
-        assessment.strong_location_evidence
-        or (distance is None and assessment.location_evidence)
-        or (distance is not None and distance <= 25_000)
-    ):
-        return True
-    if assessment.name_score >= 0.88 and assessment.strong_location_evidence:
-        return True
-    if (
-        assessment.name_score >= 0.78
-        and assessment.address_score >= 0.40
-        and distance is not None
-        and distance <= 2_000
-    ):
-        return True
-    if (
-        assessment.name_score >= 0.76
-        and assessment.address_score >= 0.65
-        and distance is not None
-        and distance <= 500
-    ):
-        return True
-    return False
 
 
 def choose_match(job: EnrichmentJob, leads: Sequence[Lead]) -> MatchDecision:
@@ -505,30 +512,9 @@ def choose_match(job: EnrichmentJob, leads: Sequence[Lead]) -> MatchDecision:
         reverse=True,
     )
     best = assessments[0]
-    second = assessments[1] if len(assessments) > 1 else None
-
-    if _is_confident(best):
-        if (
-            second is not None
-            and _is_confident(second)
-            and best.composite_score - second.composite_score < 0.06
-            and best.name_score < 0.98
-        ):
-            return MatchDecision("ambiguous", best, assessments, "two_close_confident_candidates")
-        return MatchDecision("matched", best, assessments, "confidence_rules_passed")
-
-    plausible = (
-        best.name_score >= 0.62
-        and (best.location_evidence or (best.distance_meters is not None and best.distance_meters <= 25_000))
-    ) or best.name_score >= 0.82 or (
-        best.name_score >= 0.55
-        and best.address_score >= 0.90
-        and best.distance_meters is not None
-        and best.distance_meters <= 250
-    )
-    if plausible:
-        return MatchDecision("ambiguous", best, assessments, "plausible_but_below_match_threshold")
-    return MatchDecision("not_found", best, assessments, "candidates_failed_identity_threshold")
+    if best.composite_score >= MATCH_THRESHOLD:
+        return MatchDecision("matched", best, assessments, "binary_score_at_or_above_threshold")
+    return MatchDecision("not_found", best, assessments, "binary_score_below_threshold")
 
 
 def candidate_snapshot(assessments: Sequence[CandidateAssessment], limit: int = 5) -> list[dict[str, Any]]:
@@ -542,6 +528,9 @@ def candidate_snapshot(assessments: Sequence[CandidateAssessment], limit: int = 
                 "website": assessment.lead.website_raw,
                 "name_score": round(assessment.name_score, 6),
                 "address_score": round(assessment.address_score, 6),
+                "rough_location_score": round(assessment.address_score, 6),
+                "meaningful_name_overlap": round(assessment.meaningful_name_overlap, 6),
+                "meaningful_name_containment": assessment.meaningful_name_containment,
                 "distance_meters": (
                     round(assessment.distance_meters, 1)
                     if assessment.distance_meters is not None
@@ -603,6 +592,48 @@ def fetch_official_review_metadata(
     return ReviewMetadata(review_count, latest_review_at, website, "places_api_legacy_newest")
 
 
+def fetch_internal_review_metadata(
+    client: GoogleMapsRpcClient,
+    lead: Lead,
+) -> ReviewMetadata:
+    """Uses Maps' structured count and newest-review RPC without page parsing."""
+    review_count = int(lead.reviews_count) if lead.review_count_available else None
+    source_prefix = (
+        "maps_search_count" if lead.review_count_available else "maps_search_count_unavailable"
+    )
+    if review_count == 0:
+        return ReviewMetadata(0, None, None, f"{source_prefix}_zero_reviews")
+    if not lead.cid:
+        return ReviewMetadata(
+            review_count,
+            None,
+            None,
+            f"{source_prefix}_qv9_missing_cid",
+        )
+
+    page = client.fetch_latest_review(lead.cid)
+    if not page.has_reviews:
+        return ReviewMetadata(
+            review_count,
+            None,
+            None,
+            f"{source_prefix}_qv9_limited_empty",
+        )
+    if page.latest_review_at is None:
+        return ReviewMetadata(
+            review_count,
+            None,
+            None,
+            f"{source_prefix}_qv9_missing_timestamp",
+        )
+    return ReviewMetadata(
+        review_count,
+        page.latest_review_at,
+        None,
+        f"{source_prefix}_qv9_newest",
+    )
+
+
 def _website_network_error_status(error: Exception) -> str:
     message = f"{type(error).__name__} {error}".lower()
     if "timeout" in message or "timed out" in message:
@@ -652,8 +683,14 @@ def verify_website(
             return WebsiteVerification(False, f"http_{status_code or 'unknown'}", checked_at)
         except Exception as error:
             last_error = error
-            if attempt < max_attempts:
+            # TLS/certificate, redirect, DNS, and connection-refused failures
+            # are deterministic for this reachability check. Only a timeout is
+            # retried once; replaying every network error caused the prior run's
+            # 60-90 second tail.
+            if attempt < max_attempts and _website_network_error_status(error) == "timeout":
                 time.sleep(min(3.0, (0.5 * (2 ** (attempt - 1))) + random.uniform(0.05, 0.35)))
+                continue
+            break
 
     return WebsiteVerification(
         False,
@@ -663,16 +700,37 @@ def verify_website(
 
 
 class EnrichmentRepository:
-    def __init__(self, connection_kwargs: dict[str, Any]) -> None:
+    def __init__(self, connection_kwargs: dict[str, Any], pool_size: int = 25) -> None:
+        if pool_size <= 0:
+            raise ValueError("pool_size must be greater than zero")
         self.connection_kwargs = connection_kwargs
+        self.pool_size = pool_size
+        self.pool = ConnectionPool(
+            kwargs={**connection_kwargs, "row_factory": dict_row},
+            min_size=min(4, pool_size),
+            max_size=pool_size,
+            open=True,
+            timeout=30.0,
+            check=ConnectionPool.check_connection,
+            name="google-maps-enrichment",
+        )
+        self.pool.wait(timeout=15.0)
 
-    def connect(self) -> psycopg.Connection:
-        return psycopg.connect(**self.connection_kwargs, row_factory=dict_row)
+    def connect(self) -> Any:
+        """Borrow a pooled connection for one short database operation."""
+        return self.pool.connection()
+
+    def pool_stats(self) -> dict[str, int]:
+        return dict(self.pool.get_stats())
+
+    def close(self) -> None:
+        self.pool.close()
 
     def create_run(
         self,
         requested_count: int,
         worker_count: int,
+        website_worker_count: int,
         review_provider: str,
     ) -> uuid.UUID:
         run_id = uuid.uuid4()
@@ -680,10 +738,11 @@ class EnrichmentRepository:
             connection.execute(
                 """
                 insert into warehouse.google_maps_enrichment_runs (
-                    run_id, status, requested_count, worker_count, review_provider
-                ) values (%s, 'running', %s, %s, %s)
+                    run_id, status, requested_count, worker_count,
+                    website_worker_count, review_provider
+                ) values (%s, 'running', %s, %s, %s, %s)
                 """,
-                (run_id, requested_count, worker_count, review_provider),
+                (run_id, requested_count, worker_count, website_worker_count, review_provider),
             )
         return run_id
 
@@ -756,6 +815,15 @@ class EnrichmentRepository:
                 """,
                 (review_provider, run_id),
             )
+            connection.execute(
+                """
+                update warehouse.google_maps_enrichment
+                set website_check_state = 'queued', website_worker_number = null,
+                    website_check_started_at = null, updated_at = current_timestamp
+                where run_id = %s and website_check_state = 'in_progress'
+                """,
+                (run_id,),
+            )
             pending = connection.execute(
                 """
                 select count(*) as count
@@ -812,21 +880,32 @@ class EnrichmentRepository:
         query: str,
         decision: MatchDecision,
         review_metadata: ReviewMetadata,
-        website_verification: WebsiteVerification,
     ) -> None:
         best = decision.best
-        # Candidate details remain in candidate_snapshot for audit, but a Google
-        # identity/website is associated at the top level only after a confident
-        # match. This prevents downstream users from treating an ambiguous or
-        # rejected nearby business as the warehouse entity.
+        # Candidate details remain in candidate_snapshot for audit. The best
+        # candidate is associated at the top level only when its binary score
+        # reaches the versioned cutoff.
         lead = best.lead if best and decision.status == "matched" else None
-        exists = True if decision.status == "matched" else False if decision.status == "not_found" else None
+        exists = decision.status == "matched"
         website = review_metadata.website_url or (lead.website_raw if lead else None)
-        google_website_found = (
-            website is not None
-            if decision.status == "matched"
-            else False if decision.status == "not_found" else None
-        )
+        google_website_found = website is not None if decision.status == "matched" else False
+        if google_website_found:
+            website_verification = WebsiteVerification(None, None, None)
+            website_check_state = "queued"
+        elif decision.status == "matched":
+            website_verification = WebsiteVerification(
+                False,
+                "not_listed_on_google",
+                datetime.now(timezone.utc),
+            )
+            website_check_state = "not_applicable"
+        else:
+            website_verification = WebsiteVerification(
+                False,
+                "business_not_found_on_google",
+                datetime.now(timezone.utc),
+            )
+            website_check_state = "not_applicable"
         connection.execute(
             """
             update warehouse.google_maps_enrichment
@@ -847,10 +926,16 @@ class EnrichmentRepository:
                 website_verified = %s,
                 website_status = %s,
                 website_checked_at = %s,
+                website_check_state = %s,
+                website_worker_number = null,
+                website_check_attempt_count = 0,
+                website_check_started_at = null,
                 review_count = %s,
                 latest_review_at = %s,
                 review_metadata_source = %s,
                 match_score = %s,
+                match_policy_version = %s,
+                match_threshold = %s,
                 name_score = %s,
                 address_score = %s,
                 distance_meters = %s,
@@ -878,10 +963,13 @@ class EnrichmentRepository:
                 website_verification.verified,
                 website_verification.status,
                 website_verification.checked_at,
+                website_check_state,
                 review_metadata.review_count,
                 review_metadata.latest_review_at,
                 review_metadata.source,
-                best.composite_score if best else None,
+                best.composite_score if best else 0.0,
+                MATCH_POLICY_VERSION,
+                MATCH_THRESHOLD,
                 best.name_score if best else None,
                 best.address_score if best else None,
                 best.distance_meters if best else None,
@@ -889,6 +977,77 @@ class EnrichmentRepository:
                 Jsonb(candidate_snapshot(decision.candidates)),
                 job.entity_id,
             ),
+        )
+        connection.commit()
+
+    @staticmethod
+    def claim_website(
+        connection: psycopg.Connection,
+        run_id: uuid.UUID,
+        worker_number: int,
+    ) -> Optional[WebsiteJob]:
+        row = connection.execute(
+            """
+            with next_job as (
+                select entity_id
+                from warehouse.google_maps_enrichment
+                where run_id = %s and website_check_state = 'queued'
+                order by entity_id
+                for update skip locked
+                limit 1
+            )
+            update warehouse.google_maps_enrichment enrichment
+            set website_check_state = 'in_progress',
+                website_worker_number = %s,
+                website_check_attempt_count = enrichment.website_check_attempt_count + 1,
+                website_check_started_at = current_timestamp,
+                updated_at = current_timestamp
+            from next_job
+            where enrichment.entity_id = next_job.entity_id
+            returning enrichment.entity_id, enrichment.website_url
+            """,
+            (run_id, worker_number),
+        ).fetchone()
+        connection.commit()
+        if row is None:
+            return None
+        return WebsiteJob(**row)
+
+    @staticmethod
+    def finish_website(
+        connection: psycopg.Connection,
+        job: WebsiteJob,
+        verification: WebsiteVerification,
+    ) -> None:
+        connection.execute(
+            """
+            update warehouse.google_maps_enrichment
+            set website_verified = %s,
+                website_status = %s,
+                website_checked_at = %s,
+                website_check_state = 'completed',
+                updated_at = current_timestamp
+            where entity_id = %s and website_check_state = 'in_progress'
+            """,
+            (
+                verification.verified,
+                verification.status,
+                verification.checked_at,
+                job.entity_id,
+            ),
+        )
+        connection.commit()
+
+    @staticmethod
+    def requeue_website(connection: psycopg.Connection, entity_id: int) -> None:
+        connection.execute(
+            """
+            update warehouse.google_maps_enrichment
+            set website_check_state = 'queued', website_worker_number = null,
+                website_check_started_at = null, updated_at = current_timestamp
+            where entity_id = %s and website_check_state = 'in_progress'
+            """,
+            (entity_id,),
         )
         connection.commit()
 
@@ -906,6 +1065,9 @@ class EnrichmentRepository:
                 search_query = %s, error = %s,
                 google_maps_searched = false, google_website_found = null,
                 website_verified = null, website_status = null, website_checked_at = null,
+                website_check_state = 'not_applicable', website_worker_number = null,
+                website_check_attempt_count = 0,
+                website_check_started_at = null,
                 updated_at = current_timestamp
             where entity_id = %s
             """,
@@ -922,6 +1084,9 @@ class EnrichmentRepository:
             set status = 'failed', search_query = %s, error = %s,
                 google_maps_searched = false, google_website_found = null,
                 website_verified = null, website_status = null, website_checked_at = null,
+                website_check_state = 'not_applicable', website_worker_number = null,
+                website_check_attempt_count = 0,
+                website_check_started_at = null,
                 searched_at = current_timestamp, updated_at = current_timestamp
             where entity_id = %s
             """,
@@ -951,6 +1116,16 @@ class EnrichmentRepository:
             """,
             (run_id,),
         ).fetchall()
+        website_state_rows = connection.execute(
+            """
+            select website_check_state, count(*) as count
+            from warehouse.google_maps_enrichment
+            where run_id = %s
+            group by website_check_state
+            order by website_check_state
+            """,
+            (run_id,),
+        ).fetchall()
         metrics = connection.execute(
             """
             select
@@ -977,6 +1152,9 @@ class EnrichmentRepository:
             "statuses": {row["status"]: row["count"] for row in status_rows},
             "website_statuses": {
                 row["website_status"]: row["count"] for row in website_status_rows
+            },
+            "website_check_states": {
+                row["website_check_state"]: row["count"] for row in website_state_rows
             },
             **dict(metrics),
         }
@@ -1030,7 +1208,7 @@ class EnrichmentRepository:
         return summary
 
 
-def run_worker(
+def run_maps_worker(
     repository: EnrichmentRepository,
     run_id: uuid.UUID,
     worker_number: int,
@@ -1038,8 +1216,8 @@ def run_worker(
     api_key: Optional[str],
     captcha_api_key: Optional[str],
     throttle_controller: ThrottleController,
+    rate_limiter: ProxyRateLimiter,
     timeout_seconds: float,
-    request_delay_seconds: float,
     max_attempts: int,
 ) -> WorkerStats:
     stats = WorkerStats(worker_number=worker_number)
@@ -1050,10 +1228,10 @@ def run_worker(
         zoom_level=14,
         captcha_handler=captcha_handler,
     )
-    connection = repository.connect()
     try:
         while not throttle_controller.stop_requested:
-            job = repository.claim(connection, run_id, worker_number)
+            with repository.connect() as connection:
+                job = repository.claim(connection, run_id, worker_number)
             if job is None:
                 break
             query = build_search_query(job)
@@ -1062,6 +1240,8 @@ def run_worker(
                 last_error: Optional[Exception] = None
                 for attempt in range(1, max_attempts + 1):
                     if not throttle_controller.wait_for_route(route):
+                        raise RunAborted(throttle_controller.abort_reason or "run aborted")
+                    if not rate_limiter.acquire(throttle_controller):
                         raise RunAborted(throttle_controller.abort_reason or "run aborted")
                     captcha_before = client.captcha_detected
                     stats.search_attempts += 1
@@ -1090,6 +1270,21 @@ def run_worker(
                             stats.throttled_searches += 1
                         if throttle_controller.stop_requested:
                             raise RunAborted(throttle_controller.abort_reason or "run aborted") from error
+                        if isinstance(error, GoogleMapsPayloadDiscoveryError):
+                            # This failure was concentrated in a single stale
+                            # persistent session in the prior run. Retry it once
+                            # with fresh cookies/connections; repeating it more
+                            # than once only replays the same bad bootstrap.
+                            if attempt < min(max_attempts, 2):
+                                stats.retries += 1
+                                stats.payload_session_resets += 1
+                                client.reset_session()
+                                if not throttle_controller.wait(random.uniform(0.25, 0.75)):
+                                    raise RunAborted(
+                                        throttle_controller.abort_reason or "run aborted"
+                                    ) from error
+                                continue
+                            break
                         if attempt < max_attempts:
                             stats.retries += 1
                             backoff = min(
@@ -1105,74 +1300,225 @@ def run_worker(
 
                 decision = choose_match(job, leads)
                 metadata = ReviewMetadata(None, None, None, "not_applicable")
-                if decision.status == "matched" and decision.best and decision.best.lead.place_id:
-                    metadata = fetch_official_review_metadata(
-                        client,
-                        decision.best.lead.place_id,
-                        api_key,
+                if decision.status == "matched" and decision.best:
+                    matched_lead = decision.best.lead
+                    structured_review_count = (
+                        int(matched_lead.reviews_count)
+                        if matched_lead.review_count_available
+                        else None
                     )
-                elif decision.status == "ambiguous":
-                    metadata = ReviewMetadata(None, None, None, "withheld_ambiguous_match")
-
-                best_lead = decision.best.lead if decision.best and decision.status == "matched" else None
-                website_url = metadata.website_url or (best_lead.website_raw if best_lead else None)
-                if decision.status == "matched" and website_url:
-                    website_verification = verify_website(client, website_url)
-                    stats.websites_checked += 1
-                    if website_verification.verified:
-                        stats.websites_live += 1
+                    metadata = ReviewMetadata(
+                        structured_review_count,
+                        None,
+                        None,
+                        "maps_search_count_qv9_not_attempted",
+                    )
+                    if (
+                        matched_lead.cid
+                        and (
+                            not matched_lead.review_count_available
+                            or matched_lead.reviews_count > 0
+                        )
+                    ):
+                        last_review_error: Optional[Exception] = None
+                        for review_attempt in range(1, 3):
+                            if not throttle_controller.wait_for_route(route):
+                                raise RunAborted(
+                                    throttle_controller.abort_reason or "run aborted"
+                                )
+                            if not rate_limiter.acquire(throttle_controller):
+                                raise RunAborted(
+                                    throttle_controller.abort_reason or "run aborted"
+                                )
+                            captcha_before = client.captcha_detected
+                            stats.review_attempts += 1
+                            try:
+                                metadata = fetch_internal_review_metadata(client, matched_lead)
+                                challenge_detected = client.captcha_detected > captcha_before
+                                throttle_controller.record_success(route, challenge_detected)
+                                if challenge_detected:
+                                    stats.throttled_review_requests += 1
+                                last_review_error = None
+                                break
+                            except Exception as error:
+                                last_review_error = error
+                                challenge_detected = client.captcha_detected > captcha_before
+                                throttled = throttle_controller.record_failure(
+                                    route,
+                                    error,
+                                    challenge_detected,
+                                )
+                                if throttled:
+                                    stats.throttled_review_requests += 1
+                                if throttle_controller.stop_requested:
+                                    raise RunAborted(
+                                        throttle_controller.abort_reason or "run aborted"
+                                    ) from error
+                                retryable = challenge_detected or isinstance(
+                                    error,
+                                    (
+                                        GoogleMapsThrottleError,
+                                        GoogleMapsChallengeError,
+                                        TimeoutError,
+                                        OSError,
+                                    ),
+                                )
+                                if retryable and review_attempt < 2:
+                                    stats.review_retries += 1
+                                    if not throttle_controller.wait(
+                                        1.0 + random.uniform(0.15, 0.85)
+                                    ):
+                                        raise RunAborted(
+                                            throttle_controller.abort_reason or "run aborted"
+                                        ) from error
+                                    continue
+                                break
+                        if last_review_error is not None:
+                            stats.failed_review_requests += 1
+                            error_source_prefix = (
+                                "maps_search_count"
+                                if matched_lead.review_count_available
+                                else "maps_search_count_unavailable"
+                            )
+                            metadata = ReviewMetadata(
+                                structured_review_count,
+                                None,
+                                None,
+                                f"{error_source_prefix}_qv9_error_"
+                                f"{type(last_review_error).__name__.lower()}",
+                            )
                     else:
-                        stats.website_errors += 1
-                elif decision.status == "matched":
-                    website_verification = WebsiteVerification(
-                        False,
-                        "not_listed_on_google",
-                        datetime.now(timezone.utc),
-                    )
-                elif decision.status == "not_found":
-                    website_verification = WebsiteVerification(
-                        False,
-                        "business_not_found_on_google",
-                        datetime.now(timezone.utc),
-                    )
-                else:
-                    website_verification = WebsiteVerification(None, None, None)
+                        metadata = fetch_internal_review_metadata(client, matched_lead)
 
-                repository.finish(
-                    connection,
-                    job,
-                    query,
-                    decision,
-                    metadata,
-                    website_verification,
-                )
+                    if metadata.review_count is not None:
+                        stats.review_counts_found += 1
+                    if metadata.latest_review_at is not None:
+                        stats.latest_reviews_found += 1
+                    elif metadata.source.endswith("_qv9_limited_empty"):
+                        stats.empty_review_payloads += 1
+
+                    # A configured Places key remains an optional fallback for
+                    # sessions where the internal newest-review RPC is limited.
+                    if (
+                        api_key
+                        and matched_lead.place_id
+                        and metadata.review_count != 0
+                        and metadata.latest_review_at is None
+                    ):
+                        official = fetch_official_review_metadata(
+                            client,
+                            matched_lead.place_id,
+                            api_key,
+                        )
+                        if official.latest_review_at is not None:
+                            metadata = ReviewMetadata(
+                                official.review_count
+                                if official.review_count is not None
+                                else metadata.review_count,
+                                official.latest_review_at,
+                                official.website_url,
+                                f"{metadata.source}+places_api_legacy_fallback",
+                            )
+                with repository.connect() as connection:
+                    repository.finish(
+                        connection,
+                        job,
+                        query,
+                        decision,
+                        metadata,
+                    )
                 stats.processed += 1
                 if decision.status == "matched":
                     stats.matched += 1
-                elif decision.status == "ambiguous":
-                    stats.ambiguous += 1
                 else:
                     stats.not_found += 1
             except RunAborted as error:
-                repository.requeue(connection, job.entity_id, query, str(error))
+                with repository.connect() as connection:
+                    repository.requeue(connection, job.entity_id, query, str(error))
                 stats.requeued += 1
                 break
             except Exception as error:
-                repository.fail(connection, job.entity_id, query, error)
+                with repository.connect() as connection:
+                    repository.fail(connection, job.entity_id, query, error)
                 stats.processed += 1
                 stats.failed += 1
                 if len(stats.errors) < 10:
                     stats.errors.append(f"entity_id={job.entity_id}: {type(error).__name__}: {error}")
-            if request_delay_seconds > 0:
-                if not throttle_controller.wait(
-                    request_delay_seconds + random.uniform(0.0, request_delay_seconds * 0.35)
-                ):
-                    break
     finally:
         stats.captchas_detected = client.captcha_detected
         stats.captchas_solved = client.captcha_solved
         stats.captchas_failed = client.captcha_failed
-        connection.close()
+        client.close()
+    return stats
+
+
+def run_website_worker(
+    repository: EnrichmentRepository,
+    run_id: uuid.UUID,
+    worker_number: int,
+    route: ProxyRoute,
+    maps_done: threading.Event,
+    throttle_controller: ThrottleController,
+    timeout_seconds: float,
+    max_attempts: int,
+) -> WebsiteWorkerStats:
+    stats = WebsiteWorkerStats(worker_number=worker_number)
+    client = GoogleMapsRpcClient(
+        proxy_url=route.raw_url,
+        timeout=timeout_seconds,
+        zoom_level=14,
+    )
+    current_job: Optional[WebsiteJob] = None
+    try:
+        while not throttle_controller.stop_requested:
+            with repository.connect() as connection:
+                current_job = repository.claim_website(connection, run_id, worker_number)
+            if current_job is None:
+                if maps_done.is_set():
+                    break
+                maps_done.wait(0.20)
+                continue
+
+            try:
+                verification = verify_website(
+                    client,
+                    current_job.website_url,
+                    max_attempts=max_attempts,
+                )
+                with repository.connect() as connection:
+                    repository.finish_website(connection, current_job, verification)
+                stats.processed += 1
+                if verification.verified:
+                    stats.live += 1
+                else:
+                    stats.errors += 1
+            except Exception as error:
+                verification = WebsiteVerification(
+                    False,
+                    _website_network_error_status(error),
+                    datetime.now(timezone.utc),
+                )
+                try:
+                    with repository.connect() as connection:
+                        repository.finish_website(connection, current_job, verification)
+                    stats.processed += 1
+                    stats.errors += 1
+                except Exception:
+                    with repository.connect() as connection:
+                        repository.requeue_website(connection, current_job.entity_id)
+                    stats.requeued += 1
+                    raise
+                if len(stats.error_samples) < 10:
+                    stats.error_samples.append(
+                        f"entity_id={current_job.entity_id}: {type(error).__name__}: {error}"
+                    )
+            finally:
+                current_job = None
+    finally:
+        if current_job is not None:
+            with repository.connect() as connection:
+                repository.requeue_website(connection, current_job.entity_id)
+            stats.requeued += 1
         client.close()
     return stats
 
