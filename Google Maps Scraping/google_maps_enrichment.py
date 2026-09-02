@@ -738,14 +738,23 @@ class EnrichmentRepository:
             rows = connection.execute(
                 """
                 insert into warehouse.google_maps_enrichment (entity_id, run_id, status)
-                select qualified.entity_id, %s, 'queued'
-                from warehouse.qualified_no_website_email_leads qualified
+                select candidate.entity_id, %s, 'queued'
+                from (
+                    select e.entity_id
+                    from warehouse.entities e
+                    where (e.is_qualified_no_website_email_lead or e.primary_source = 'fmcsa')
+                      and exists (
+                          select 1
+                          from warehouse.entity_emails email
+                          where email.entity_id = e.entity_id and email.is_usable
+                      )
+                ) candidate
                 where not exists (
                     select 1
                     from warehouse.google_maps_enrichment existing
-                    where existing.entity_id = qualified.entity_id
+                    where existing.entity_id = candidate.entity_id
                 )
-                order by qualified.entity_id
+                order by candidate.entity_id
                 limit %s
                 on conflict (entity_id) do nothing
                 returning entity_id
@@ -1016,23 +1025,44 @@ class EnrichmentRepository:
         job: WebsiteJob,
         verification: WebsiteVerification,
     ) -> None:
-        connection.execute(
-            """
-            update warehouse.google_maps_enrichment
-            set website_verified = %s,
-                website_status = %s,
-                website_checked_at = %s,
-                website_check_state = 'completed',
-                updated_at = current_timestamp
-            where entity_id = %s and website_check_state = 'in_progress'
-            """,
-            (
-                verification.verified,
-                verification.status,
-                verification.checked_at,
-                job.entity_id,
-            ),
-        )
+        if verification.status == "live":
+            connection.execute(
+                """
+                update warehouse.google_maps_enrichment
+                set website_verified = %s,
+                    website_status = %s,
+                    website_checked_at = %s,
+                    website_check_state = 'completed',
+                    has_operating_hours = false,
+                    regular_hours = null,
+                    updated_at = current_timestamp
+                where entity_id = %s and website_check_state = 'in_progress'
+                """,
+                (
+                    verification.verified,
+                    verification.status,
+                    verification.checked_at,
+                    job.entity_id,
+                ),
+            )
+        else:
+            connection.execute(
+                """
+                update warehouse.google_maps_enrichment
+                set website_verified = %s,
+                    website_status = %s,
+                    website_checked_at = %s,
+                    website_check_state = 'completed',
+                    updated_at = current_timestamp
+                where entity_id = %s and website_check_state = 'in_progress'
+                """,
+                (
+                    verification.verified,
+                    verification.status,
+                    verification.checked_at,
+                    job.entity_id,
+                ),
+            )
         connection.commit()
 
     @staticmethod
