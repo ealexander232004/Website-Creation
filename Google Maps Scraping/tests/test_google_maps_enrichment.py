@@ -195,15 +195,18 @@ class FakeDatabaseConnection:
     def __init__(self) -> None:
         self.query = None
         self.params = None
+        self.queries = []
+        self.param_list = []
         self.committed = False
 
     def execute(self, query, params):
         self.query = query
         self.params = params
+        self.queries.append(query)
+        self.param_list.append(params)
 
     def commit(self) -> None:
         self.committed = True
-
 
 class PersistenceTests(unittest.TestCase):
     def test_binary_confidence_and_policy_are_written(self) -> None:
@@ -223,6 +226,46 @@ class PersistenceTests(unittest.TestCase):
         self.assertIn(MATCH_POLICY_VERSION, connection.params)
         self.assertIn(MATCH_THRESHOLD, connection.params)
         self.assertIn("queued", connection.params)
+        self.assertTrue(connection.committed)
+
+    def test_finish_batch_writes_all_items(self) -> None:
+        source1 = job(entity_id=101)
+        source2 = job(entity_id=102)
+        decision1 = choose_match(source1, [lead(website_raw="https://example.com/")])
+        decision2 = choose_match(source2, [])
+        connection = FakeDatabaseConnection()
+        items = [
+            (
+                source1,
+                build_search_query(source1),
+                decision1,
+                ReviewMetadata(5, None, None, "test"),
+            ),
+            (
+                source2,
+                build_search_query(source2),
+                decision2,
+                ReviewMetadata(None, None, None, "test"),
+            ),
+        ]
+        EnrichmentRepository.finish_batch(connection, items)
+        self.assertEqual(len(connection.queries), 2)
+        self.assertEqual(connection.param_list[0][-1], 101)
+        self.assertEqual(connection.param_list[1][-1], 102)
+        self.assertTrue(connection.committed)
+
+    def test_finish_website_batch_writes_all_items(self) -> None:
+        from google_maps_enrichment import WebsiteJob, WebsiteVerification
+        job1 = WebsiteJob(entity_id=201, website_url="https://live.com")
+        job2 = WebsiteJob(entity_id=202, website_url="https://dead.com")
+        v1 = WebsiteVerification(True, "live", datetime.now(timezone.utc))
+        v2 = WebsiteVerification(False, "http_404", datetime.now(timezone.utc))
+        connection = FakeDatabaseConnection()
+        EnrichmentRepository.finish_website_batch(connection, [(job1, v1), (job2, v2)])
+        self.assertEqual(len(connection.queries), 2)
+        self.assertIn("website_check_state = 'completed'", connection.queries[0])
+        self.assertEqual(connection.param_list[0][-1], 201)
+        self.assertEqual(connection.param_list[1][-1], 202)
         self.assertTrue(connection.committed)
 
 
@@ -490,6 +533,31 @@ class RpcCaptchaTests(unittest.TestCase):
         finally:
             client.close()
 
+
+class MultiProcessArgTests(unittest.TestCase):
+    def test_processes_arg_defaults_to_one(self) -> None:
+        from enrich_google_maps import parse_args
+        import sys
+        orig_argv = sys.argv
+        try:
+            sys.argv = ["enrich_google_maps.py", "--limit", "100", "--workers", "10"]
+            args = parse_args()
+            self.assertEqual(args.processes, 1)
+            self.assertIsNone(args.child_run)
+            self.assertEqual(args.worker_offset, 0)
+        finally:
+            sys.argv = orig_argv
+
+    def test_processes_arg_parses_custom_value(self) -> None:
+        from enrich_google_maps import parse_args
+        import sys
+        orig_argv = sys.argv
+        try:
+            sys.argv = ["enrich_google_maps.py", "--limit", "100", "--workers", "10", "--processes", "4"]
+            args = parse_args()
+            self.assertEqual(args.processes, 4)
+        finally:
+            sys.argv = orig_argv
 
 if __name__ == "__main__":
     unittest.main()
