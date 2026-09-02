@@ -11,8 +11,11 @@ from __future__ import annotations
 import html
 import json
 import logging
+import random
 import re
 import urllib.parse
+from dataclasses import dataclass
+from datetime import datetime, timezone
 from typing import Any, Dict, List, Optional, Tuple
 
 try:
@@ -35,6 +38,9 @@ BOOTSTRAP_PAYLOAD_LINK_RE = re.compile(
     r'''href=["'](?P<href>/search\?[^"']*\btbm=map[^"']*)["']''',
     flags=re.IGNORECASE,
 )
+BOOTSTRAP_KEI_RE = re.compile(r'''\bkEI\s*=\s*["'](?P<kei>[^"']+)["']''')
+REVIEW_RPC_ID = "qv9Egd"
+REVIEW_RPC_PATH = "/maps/_/MapsWizUi/data/batchexecute"
 
 # Realistic Chrome browser headers
 DEFAULT_HEADERS = {
@@ -72,6 +78,24 @@ class GoogleMapsChallengeError(GoogleMapsThrottleError):
     """A Google bot challenge could not be solved."""
 
 
+class GoogleMapsPayloadDiscoveryError(GoogleMapsRpcError):
+    """The bootstrap loaded but did not expose the structured Maps endpoint."""
+
+
+class GoogleMapsReviewRpcError(GoogleMapsRpcError):
+    """The structured Maps review RPC returned an invalid or rejected payload."""
+
+
+@dataclass(frozen=True)
+class GoogleMapsReviewPage:
+    """The newest public review returned by MapsUgcPostService.ListUgcPosts."""
+
+    latest_review_at: Optional[datetime]
+    relative_date: Optional[str]
+    has_reviews: bool
+    exhausted: bool
+
+
 class GoogleMapsRpcClient:
     """Queries Google Maps web payloads directly without DOM rendering."""
 
@@ -91,16 +115,36 @@ class GoogleMapsRpcClient:
         self.captcha_detected = 0
         self.captcha_solved = 0
         self.captcha_failed = 0
-        self._session = (
+        self._session = self._new_session()
+        self._payload_url_cache: Dict[Tuple[str, float, float], Tuple[str, str]] = {}
+        self._bootstrap_context_cache: Dict[Tuple[str, float, float], Tuple[str, str]] = {}
+        self._last_bootstrap_context: Optional[Tuple[str, str]] = None
+        self._review_client_context: Optional[int] = None
+        self._review_request_id = random.randint(100_000, 999_999)
+
+    def _new_session(self) -> Any:
+        return (
             cffi_requests.Session()
             if CURL_CFFI_AVAILABLE
-            else cffi_requests.Client(proxy=self.proxy_url, timeout=self.timeout, follow_redirects=True)
+            else cffi_requests.Client(
+                proxy=self.proxy_url,
+                timeout=self.timeout,
+                follow_redirects=True,
+            )
         )
-        self._payload_url_cache: Dict[Tuple[str, float, float], Tuple[str, str]] = {}
 
     def close(self) -> None:
         """Release sockets held by the underlying proxied HTTP session."""
         self._session.close()
+
+    def reset_session(self) -> None:
+        """Drops cookies/connections after a malformed or degraded bootstrap."""
+        self._session.close()
+        self._session = self._new_session()
+        self._payload_url_cache.clear()
+        self._bootstrap_context_cache.clear()
+        self._last_bootstrap_context = None
+        self._review_client_context = None
 
     def _request(
         self,
@@ -224,6 +268,7 @@ class GoogleMapsRpcClient:
         cache_key = (keyword, round(lat, 7), round(lng, 7))
         cached = self._payload_url_cache.get(cache_key)
         if cached:
+            self._last_bootstrap_context = self._bootstrap_context_cache.get(cache_key)
             return cached
 
         bootstrap_url = self._bootstrap_url(keyword, lat, lng)
@@ -238,13 +283,181 @@ class GoogleMapsRpcClient:
 
         match = BOOTSTRAP_PAYLOAD_LINK_RE.search(response.text)
         if match is None:
-            raise RuntimeError("Maps bootstrap did not publish a /search?tbm=map payload URL")
+            raise GoogleMapsPayloadDiscoveryError(
+                "Maps bootstrap did not publish a /search?tbm=map payload URL"
+            )
 
         relative_url = html.unescape(match.group("href"))
         payload_url = urllib.parse.urljoin(GMAPS_BOOTSTRAP_ORIGIN, relative_url)
+        kei_match = BOOTSTRAP_KEI_RE.search(response.text)
+        if kei_match is None:
+            raise GoogleMapsPayloadDiscoveryError("Maps bootstrap did not publish a kEI session ID")
+        source_path = urllib.parse.urlsplit(bootstrap_url).path
         discovered = (bootstrap_url, payload_url)
         self._payload_url_cache[cache_key] = discovered
+        self._bootstrap_context_cache[cache_key] = (kei_match.group("kei"), source_path)
+        self._last_bootstrap_context = self._bootstrap_context_cache[cache_key]
         return discovered
+
+    @staticmethod
+    def _review_rpc_entry(response_text: str) -> list[Any]:
+        """Extracts the qv9Egd entry from batchexecute's length-framed response."""
+        text = response_text.lstrip()
+        if text.startswith(")]}'"):
+            text = text[4:].lstrip("\r\n")
+        for line in text.splitlines():
+            candidate = line.strip()
+            if not candidate.startswith("["):
+                continue
+            try:
+                frame = json.loads(candidate)
+            except json.JSONDecodeError:
+                continue
+            if not isinstance(frame, list):
+                continue
+            for entry in frame:
+                if (
+                    isinstance(entry, list)
+                    and len(entry) >= 3
+                    and entry[0] == "wrb.fr"
+                    and entry[1] == REVIEW_RPC_ID
+                ):
+                    return entry
+        raise GoogleMapsReviewRpcError("Maps review RPC response was missing qv9Egd")
+
+    @staticmethod
+    def _parse_review_rpc_payload(payload: Any) -> GoogleMapsReviewPage:
+        if not isinstance(payload, list):
+            raise GoogleMapsReviewRpcError("Maps review RPC payload was not an array")
+
+        exhausted = bool(payload[5]) if len(payload) > 5 else False
+        posts = payload[2] if len(payload) > 2 and isinstance(payload[2], list) else []
+        if not posts:
+            return GoogleMapsReviewPage(None, None, False, exhausted)
+
+        # Response field 3 is repeated UgcPost. Its field 1 contains the review,
+        # whose field 2 is metadata. Google reads metadata field 4 as a
+        # microsecond Unix timestamp when evaluating review age; field 7 is the
+        # human-readable relative date shown in Maps.
+        first_post = posts[0]
+        try:
+            review = first_post[0]
+            metadata = review[1]
+        except (IndexError, TypeError):
+            raise GoogleMapsReviewRpcError("Newest Maps review was missing metadata")
+
+        relative_date = (
+            metadata[6]
+            if isinstance(metadata, list) and len(metadata) > 6 and isinstance(metadata[6], str)
+            else None
+        )
+        raw_timestamp = metadata[3] if isinstance(metadata, list) and len(metadata) > 3 else None
+        latest_review_at: Optional[datetime] = None
+        if isinstance(raw_timestamp, str) and raw_timestamp.isdigit():
+            raw_timestamp = int(raw_timestamp)
+        if isinstance(raw_timestamp, (int, float)) and raw_timestamp > 0:
+            latest_review_at = datetime.fromtimestamp(
+                float(raw_timestamp) / 1_000_000,
+                tz=timezone.utc,
+            )
+        return GoogleMapsReviewPage(latest_review_at, relative_date, True, exhausted)
+
+    def _review_rpc_inner(self, cid: str, kei: str, client_context: int) -> list[Any]:
+        try:
+            cid_hex = format(int(cid), "x")
+        except (TypeError, ValueError) as error:
+            raise GoogleMapsReviewRpcError(f"Invalid Google CID: {cid!r}") from error
+        return [
+            [
+                [f"0x0:0x{cid_hex}"],
+                None,
+                None,
+                None,
+                None,
+                [None, None, None, [[1]]],
+            ],
+            [20],
+            None,
+            None,
+            [kei, None, None, None, None, None, client_context],
+            None,
+            None,
+            [None, 1, 1],
+            None,
+            None,
+            None,
+            None,
+            [2],
+        ]
+
+    def _post_review_rpc(
+        self,
+        cid: str,
+        kei: str,
+        source_path: str,
+        client_context: int,
+    ) -> GoogleMapsReviewPage:
+        inner = self._review_rpc_inner(cid, kei, client_context)
+        f_req = [[[REVIEW_RPC_ID, json.dumps(inner, separators=(",", ":")), None, "generic"]]]
+        self._review_request_id += 100_000
+        query = urllib.parse.urlencode(
+            {
+                "rpcids": REVIEW_RPC_ID,
+                "source-path": source_path,
+                "hl": "en",
+                "_reqid": str(self._review_request_id),
+                "rt": "c",
+            }
+        )
+        url = f"{GMAPS_BOOTSTRAP_ORIGIN}{REVIEW_RPC_PATH}?{query}"
+        response = self._guard_google_response(
+            self._request(
+                "POST",
+                url,
+                headers={
+                    **DEFAULT_HEADERS,
+                    "content-type": "application/x-www-form-urlencoded;charset=UTF-8",
+                    "origin": GMAPS_BOOTSTRAP_ORIGIN,
+                    "referer": urllib.parse.urljoin(GMAPS_BOOTSTRAP_ORIGIN, source_path),
+                    "x-same-domain": "1",
+                },
+                data={"f.req": json.dumps(f_req, separators=(",", ":"))},
+            )
+        )
+        if response.status_code != 200:
+            raise GoogleMapsReviewRpcError(f"Maps review RPC returned HTTP {response.status_code}")
+        entry = self._review_rpc_entry(response.text)
+        rpc_error = entry[5] if len(entry) > 5 else None
+        if entry[2] is None:
+            status = rpc_error[0] if isinstance(rpc_error, list) and rpc_error else "unknown"
+            raise GoogleMapsReviewRpcError(f"Maps review RPC rejected context with status {status}")
+        try:
+            payload = json.loads(entry[2])
+        except (TypeError, json.JSONDecodeError) as error:
+            raise GoogleMapsReviewRpcError("Maps review RPC returned malformed JSON") from error
+        return self._parse_review_rpc_payload(payload)
+
+    def fetch_latest_review(self, cid: str) -> GoogleMapsReviewPage:
+        """Fetches the newest review through the live qv9Egd RPC without DOM parsing."""
+        if self._last_bootstrap_context is None:
+            raise GoogleMapsReviewRpcError("Review RPC requires a successful Maps search bootstrap")
+        kei, source_path = self._last_bootstrap_context
+        contexts = (
+            [self._review_client_context]
+            if self._review_client_context is not None
+            else [81, 0]
+        )
+        errors: list[str] = []
+        for client_context in contexts:
+            try:
+                result = self._post_review_rpc(cid, kei, source_path, client_context)
+                self._review_client_context = client_context
+                return result
+            except GoogleMapsReviewRpcError as error:
+                errors.append(str(error))
+                if "rejected context with status 3" not in str(error):
+                    raise
+        raise GoogleMapsReviewRpcError("; ".join(errors))
 
     @staticmethod
     def _payload_url_with_offset(payload_url: str, start_index: int, page_size: int = 20) -> str:
@@ -393,22 +606,21 @@ class GoogleMapsRpcClient:
             all_categories = [value for value in p[76] if isinstance(value, str)]
         category = all_categories[0] if all_categories else None
 
-        # 3. Rating and review count: rating is p[4][7], count is p[37][1].
+        # 3. Rating and review count: p[4][7] is rating and p[4][8]
+        # is the true review count. p[37][1] is the photo count.
         rating = None
         reviews_count = 0
+        review_count_available = False
         if len(p) > 4 and isinstance(p[4], list) and len(p[4]) > 7:
             try:
                 rating = float(p[4][7]) if p[4][7] is not None else None
             except (ValueError, TypeError):
                 pass
-        if len(p) > 37 and isinstance(p[37], list) and len(p[37]) > 1:
+        if len(p) > 4 and isinstance(p[4], list) and len(p[4]) > 8:
             try:
-                reviews_count = int(p[37][1]) if p[37][1] is not None else 0
-            except (ValueError, TypeError):
-                pass
-        elif len(p) > 4 and isinstance(p[4], list) and len(p[4]) > 8:
-            try:
-                reviews_count = int(p[4][8]) if p[4][8] is not None else 0
+                if p[4][8] is not None:
+                    reviews_count = int(p[4][8])
+                    review_count_available = True
             except (ValueError, TypeError):
                 pass
 
@@ -492,6 +704,7 @@ class GoogleMapsRpcClient:
             has_website=has_real_web,
             rating=rating,
             reviews_count=reviews_count,
+            review_count_available=review_count_available,
             is_claimed=is_claimed,
             maps_url=maps_url,
             search_keyword=keyword,

@@ -4,6 +4,7 @@ create table if not exists warehouse.google_maps_enrichment_runs (
     requested_count integer not null check (requested_count > 0),
     enqueued_count integer not null default 0 check (enqueued_count >= 0),
     worker_count smallint not null check (worker_count > 0),
+    website_worker_count smallint not null default 0 check (website_worker_count >= 0),
     review_provider text not null,
     started_at timestamptz not null default current_timestamp,
     completed_at timestamptz,
@@ -35,10 +36,20 @@ create table if not exists warehouse.google_maps_enrichment (
     website_verified boolean,
     website_status text,
     website_checked_at timestamptz,
+    website_check_state text not null default 'not_applicable' check (
+        website_check_state in ('not_applicable', 'queued', 'in_progress', 'completed')
+    ),
+    website_worker_number smallint,
+    website_check_attempt_count smallint not null default 0 check (
+        website_check_attempt_count >= 0
+    ),
+    website_check_started_at timestamptz,
     review_count integer check (review_count >= 0),
     latest_review_at timestamptz,
     review_metadata_source text,
     match_score double precision check (match_score between 0 and 1),
+    match_policy_version text,
+    match_threshold double precision check (match_threshold between 0 and 1),
     name_score double precision check (name_score between 0 and 1),
     address_score double precision check (address_score between 0 and 1),
     distance_meters double precision check (distance_meters >= 0),
@@ -56,7 +67,56 @@ alter table warehouse.google_maps_enrichment
     add column if not exists google_website_found boolean,
     add column if not exists website_verified boolean,
     add column if not exists website_status text,
-    add column if not exists website_checked_at timestamptz;
+    add column if not exists website_checked_at timestamptz,
+    add column if not exists website_check_state text not null default 'not_applicable',
+    add column if not exists website_worker_number smallint,
+    add column if not exists website_check_attempt_count smallint not null default 0,
+    add column if not exists website_check_started_at timestamptz,
+    add column if not exists match_policy_version text,
+    add column if not exists match_threshold double precision;
+
+alter table warehouse.google_maps_enrichment_runs
+    add column if not exists website_worker_count smallint not null default 0;
+
+do $$
+begin
+    if not exists (
+        select 1
+        from pg_constraint
+        where conname = 'google_maps_enrichment_runs_website_worker_count_check'
+          and conrelid = 'warehouse.google_maps_enrichment_runs'::regclass
+    ) then
+        alter table warehouse.google_maps_enrichment_runs
+        add constraint google_maps_enrichment_runs_website_worker_count_check
+        check (website_worker_count >= 0);
+    end if;
+end $$;
+
+do $$
+begin
+    if not exists (
+        select 1
+        from pg_constraint
+        where conname = 'google_maps_enrichment_website_attempt_count_check'
+          and conrelid = 'warehouse.google_maps_enrichment'::regclass
+    ) then
+        alter table warehouse.google_maps_enrichment
+        add constraint google_maps_enrichment_website_attempt_count_check
+        check (website_check_attempt_count >= 0);
+    end if;
+end $$;
+
+-- Label historic decisions without pretending they used today's binary line.
+update warehouse.google_maps_enrichment
+set match_policy_version = 'legacy_multiclass_v1'
+where match_policy_version is null
+  and status in ('matched', 'ambiguous', 'not_found');
+
+update warehouse.google_maps_enrichment
+set match_score = 0.0
+where match_score is null
+  and google_maps_searched is true
+  and candidate_count = 0;
 
 -- Allow the controller to distinguish a protective throttle abort from a crash.
 alter table warehouse.google_maps_enrichment_runs
@@ -105,6 +165,91 @@ begin
         check (
             (google_maps_searched is false and google_website_found is null)
             or google_maps_searched is true
+        );
+    end if;
+end $$;
+
+do $$
+begin
+    if not exists (
+        select 1
+        from pg_constraint
+        where conname = 'google_maps_enrichment_match_threshold_check'
+          and conrelid = 'warehouse.google_maps_enrichment'::regclass
+    ) then
+        alter table warehouse.google_maps_enrichment
+        add constraint google_maps_enrichment_match_threshold_check
+        check (match_threshold is null or match_threshold between 0 and 1);
+    end if;
+end $$;
+
+do $$
+begin
+    if not exists (
+        select 1
+        from pg_constraint
+        where conname = 'google_maps_enrichment_website_check_state_check'
+          and conrelid = 'warehouse.google_maps_enrichment'::regclass
+    ) then
+        alter table warehouse.google_maps_enrichment
+        add constraint google_maps_enrichment_website_check_state_check
+        check (
+            website_check_state in ('not_applicable', 'queued', 'in_progress', 'completed')
+        );
+    end if;
+end $$;
+
+do $$
+begin
+    if not exists (
+        select 1
+        from pg_constraint
+        where conname = 'google_maps_enrichment_website_queue_consistency_check'
+          and conrelid = 'warehouse.google_maps_enrichment'::regclass
+    ) then
+        alter table warehouse.google_maps_enrichment
+        add constraint google_maps_enrichment_website_queue_consistency_check
+        check (
+            website_check_state = 'not_applicable'
+            or (
+                google_maps_searched is true
+                and google_website_found is true
+                and website_url is not null
+                and (
+                    (
+                        website_check_state in ('queued', 'in_progress')
+                        and website_verified is null
+                        and website_status is null
+                        and website_checked_at is null
+                    )
+                    or (
+                        website_check_state = 'completed'
+                        and website_verified is not null
+                        and website_status is not null
+                        and website_checked_at is not null
+                    )
+                )
+            )
+        );
+    end if;
+end $$;
+
+do $$
+begin
+    if not exists (
+        select 1
+        from pg_constraint
+        where conname = 'google_maps_enrichment_binary_policy_check'
+          and conrelid = 'warehouse.google_maps_enrichment'::regclass
+    ) then
+        alter table warehouse.google_maps_enrichment
+        add constraint google_maps_enrichment_binary_policy_check
+        check (
+            match_policy_version <> 'binary_name85_location15_v1'
+            or (
+                status in ('queued', 'in_progress', 'matched', 'not_found', 'failed')
+                and match_threshold = 0.65
+            )
         );
     end if;
 end $$;
@@ -168,6 +313,10 @@ create index if not exists google_maps_enrichment_place_id_idx
 create index if not exists google_maps_enrichment_website_status_idx
     on warehouse.google_maps_enrichment(website_status)
     where website_status is not null;
+
+create index if not exists google_maps_enrichment_website_queue_idx
+    on warehouse.google_maps_enrichment(run_id, entity_id)
+    where website_check_state = 'queued';
 
 create index if not exists google_maps_enrichment_refresh_idx
     on warehouse.google_maps_enrichment(searched_at, entity_id)

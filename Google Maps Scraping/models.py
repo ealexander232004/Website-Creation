@@ -63,6 +63,10 @@ class Lead(BaseModel):
     # Reputation & Profile Metadata
     rating: Optional[float] = Field(None, description="Average review rating (0.0 - 5.0)")
     reviews_count: int = Field(0, description="Total number of Google reviews")
+    review_count_available: bool = Field(
+        False,
+        description="Whether reviews_count was explicitly present in the source payload",
+    )
     is_claimed: ClaimedStatus = Field(ClaimedStatus.UNKNOWN, description="GBP claimed status")
     price_level: Optional[str] = Field(None, description="Price tier indicator (e.g. $, $$, $$$)")
     business_status: Optional[str] = Field(None, description="Operational status (e.g. OPERATIONAL, CLOSED)")
