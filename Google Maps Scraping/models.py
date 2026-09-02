@@ -70,6 +70,14 @@ class Lead(BaseModel):
     is_claimed: ClaimedStatus = Field(ClaimedStatus.UNKNOWN, description="GBP claimed status")
     price_level: Optional[str] = Field(None, description="Price tier indicator (e.g. $, $$, $$$)")
     business_status: Optional[str] = Field(None, description="Operational status (e.g. OPERATIONAL, CLOSED)")
+    operating_hours: Dict[str, str] = Field(default_factory=dict, description="Daily operating hours (e.g. Monday: 11 AM-7 PM)")
+    current_status: Optional[str] = Field(None, description="Current operational status (e.g. Open now, Closed - Opens 11 AM)")
+    is_operational: bool = Field(False, description="True if business has active operating hours")
+    has_operating_hours: bool = Field(False, description="True if listing has published regular weekly hours")
+    is_claimed_owner: bool = Field(False, description="True if listing is managed by a verified owner on GBP")
+    is_permanently_closed: bool = Field(False, description="True if Google explicitly marked listing as permanently closed")
+    is_temporarily_closed: bool = Field(False, description="True if Google explicitly marked listing as temporarily closed")
+    special_hours_notice: Optional[str] = Field(None, description="Holiday or special hours advisory notice")
     
     # Metadata & Tracking
     maps_url: Optional[str] = Field(None, description="Direct URL to Google Maps place listing")
@@ -90,6 +98,12 @@ class Lead(BaseModel):
             "is_claimed": self.is_claimed.value,
             "rating": self.rating,
             "reviews_count": self.reviews_count,
+            "is_operational": self.is_operational,
+            "has_operating_hours": self.has_operating_hours,
+            "is_permanently_closed": self.is_permanently_closed,
+            "is_temporarily_closed": self.is_temporarily_closed,
+            "current_status": self.current_status,
+            "is_claimed_owner": self.is_claimed_owner,
             "full_address": self.full_address,
             "street": self.street,
             "city": self.city,
