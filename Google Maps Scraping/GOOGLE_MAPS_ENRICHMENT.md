@@ -30,9 +30,11 @@ python .\enrich_google_maps.py --limit 5000 --workers 75 --workers-per-proxy 8 `
 ```
 
 All network workers share the bounded Postgres pool. Connections are borrowed
-only for queue claims and result updates, then returned before any HTTP call, so
-100 network workers use no more than 25 database connections.
+only for batch queue claims (10 items) and batch result commits (10 items), then
+returned before any HTTP call, minimizing connection wait latency.
 
+Multi-core scaling: use `--processes 4` to distribute workers across 4 separate
+Python OS processes, bypassing the Python GIL and utilizing all available CPU cores.
 Website checks default to a 3-second timeout and a single attempt without
 retries; deterministic TLS, network, URL, redirect, timeout, and ordinary 4xx/5xx
 failures are recorded immediately.

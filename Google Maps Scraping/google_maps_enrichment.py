@@ -872,121 +872,130 @@ class EnrichmentRepository:
         jobs = cls.claim_batch(connection, run_id, worker_number, batch_size=1)
         return jobs[0] if jobs else None
     @staticmethod
+    def finish_batch(
+        connection: psycopg.Connection,
+        items: Sequence[Tuple[EnrichmentJob, str, MatchDecision, ReviewMetadata]],
+    ) -> None:
+        if not items:
+            return
+        for job, query, decision, review_metadata in items:
+            best = decision.best
+            lead = best.lead if best and decision.status == "matched" else None
+            exists = decision.status == "matched"
+            website = review_metadata.website_url or (lead.website_raw if lead else None)
+            google_website_found = website is not None if decision.status == "matched" else False
+            if google_website_found:
+                website_verification = WebsiteVerification(None, None, None)
+                website_check_state = "queued"
+            elif decision.status == "matched":
+                website_verification = WebsiteVerification(
+                    False,
+                    "not_listed_on_google",
+                    datetime.now(timezone.utc),
+                )
+                website_check_state = "not_applicable"
+            else:
+                website_verification = WebsiteVerification(
+                    False,
+                    "business_not_found_on_google",
+                    datetime.now(timezone.utc),
+                )
+                website_check_state = "not_applicable"
+
+            connection.execute(
+                """
+                update warehouse.google_maps_enrichment
+                set status = %s,
+                    search_query = %s,
+                    candidate_count = %s,
+                    exists_on_google_maps = %s,
+                    google_maps_searched = true,
+                    google_website_found = %s,
+                    google_place_id = %s,
+                    google_cid = %s,
+                    google_name = %s,
+                    google_formatted_address = %s,
+                    google_latitude = %s,
+                    google_longitude = %s,
+                    google_maps_url = %s,
+                    website_url = %s,
+                    website_verified = %s,
+                    website_status = %s,
+                    website_checked_at = %s,
+                    website_check_state = %s,
+                    website_worker_number = null,
+                    website_check_attempt_count = 0,
+                    website_check_started_at = null,
+                    review_count = %s,
+                    latest_review_at = %s,
+                    review_metadata_source = %s,
+                    has_operating_hours = %s,
+                    is_claimed_owner = %s,
+                    is_permanently_closed = %s,
+                    is_temporarily_closed = %s,
+                    regular_hours = %s,
+                    match_score = %s,
+                    match_policy_version = %s,
+                    match_threshold = %s,
+                    name_score = %s,
+                    address_score = %s,
+                    distance_meters = %s,
+                    match_reason = %s,
+                    candidate_snapshot = %s,
+                    error = null,
+                    searched_at = current_timestamp,
+                    updated_at = current_timestamp
+                where entity_id = %s
+                """,
+                (
+                    decision.status,
+                    query,
+                    len(decision.candidates),
+                    exists,
+                    google_website_found,
+                    lead.place_id if lead else None,
+                    lead.cid if lead else None,
+                    lead.name if lead else None,
+                    lead.full_address if lead else None,
+                    lead.latitude if lead else None,
+                    lead.longitude if lead else None,
+                    lead.maps_url if lead else None,
+                    website,
+                    website_verification.verified,
+                    website_verification.status,
+                    website_verification.checked_at,
+                    website_check_state,
+                    review_metadata.review_count,
+                    review_metadata.latest_review_at,
+                    review_metadata.source,
+                    review_metadata.has_operating_hours,
+                    review_metadata.is_claimed_owner,
+                    review_metadata.is_permanently_closed,
+                    review_metadata.is_temporarily_closed,
+                    Jsonb(review_metadata.regular_hours) if review_metadata.regular_hours else None,
+                    best.composite_score if best else 0.0,
+                    MATCH_POLICY_VERSION,
+                    MATCH_THRESHOLD,
+                    best.name_score if best else None,
+                    best.address_score if best else None,
+                    best.distance_meters if best else None,
+                    f"{decision.reason};{best.reason if best else 'no_candidate'}",
+                    Jsonb(candidate_snapshot(decision.candidates)),
+                    job.entity_id,
+                ),
+            )
+        connection.commit()
+
+    @classmethod
     def finish(
+        cls,
         connection: psycopg.Connection,
         job: EnrichmentJob,
         query: str,
         decision: MatchDecision,
         review_metadata: ReviewMetadata,
     ) -> None:
-        best = decision.best
-        # Candidate details remain in candidate_snapshot for audit. The best
-        # candidate is associated at the top level only when its binary score
-        # reaches the versioned cutoff.
-        lead = best.lead if best and decision.status == "matched" else None
-        exists = decision.status == "matched"
-        website = review_metadata.website_url or (lead.website_raw if lead else None)
-        google_website_found = website is not None if decision.status == "matched" else False
-        if google_website_found:
-            website_verification = WebsiteVerification(None, None, None)
-            website_check_state = "queued"
-        elif decision.status == "matched":
-            website_verification = WebsiteVerification(
-                False,
-                "not_listed_on_google",
-                datetime.now(timezone.utc),
-            )
-            website_check_state = "not_applicable"
-        else:
-            website_verification = WebsiteVerification(
-                False,
-                "business_not_found_on_google",
-                datetime.now(timezone.utc),
-            )
-            website_check_state = "not_applicable"
-        connection.execute(
-            """
-            update warehouse.google_maps_enrichment
-            set status = %s,
-                search_query = %s,
-                candidate_count = %s,
-                exists_on_google_maps = %s,
-                google_maps_searched = true,
-                google_website_found = %s,
-                google_place_id = %s,
-                google_cid = %s,
-                google_name = %s,
-                google_formatted_address = %s,
-                google_latitude = %s,
-                google_longitude = %s,
-                google_maps_url = %s,
-                website_url = %s,
-                website_verified = %s,
-                website_status = %s,
-                website_checked_at = %s,
-                website_check_state = %s,
-                website_worker_number = null,
-                website_check_attempt_count = 0,
-                website_check_started_at = null,
-                review_count = %s,
-                latest_review_at = %s,
-                review_metadata_source = %s,
-                has_operating_hours = %s,
-                is_claimed_owner = %s,
-                is_permanently_closed = %s,
-                is_temporarily_closed = %s,
-                regular_hours = %s,
-                match_score = %s,
-                match_policy_version = %s,
-                match_threshold = %s,
-                name_score = %s,
-                address_score = %s,
-                distance_meters = %s,
-                match_reason = %s,
-                candidate_snapshot = %s,
-                error = null,
-                searched_at = current_timestamp,
-                updated_at = current_timestamp
-            where entity_id = %s
-            """,
-            (
-                decision.status,
-                query,
-                len(decision.candidates),
-                exists,
-                google_website_found,
-                lead.place_id if lead else None,
-                lead.cid if lead else None,
-                lead.name if lead else None,
-                lead.full_address if lead else None,
-                lead.latitude if lead else None,
-                lead.longitude if lead else None,
-                lead.maps_url if lead else None,
-                website,
-                website_verification.verified,
-                website_verification.status,
-                website_verification.checked_at,
-                website_check_state,
-                review_metadata.review_count,
-                review_metadata.latest_review_at,
-                review_metadata.source,
-                review_metadata.has_operating_hours,
-                review_metadata.is_claimed_owner,
-                review_metadata.is_permanently_closed,
-                review_metadata.is_temporarily_closed,
-                Jsonb(review_metadata.regular_hours) if review_metadata.regular_hours else None,
-                best.composite_score if best else 0.0,
-                MATCH_POLICY_VERSION,
-                MATCH_THRESHOLD,
-                best.name_score if best else None,
-                best.address_score if best else None,
-                best.distance_meters if best else None,
-                f"{decision.reason};{best.reason if best else 'no_candidate'}",
-                Jsonb(candidate_snapshot(decision.candidates)),
-                job.entity_id,
-            ),
-        )
-        connection.commit()
+        cls.finish_batch(connection, [(job, query, decision, review_metadata)])
 
     @staticmethod
     def claim_website_batch(
@@ -1030,50 +1039,61 @@ class EnrichmentRepository:
         jobs = cls.claim_website_batch(connection, run_id, worker_number, batch_size=1)
         return jobs[0] if jobs else None
     @staticmethod
+    def finish_website_batch(
+        connection: psycopg.Connection,
+        items: Sequence[Tuple[WebsiteJob, WebsiteVerification]],
+    ) -> None:
+        if not items:
+            return
+        for job, verification in items:
+            if verification.status == "live":
+                connection.execute(
+                    """
+                    update warehouse.google_maps_enrichment
+                    set website_verified = %s,
+                        website_status = %s,
+                        website_checked_at = %s,
+                        website_check_state = 'completed',
+                        has_operating_hours = false,
+                        regular_hours = null,
+                        updated_at = current_timestamp
+                    where entity_id = %s and website_check_state = 'in_progress'
+                    """,
+                    (
+                        verification.verified,
+                        verification.status,
+                        verification.checked_at,
+                        job.entity_id,
+                    ),
+                )
+            else:
+                connection.execute(
+                    """
+                    update warehouse.google_maps_enrichment
+                    set website_verified = %s,
+                        website_status = %s,
+                        website_checked_at = %s,
+                        website_check_state = 'completed',
+                        updated_at = current_timestamp
+                    where entity_id = %s and website_check_state = 'in_progress'
+                    """,
+                    (
+                        verification.verified,
+                        verification.status,
+                        verification.checked_at,
+                        job.entity_id,
+                    ),
+                )
+        connection.commit()
+
+    @classmethod
     def finish_website(
+        cls,
         connection: psycopg.Connection,
         job: WebsiteJob,
         verification: WebsiteVerification,
     ) -> None:
-        if verification.status == "live":
-            connection.execute(
-                """
-                update warehouse.google_maps_enrichment
-                set website_verified = %s,
-                    website_status = %s,
-                    website_checked_at = %s,
-                    website_check_state = 'completed',
-                    has_operating_hours = false,
-                    regular_hours = null,
-                    updated_at = current_timestamp
-                where entity_id = %s and website_check_state = 'in_progress'
-                """,
-                (
-                    verification.verified,
-                    verification.status,
-                    verification.checked_at,
-                    job.entity_id,
-                ),
-            )
-        else:
-            connection.execute(
-                """
-                update warehouse.google_maps_enrichment
-                set website_verified = %s,
-                    website_status = %s,
-                    website_checked_at = %s,
-                    website_check_state = 'completed',
-                    updated_at = current_timestamp
-                where entity_id = %s and website_check_state = 'in_progress'
-                """,
-                (
-                    verification.verified,
-                    verification.status,
-                    verification.checked_at,
-                    job.entity_id,
-                ),
-            )
-        connection.commit()
+        cls.finish_website_batch(connection, [(job, verification)])
 
     @staticmethod
     def requeue_website(connection: psycopg.Connection, entity_id: int) -> None:
@@ -1271,6 +1291,7 @@ def run_maps_worker(
                 jobs = repository.claim_batch(connection, run_id, worker_number, batch_size=10)
             if not jobs:
                 break
+            completed_batch = []
             for idx, job in enumerate(jobs):
                 if throttle_controller.stop_requested:
                     with repository.connect() as connection:
@@ -1376,14 +1397,7 @@ def run_maps_worker(
                                     is_temporarily_closed=metadata.is_temporarily_closed,
                                     regular_hours=metadata.regular_hours,
                                 )
-                    with repository.connect() as connection:
-                        repository.finish(
-                            connection,
-                            job,
-                            query,
-                            decision,
-                            metadata,
-                        )
+                    completed_batch.append((job, query, decision, metadata))
                     stats.processed += 1
                     if decision.status == "matched":
                         stats.matched += 1
@@ -1409,6 +1423,9 @@ def run_maps_worker(
                         stats.errors.append(
                             f"entity_id={job.entity_id}: {type(error).__name__}: {error}"
                         )
+            if completed_batch:
+                with repository.connect() as connection:
+                    repository.finish_batch(connection, completed_batch)
     finally:
         stats.captchas_detected = client.captcha_detected
         stats.captchas_solved = client.captcha_solved
@@ -1445,10 +1462,18 @@ def run_website_worker(
                     with repository.connect() as connection:
                         jobs = repository.claim_website_batch(connection, run_id, worker_number, batch_size=10)
                     if not jobs:
-                        break
+                        with repository.connect() as connection:
+                            row = connection.execute(
+                                "select count(*) as count from warehouse.google_maps_enrichment where run_id = %s and status in ('queued', 'in_progress')",
+                                (run_id,),
+                            ).fetchone()
+                            pending_maps = row["count"] if row else 0
+                            if pending_maps == 0:
+                                break
                 maps_done.wait(0.20)
                 continue
 
+            completed_website_batch = []
             for current_job in jobs:
                 if throttle_controller.stop_requested:
                     with repository.connect() as connection:
@@ -1462,8 +1487,7 @@ def run_website_worker(
                         current_job.website_url,
                         max_attempts=max_attempts,
                     )
-                    with repository.connect() as connection:
-                        repository.finish_website(connection, current_job, verification)
+                    completed_website_batch.append((current_job, verification))
                     stats.processed += 1
                     if verification.verified:
                         stats.live += 1
@@ -1475,22 +1499,18 @@ def run_website_worker(
                         _website_network_error_status(error),
                         datetime.now(timezone.utc),
                     )
-                    try:
-                        with repository.connect() as connection:
-                            repository.finish_website(connection, current_job, verification)
-                        stats.processed += 1
-                        stats.errors += 1
-                    except Exception:
-                        with repository.connect() as connection:
-                            repository.requeue_website(connection, current_job.entity_id)
-                        stats.requeued += 1
-                        raise
+                    completed_website_batch.append((current_job, verification))
+                    stats.processed += 1
+                    stats.errors += 1
                     if len(stats.error_samples) < 10:
                         stats.error_samples.append(
                             f"entity_id={current_job.entity_id}: {type(error).__name__}: {error}"
                         )
                 finally:
                     current_job = None
+            if completed_website_batch:
+                with repository.connect() as connection:
+                    repository.finish_website_batch(connection, completed_website_batch)
     finally:
         if current_job is not None:
             with repository.connect() as connection:
