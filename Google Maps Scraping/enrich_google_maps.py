@@ -110,7 +110,7 @@ def run_multi_process(
     maps_per_proc = [args.workers // n_procs + (1 if i < args.workers % n_procs else 0) for i in range(n_procs)]
     web_per_proc = [args.website_workers // n_procs + (1 if i < args.website_workers % n_procs else 0) for i in range(n_procs)]
     pool_per_proc = max(10, args.postgres_pool_size // n_procs)
-    rps_per_proc = args.maps_rps_per_proxy
+    rps_per_proc = max(0.5, args.maps_rps_per_proxy / n_procs)
 
     subprocesses = []
     child_outputs: list[list[str]] = [[] for _ in range(n_procs)]
