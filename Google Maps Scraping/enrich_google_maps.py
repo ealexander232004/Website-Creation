@@ -48,7 +48,7 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--website-workers-per-proxy", type=int, default=3)
     parser.add_argument("--postgres-pool-size", type=int, default=25)
     parser.add_argument("--database", default="lead_warehouse")
-    parser.add_argument("--timeout", type=float, default=45.0)
+    parser.add_argument("--timeout", type=float, default=10.0)
     parser.add_argument("--website-timeout", type=float, default=3.0)
     parser.add_argument("--website-max-attempts", type=int, default=1)
     parser.add_argument("--maps-rps-per-proxy", type=float, default=3.0)
@@ -110,7 +110,7 @@ def run_multi_process(
     maps_per_proc = [args.workers // n_procs + (1 if i < args.workers % n_procs else 0) for i in range(n_procs)]
     web_per_proc = [args.website_workers // n_procs + (1 if i < args.website_workers % n_procs else 0) for i in range(n_procs)]
     pool_per_proc = max(10, args.postgres_pool_size // n_procs)
-    rps_per_proc = max(0.5, args.maps_rps_per_proxy / n_procs)
+    rps_per_proc = args.maps_rps_per_proxy
 
     subprocesses = []
     child_outputs: list[list[str]] = [[] for _ in range(n_procs)]
