@@ -46,7 +46,7 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--postgres-pool-size", type=int, default=25)
     parser.add_argument("--database", default="lead_warehouse")
     parser.add_argument("--timeout", type=float, default=45.0)
-    parser.add_argument("--website-timeout", type=float, default=12.0)
+    parser.add_argument("--website-timeout", type=float, default=6.0)
     parser.add_argument("--website-max-attempts", type=int, default=2)
     parser.add_argument("--maps-rps-per-proxy", type=float, default=3.0)
     parser.add_argument("--max-attempts", type=int, default=3)
