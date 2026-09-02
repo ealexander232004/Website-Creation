@@ -13,8 +13,8 @@ if (-not (Test-Path -LiteralPath $proxyFile)) {
 }
 
 $proxyUrls = @(Get-Content -LiteralPath $proxyFile | Where-Object { $_.Trim() })
-if ($proxyUrls.Count -ne 10) {
-    throw "Expected 10 proxy URLs; found $($proxyUrls.Count)."
+if ($proxyUrls.Count -lt 1) {
+    throw "Expected at least 1 proxy URL; found $($proxyUrls.Count)."
 }
 
 $results = for ($index = 0; $index -lt $proxyUrls.Count; $index++) {
@@ -43,9 +43,9 @@ $results = for ($index = 0; $index -lt $proxyUrls.Count; $index++) {
 $results | Format-Table -AutoSize
 $successfulIps = @($results | Where-Object Status -eq 'OK' | Select-Object -ExpandProperty PublicIP)
 $distinctCount = @($successfulIps | Sort-Object -Unique).Count
-Write-Host "Successful routes: $($successfulIps.Count)/10; distinct public IPs: $distinctCount"
+Write-Host "Successful routes: $($successfulIps.Count)/$($proxyUrls.Count); distinct public IPs: $distinctCount"
 
-if ($successfulIps.Count -ne 10 -or $distinctCount -ne 10) {
+if ($successfulIps.Count -ne $proxyUrls.Count -or $distinctCount -ne $proxyUrls.Count) {
     exit 1
 }
 
