@@ -54,6 +54,7 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--website-max-attempts", type=int, default=1)
     parser.add_argument("--maps-rps-per-proxy", type=float, default=3.0)
     parser.add_argument("--max-attempts", type=int, default=3)
+    parser.add_argument("--batch-size", type=int, default=10, help="Batch claim size from database queue.")
     parser.add_argument("--hard-throttle-window", type=int, default=100)
     parser.add_argument("--hard-throttle-min-events", type=int, default=30)
     parser.add_argument("--monitor-interval", type=float, default=2.0)
@@ -173,6 +174,7 @@ def run_multi_process(
             "--hard-throttle-rate", str(args.hard_throttle_rate),
             "--hard-throttle-consecutive", str(args.hard_throttle_consecutive),
             "--no-migrate",
+            "--batch-size", str(args.batch_size),
         ]
         if args.review_api_key_env:
             cmd.extend(["--review-api-key-env", args.review_api_key_env])
@@ -487,6 +489,7 @@ def main() -> int:
                 rate_limiter,
                 args.timeout,
                 args.max_attempts,
+                args.batch_size,
             )
             future_kinds[future] = ("maps", worker_number)
             map_futures.add(future)
@@ -506,6 +509,7 @@ def main() -> int:
                 throttle_controller,
                 args.website_timeout,
                 args.website_max_attempts,
+                args.batch_size,
             )
             future_kinds[future] = ("website", worker_number)
 
