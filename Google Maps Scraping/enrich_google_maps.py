@@ -376,8 +376,8 @@ def main() -> int:
     captcha_preflight = CaptchaHandler(api_key=config.capsolver_api_key)
     if not captcha_preflight.enabled:
         raise SystemExit("CapSolver is not configured; CAPTCHA solving is required for this run")
-    captcha_balance = captcha_preflight.check_balance()
-    if captcha_balance <= 0:
+    captcha_balance = captcha_preflight.check_balance() if not args.child_run else 1.0
+    if not args.child_run and captcha_balance <= 0:
         raise SystemExit("CapSolver has no available balance; refusing an unprotected run")
 
     connection_kwargs = database_connection_kwargs(args.database)
