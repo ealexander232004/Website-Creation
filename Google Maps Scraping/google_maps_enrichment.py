@@ -1276,6 +1276,7 @@ def run_maps_worker(
     rate_limiter: ProxyRateLimiter,
     timeout_seconds: float,
     max_attempts: int,
+    batch_size: int = 10,
 ) -> WorkerStats:
     stats = WorkerStats(worker_number=worker_number)
     captcha_handler = CaptchaHandler(api_key=captcha_api_key)
@@ -1288,7 +1289,7 @@ def run_maps_worker(
     try:
         while not throttle_controller.stop_requested:
             with repository.connect() as connection:
-                jobs = repository.claim_batch(connection, run_id, worker_number, batch_size=10)
+                jobs = repository.claim_batch(connection, run_id, worker_number, batch_size=batch_size)
             if not jobs:
                 break
             completed_batch = []
@@ -1445,6 +1446,7 @@ def run_website_worker(
     throttle_controller: ThrottleController,
     timeout_seconds: float,
     max_attempts: int,
+    batch_size: int = 10,
 ) -> WebsiteWorkerStats:
     stats = WebsiteWorkerStats(worker_number=worker_number)
     client = GoogleMapsRpcClient(
@@ -1456,11 +1458,11 @@ def run_website_worker(
     try:
         while not throttle_controller.stop_requested:
             with repository.connect() as connection:
-                jobs = repository.claim_website_batch(connection, run_id, worker_number, batch_size=10)
+                jobs = repository.claim_website_batch(connection, run_id, worker_number, batch_size=batch_size)
             if not jobs:
                 if maps_done.is_set():
                     with repository.connect() as connection:
-                        jobs = repository.claim_website_batch(connection, run_id, worker_number, batch_size=10)
+                        jobs = repository.claim_website_batch(connection, run_id, worker_number, batch_size=batch_size)
                     if not jobs:
                         with repository.connect() as connection:
                             row = connection.execute(
