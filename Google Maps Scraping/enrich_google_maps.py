@@ -72,6 +72,7 @@ def parse_args() -> argparse.Namespace:
         action="store_true",
         help="With --resume-run, requeue matched rows missing review metadata.",
     )
+    parser.add_argument("--source", choices=["smb", "fmcsa", "all"], default="smb", help="Lead source to enrich (smb, fmcsa, all).")
     parser.add_argument("--processes", type=int, default=1, help="Number of OS worker processes (default: 1).")
     parser.add_argument("--child-run", type=uuid.UUID, default=None, help=argparse.SUPPRESS)
     parser.add_argument("--worker-offset", type=int, default=0, help=argparse.SUPPRESS)
@@ -175,6 +176,7 @@ def run_multi_process(
             "--hard-throttle-consecutive", str(args.hard_throttle_consecutive),
             "--no-migrate",
             "--batch-size", str(args.batch_size),
+            "--source", args.source,
         ]
         if args.review_api_key_env:
             cmd.extend(["--review-api-key-env", args.review_api_key_env])
@@ -425,7 +427,7 @@ def main() -> int:
             args.website_workers,
             review_provider,
         )
-        enqueued = repository.enqueue(run_id, args.limit)
+        enqueued = repository.enqueue(run_id, args.limit, source=args.source)
     if not args.child_run:
         print(
             f"run_id={run_id} enqueued={enqueued} processes={args.processes} maps_workers={args.workers} "
