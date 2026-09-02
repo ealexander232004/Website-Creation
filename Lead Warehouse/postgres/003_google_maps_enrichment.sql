@@ -47,14 +47,11 @@ create table if not exists warehouse.google_maps_enrichment (
     review_count integer check (review_count >= 0),
     latest_review_at timestamptz,
     review_metadata_source text,
-    is_operational boolean,
     has_operating_hours boolean,
     is_claimed_owner boolean,
     is_permanently_closed boolean,
     is_temporarily_closed boolean,
-    current_status text,
     regular_hours jsonb,
-    special_hours_notice text,
     match_score double precision check (match_score between 0 and 1),
     match_policy_version text,
     match_threshold double precision check (match_threshold between 0 and 1),
@@ -82,14 +79,11 @@ alter table warehouse.google_maps_enrichment
     add column if not exists website_check_started_at timestamptz,
     add column if not exists match_policy_version text,
     add column if not exists match_threshold double precision,
-    add column if not exists is_operational boolean,
     add column if not exists has_operating_hours boolean,
     add column if not exists is_claimed_owner boolean,
     add column if not exists is_permanently_closed boolean,
     add column if not exists is_temporarily_closed boolean,
-    add column if not exists current_status text,
-    add column if not exists regular_hours jsonb,
-    add column if not exists special_hours_notice text;
+    add column if not exists regular_hours jsonb;
 
 alter table warehouse.google_maps_enrichment_runs
     add column if not exists website_worker_count smallint not null default 0;

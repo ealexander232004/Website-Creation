@@ -238,26 +238,20 @@ class ReviewMetadataTests(unittest.TestCase):
             cid="12345",
             reviews_count=47,
             operating_hours={"Monday": "9 AM–5 PM"},
-            current_status="Open · Closes 5 PM",
-            is_operational=True,
             has_operating_hours=True,
             is_claimed_owner=True,
             is_permanently_closed=False,
             is_temporarily_closed=False,
-            special_hours_notice="Labor Day might affect these hours",
         )
         metadata = fetch_internal_review_metadata(object(), sample_lead)
         self.assertEqual(metadata.review_count, 47)
         self.assertIsNone(metadata.latest_review_at)
         self.assertEqual(metadata.source, "maps_search_structured")
-        self.assertTrue(metadata.is_operational)
         self.assertTrue(metadata.has_operating_hours)
         self.assertFalse(metadata.is_permanently_closed)
         self.assertFalse(metadata.is_temporarily_closed)
-        self.assertEqual(metadata.current_status, "Open · Closes 5 PM")
         self.assertEqual(metadata.regular_hours, {"Monday": "9 AM–5 PM"})
         self.assertTrue(metadata.is_claimed_owner)
-        self.assertEqual(metadata.special_hours_notice, "Labor Day might affect these hours")
     def test_internal_unlisted_count_reports_unlisted(self) -> None:
         sample_lead = lead(reviews_count=0, review_count_available=False)
         metadata = fetch_internal_review_metadata(object(), sample_lead)
@@ -305,9 +299,8 @@ class ReviewRpcTests(unittest.TestCase):
         client = object.__new__(GoogleMapsRpcClient)
         parsed = client._parse_place_array(place, "test", 33.4, -111.9)
         self.assertIsNotNone(parsed)
-        self.assertTrue(parsed.is_operational)
+        self.assertTrue(parsed.has_operating_hours)
         self.assertTrue(parsed.is_claimed_owner)
-        self.assertEqual(parsed.current_status, "Opens soon · 11 AM")
         self.assertEqual(parsed.operating_hours["Wednesday"], "11 AM–7 PM")
         self.assertEqual(parsed.operating_hours["Thursday"], "11 AM–10 PM")
 
@@ -339,7 +332,7 @@ class ReviewRpcTests(unittest.TestCase):
         self.assertIsNotNone(parsed)
         self.assertTrue(parsed.is_permanently_closed)
         self.assertFalse(parsed.is_temporarily_closed)
-        self.assertFalse(parsed.is_operational)
+        self.assertFalse(parsed.has_operating_hours)
         self.assertEqual(parsed.business_status, "CLOSED_PERMANENTLY")
     def test_qv9_payload_extracts_microsecond_timestamp(self) -> None:
         micros = 1_752_227_400_000_000
