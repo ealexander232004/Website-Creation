@@ -133,7 +133,14 @@ class ReviewMetadata:
     latest_review_at: Optional[datetime]
     website_url: Optional[str]
     source: str
-
+    is_operational: Optional[bool] = None
+    has_operating_hours: Optional[bool] = None
+    is_claimed_owner: Optional[bool] = None
+    is_permanently_closed: Optional[bool] = None
+    is_temporarily_closed: Optional[bool] = None
+    current_status: Optional[str] = None
+    regular_hours: Optional[dict[str, str]] = None
+    special_hours_notice: Optional[str] = None
 
 @dataclass(frozen=True)
 class WebsiteVerification:
@@ -596,41 +603,27 @@ def fetch_internal_review_metadata(
     client: GoogleMapsRpcClient,
     lead: Lead,
 ) -> ReviewMetadata:
-    """Uses Maps' structured count and newest-review RPC without page parsing."""
+    """Extracts review count, operational hours, and claim status directly from search entity."""
+    del client
     review_count = int(lead.reviews_count) if lead.review_count_available else None
-    source_prefix = (
-        "maps_search_count" if lead.review_count_available else "maps_search_count_unavailable"
+    source = (
+        "maps_search_structured"
+        if lead.review_count_available
+        else "maps_search_unlisted_or_zero"
     )
-    if review_count == 0:
-        return ReviewMetadata(0, None, None, f"{source_prefix}_zero_reviews")
-    if not lead.cid:
-        return ReviewMetadata(
-            review_count,
-            None,
-            None,
-            f"{source_prefix}_qv9_missing_cid",
-        )
-
-    page = client.fetch_latest_review(lead.cid)
-    if not page.has_reviews:
-        return ReviewMetadata(
-            review_count,
-            None,
-            None,
-            f"{source_prefix}_qv9_limited_empty",
-        )
-    if page.latest_review_at is None:
-        return ReviewMetadata(
-            review_count,
-            None,
-            None,
-            f"{source_prefix}_qv9_missing_timestamp",
-        )
     return ReviewMetadata(
-        review_count,
-        page.latest_review_at,
-        None,
-        f"{source_prefix}_qv9_newest",
+        review_count=review_count,
+        latest_review_at=None,
+        website_url=None,
+        source=source,
+        is_operational=lead.is_operational,
+        has_operating_hours=lead.has_operating_hours,
+        is_claimed_owner=lead.is_claimed_owner,
+        is_permanently_closed=lead.is_permanently_closed,
+        is_temporarily_closed=lead.is_temporarily_closed,
+        current_status=lead.current_status,
+        regular_hours=lead.operating_hours if lead.operating_hours else None,
+        special_hours_notice=lead.special_hours_notice,
     )
 
 
@@ -933,6 +926,14 @@ class EnrichmentRepository:
                 review_count = %s,
                 latest_review_at = %s,
                 review_metadata_source = %s,
+                is_operational = %s,
+                has_operating_hours = %s,
+                is_claimed_owner = %s,
+                is_permanently_closed = %s,
+                is_temporarily_closed = %s,
+                current_status = %s,
+                regular_hours = %s,
+                special_hours_notice = %s,
                 match_score = %s,
                 match_policy_version = %s,
                 match_threshold = %s,
@@ -967,6 +968,14 @@ class EnrichmentRepository:
                 review_metadata.review_count,
                 review_metadata.latest_review_at,
                 review_metadata.source,
+                review_metadata.is_operational,
+                review_metadata.has_operating_hours,
+                review_metadata.is_claimed_owner,
+                review_metadata.is_permanently_closed,
+                review_metadata.is_temporarily_closed,
+                review_metadata.current_status,
+                Jsonb(review_metadata.regular_hours) if review_metadata.regular_hours else None,
+                review_metadata.special_hours_notice,
                 best.composite_score if best else 0.0,
                 MATCH_POLICY_VERSION,
                 MATCH_THRESHOLD,
@@ -1302,107 +1311,14 @@ def run_maps_worker(
                 metadata = ReviewMetadata(None, None, None, "not_applicable")
                 if decision.status == "matched" and decision.best:
                     matched_lead = decision.best.lead
-                    structured_review_count = (
-                        int(matched_lead.reviews_count)
-                        if matched_lead.review_count_available
-                        else None
-                    )
-                    metadata = ReviewMetadata(
-                        structured_review_count,
-                        None,
-                        None,
-                        "maps_search_count_qv9_not_attempted",
-                    )
-                    if (
-                        matched_lead.cid
-                        and (
-                            not matched_lead.review_count_available
-                            or matched_lead.reviews_count > 0
-                        )
-                    ):
-                        last_review_error: Optional[Exception] = None
-                        for review_attempt in range(1, 3):
-                            if not throttle_controller.wait_for_route(route):
-                                raise RunAborted(
-                                    throttle_controller.abort_reason or "run aborted"
-                                )
-                            if not rate_limiter.acquire(throttle_controller):
-                                raise RunAborted(
-                                    throttle_controller.abort_reason or "run aborted"
-                                )
-                            captcha_before = client.captcha_detected
-                            stats.review_attempts += 1
-                            try:
-                                metadata = fetch_internal_review_metadata(client, matched_lead)
-                                challenge_detected = client.captcha_detected > captcha_before
-                                throttle_controller.record_success(route, challenge_detected)
-                                if challenge_detected:
-                                    stats.throttled_review_requests += 1
-                                last_review_error = None
-                                break
-                            except Exception as error:
-                                last_review_error = error
-                                challenge_detected = client.captcha_detected > captcha_before
-                                throttled = throttle_controller.record_failure(
-                                    route,
-                                    error,
-                                    challenge_detected,
-                                )
-                                if throttled:
-                                    stats.throttled_review_requests += 1
-                                if throttle_controller.stop_requested:
-                                    raise RunAborted(
-                                        throttle_controller.abort_reason or "run aborted"
-                                    ) from error
-                                retryable = challenge_detected or isinstance(
-                                    error,
-                                    (
-                                        GoogleMapsThrottleError,
-                                        GoogleMapsChallengeError,
-                                        TimeoutError,
-                                        OSError,
-                                    ),
-                                )
-                                if retryable and review_attempt < 2:
-                                    stats.review_retries += 1
-                                    if not throttle_controller.wait(
-                                        1.0 + random.uniform(0.15, 0.85)
-                                    ):
-                                        raise RunAborted(
-                                            throttle_controller.abort_reason or "run aborted"
-                                        ) from error
-                                    continue
-                                break
-                        if last_review_error is not None:
-                            stats.failed_review_requests += 1
-                            error_source_prefix = (
-                                "maps_search_count"
-                                if matched_lead.review_count_available
-                                else "maps_search_count_unavailable"
-                            )
-                            metadata = ReviewMetadata(
-                                structured_review_count,
-                                None,
-                                None,
-                                f"{error_source_prefix}_qv9_error_"
-                                f"{type(last_review_error).__name__.lower()}",
-                            )
-                    else:
-                        metadata = fetch_internal_review_metadata(client, matched_lead)
-
+                    metadata = fetch_internal_review_metadata(client, matched_lead)
                     if metadata.review_count is not None:
                         stats.review_counts_found += 1
-                    if metadata.latest_review_at is not None:
-                        stats.latest_reviews_found += 1
-                    elif metadata.source.endswith("_qv9_limited_empty"):
-                        stats.empty_review_payloads += 1
 
-                    # A configured Places key remains an optional fallback for
-                    # sessions where the internal newest-review RPC is limited.
+                    # Optional Places API key fallback if explicitly configured
                     if (
                         api_key
                         and matched_lead.place_id
-                        and metadata.review_count != 0
                         and metadata.latest_review_at is None
                     ):
                         official = fetch_official_review_metadata(
@@ -1418,6 +1334,11 @@ def run_maps_worker(
                                 official.latest_review_at,
                                 official.website_url,
                                 f"{metadata.source}+places_api_legacy_fallback",
+                                is_operational=metadata.is_operational,
+                                current_status=metadata.current_status,
+                                regular_hours=metadata.regular_hours,
+                                is_claimed_owner=metadata.is_claimed_owner,
+                                special_hours_notice=metadata.special_hours_notice,
                             )
                 with repository.connect() as connection:
                     repository.finish(

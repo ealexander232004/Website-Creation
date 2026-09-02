@@ -233,33 +233,36 @@ class ReviewMetadataTests(unittest.TestCase):
         self.assertIsNone(metadata.latest_review_at)
         self.assertEqual(metadata.source, "unavailable_no_api_key")
 
-    def test_internal_zero_count_skips_review_request(self) -> None:
-        metadata = fetch_internal_review_metadata(
-            object(),
-            lead(reviews_count=0),
+    def test_internal_metadata_extracts_structured_count_and_hours(self) -> None:
+        sample_lead = lead(
+            cid="12345",
+            reviews_count=47,
+            operating_hours={"Monday": "9 AM–5 PM"},
+            current_status="Open · Closes 5 PM",
+            is_operational=True,
+            has_operating_hours=True,
+            is_claimed_owner=True,
+            is_permanently_closed=False,
+            is_temporarily_closed=False,
+            special_hours_notice="Labor Day might affect these hours",
         )
-        self.assertEqual(metadata.review_count, 0)
-        self.assertIsNone(metadata.latest_review_at)
-        self.assertEqual(metadata.source, "maps_search_count_zero_reviews")
-
-    def test_internal_newest_review_preserves_count(self) -> None:
-        expected = datetime(2025, 7, 3, 12, 30, tzinfo=timezone.utc)
-
-        class FakeReviewClient:
-            def fetch_latest_review(self, cid):
-                self.cid = cid
-                return GoogleMapsReviewPage(expected, "a year ago", True, True)
-
-        client = FakeReviewClient()
-        metadata = fetch_internal_review_metadata(
-            client,
-            lead(cid="12345", reviews_count=47),
-        )
-        self.assertEqual(client.cid, "12345")
+        metadata = fetch_internal_review_metadata(object(), sample_lead)
         self.assertEqual(metadata.review_count, 47)
-        self.assertEqual(metadata.latest_review_at, expected)
-        self.assertEqual(metadata.source, "maps_search_count_qv9_newest")
-
+        self.assertIsNone(metadata.latest_review_at)
+        self.assertEqual(metadata.source, "maps_search_structured")
+        self.assertTrue(metadata.is_operational)
+        self.assertTrue(metadata.has_operating_hours)
+        self.assertFalse(metadata.is_permanently_closed)
+        self.assertFalse(metadata.is_temporarily_closed)
+        self.assertEqual(metadata.current_status, "Open · Closes 5 PM")
+        self.assertEqual(metadata.regular_hours, {"Monday": "9 AM–5 PM"})
+        self.assertTrue(metadata.is_claimed_owner)
+        self.assertEqual(metadata.special_hours_notice, "Labor Day might affect these hours")
+    def test_internal_unlisted_count_reports_unlisted(self) -> None:
+        sample_lead = lead(reviews_count=0, review_count_available=False)
+        metadata = fetch_internal_review_metadata(object(), sample_lead)
+        self.assertIsNone(metadata.review_count)
+        self.assertEqual(metadata.source, "maps_search_unlisted_or_zero")
 
 class ReviewRpcTests(unittest.TestCase):
     def test_search_parser_uses_review_count_not_photo_count(self) -> None:
@@ -281,6 +284,63 @@ class ReviewRpcTests(unittest.TestCase):
         self.assertTrue(parsed.review_count_available)
         self.assertEqual(parsed.cid, "123")
 
+    def test_search_parser_extracts_operating_hours(self) -> None:
+        place = [None] * 210
+        place[4] = [None] * 9
+        place[4][7] = 4.6
+        place[4][8] = 533
+        place[9] = [None, None, 33.4078, -111.9540]
+        place[10] = "0x0:0x7b"
+        place[11] = "The Gaming Zone"
+        place[57] = [None, "The Gaming Zone (Owner)"]
+        place[78] = "ChIJ-test"
+        place[203] = [
+            [
+                ["Wednesday", 3, [2026, 9, 2], [["11 AM–7 PM", [[11], [19]]]]],
+                ["Thursday", 4, [2026, 9, 3], [["11 AM–10 PM", [[11], [22]]]]],
+            ],
+            [["Wednesday", 3, [2026, 9, 2], [["11 AM–7 PM", [[11], [19]]]]], 0, 4, None, ["Opens soon · 11 AM"]]
+        ]
+
+        client = object.__new__(GoogleMapsRpcClient)
+        parsed = client._parse_place_array(place, "test", 33.4, -111.9)
+        self.assertIsNotNone(parsed)
+        self.assertTrue(parsed.is_operational)
+        self.assertTrue(parsed.is_claimed_owner)
+        self.assertEqual(parsed.current_status, "Opens soon · 11 AM")
+        self.assertEqual(parsed.operating_hours["Wednesday"], "11 AM–7 PM")
+        self.assertEqual(parsed.operating_hours["Thursday"], "11 AM–10 PM")
+
+    def test_search_parser_rescues_review_count_from_p4_sub3(self) -> None:
+        place = [None] * 180
+        place[4] = [None, None, None, ["https://maps...", "27 reviews"], None, None, None, 3.7]
+        place[9] = [None, None, 34.0, -84.0]
+        place[10] = "0x0:0x7b"
+        place[11] = "Rio Bravo Auto Sales"
+        place[78] = "ChIJ-test"
+
+        client = object.__new__(GoogleMapsRpcClient)
+        parsed = client._parse_place_array(place, "test", 34.0, -84.0)
+        self.assertIsNotNone(parsed)
+        self.assertEqual(parsed.reviews_count, 27)
+        self.assertTrue(parsed.review_count_available)
+        self.assertTrue(parsed.review_count_available)
+        self.assertEqual(parsed.rating, 3.7)
+
+    def test_search_parser_detects_permanent_closure(self) -> None:
+        place = [None] * 100
+        place[10] = "0x0:0x7b"
+        place[11] = "Closed Restaurant"
+        place[78] = "ChIJ-test"
+        place[88] = ["CLOSED", "SearchResult.TYPE_RESTAURANT"]
+
+        client = object.__new__(GoogleMapsRpcClient)
+        parsed = client._parse_place_array(place, "test", 33.4, -111.9)
+        self.assertIsNotNone(parsed)
+        self.assertTrue(parsed.is_permanently_closed)
+        self.assertFalse(parsed.is_temporarily_closed)
+        self.assertFalse(parsed.is_operational)
+        self.assertEqual(parsed.business_status, "CLOSED_PERMANENTLY")
     def test_qv9_payload_extracts_microsecond_timestamp(self) -> None:
         micros = 1_752_227_400_000_000
         metadata = [None, None, None, micros, None, None, "2 months ago"]

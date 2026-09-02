@@ -623,6 +623,17 @@ class GoogleMapsRpcClient:
                     review_count_available = True
             except (ValueError, TypeError):
                 pass
+        # Fallback: check p[4][3] which often contains ['https://...', '27 reviews', ...]
+        if not review_count_available and len(p) > 4 and isinstance(p[4], list) and len(p[4]) > 3:
+            sub = p[4][3]
+            if isinstance(sub, list) and len(sub) > 1 and isinstance(sub[1], str):
+                match = re.search(r"(\d[\d,]*)\s+reviews?", sub[1], flags=re.IGNORECASE)
+                if match:
+                    try:
+                        reviews_count = int(match.group(1).replace(",", ""))
+                        review_count_available = True
+                    except (ValueError, TypeError):
+                        pass
 
         # 4. Full address: p[39] is formatted; p[2] has split lines.
         full_address = None
@@ -670,9 +681,74 @@ class GoogleMapsRpcClient:
             if cid_match:
                 cid = str(int(cid_match.group(1), 16))
 
-        # Claimed status is intentionally unknown: the current payload has no
-        # stable, verified ownership field and guessing would contaminate data.
-        is_claimed = ClaimedStatus.UNKNOWN
+        # 9. Operating Hours & Schedule (p[203])
+        operating_hours: Dict[str, str] = {}
+        current_status: Optional[str] = None
+        is_operational = False
+        special_hours_notice: Optional[str] = None
+        if len(p) > 203 and isinstance(p[203], list):
+            hours_data = p[203]
+            if len(hours_data) > 0 and isinstance(hours_data[0], list):
+                for day_entry in hours_data[0]:
+                    if isinstance(day_entry, list) and len(day_entry) > 3:
+                        day_name = day_entry[0] if isinstance(day_entry[0], str) else None
+                        hours_list = day_entry[3] if isinstance(day_entry[3], list) else []
+                        if day_name and hours_list and len(hours_list) > 0 and isinstance(hours_list[0], list):
+                            time_str = hours_list[0][0] if len(hours_list[0]) > 0 and isinstance(hours_list[0][0], str) else None
+                            if time_str:
+                                operating_hours[day_name] = time_str
+                        if len(day_entry) > 6 and isinstance(day_entry[6], list) and len(day_entry[6]) > 0:
+                            if isinstance(day_entry[6][0], str):
+                                special_hours_notice = day_entry[6][0]
+            if len(hours_data) > 1 and isinstance(hours_data[1], list):
+                for item in hours_data[1]:
+                    if isinstance(item, list):
+                        for sub in item:
+                            if isinstance(sub, str) and any(kw in sub for kw in ("Open", "Closed")):
+                                current_status = sub
+                                break
+                    elif isinstance(item, str) and any(kw in item for kw in ("Open", "Closed")):
+                        current_status = item
+                        break
+        has_operating_hours = len(operating_hours) > 0
+
+        # 10. Closure Status (p[88] and current_status)
+        is_permanently_closed = False
+        is_temporarily_closed = False
+        business_status = "OPERATIONAL"
+        if len(p) > 88 and isinstance(p[88], list) and len(p[88]) > 0:
+            raw_status = p[88][0]
+            if isinstance(raw_status, str):
+                upper_status = raw_status.upper()
+                if "CLOSED" in upper_status:
+                    if "TEMP" in upper_status:
+                        is_temporarily_closed = True
+                        business_status = "CLOSED_TEMPORARILY"
+                    else:
+                        is_permanently_closed = True
+                        business_status = "CLOSED_PERMANENTLY"
+
+        lowered_current = (current_status or "").lower()
+        if "permanently closed" in lowered_current:
+            is_permanently_closed = True
+            business_status = "CLOSED_PERMANENTLY"
+        elif "temporarily closed" in lowered_current:
+            is_temporarily_closed = True
+            business_status = "CLOSED_TEMPORARILY"
+
+        is_operational = has_operating_hours or (
+            current_status is not None
+            and not is_permanently_closed
+            and not is_temporarily_closed
+        )
+
+        # 11. Verified GBP Owner (p[57])
+        is_claimed_owner = False
+        if len(p) > 57 and isinstance(p[57], list) and len(p[57]) > 1:
+            if isinstance(p[57][1], str) and "(Owner)" in p[57][1]:
+                is_claimed_owner = True
+
+        is_claimed = ClaimedStatus.CLAIMED if is_claimed_owner else ClaimedStatus.UNKNOWN
 
         # Classify website
         web_type, has_real_web, explanation = classify_website(website_raw)
@@ -706,6 +782,15 @@ class GoogleMapsRpcClient:
             reviews_count=reviews_count,
             review_count_available=review_count_available,
             is_claimed=is_claimed,
+            is_claimed_owner=is_claimed_owner,
+            operating_hours=operating_hours,
+            current_status=current_status,
+            business_status=business_status,
+            is_operational=is_operational,
+            has_operating_hours=has_operating_hours,
+            is_permanently_closed=is_permanently_closed,
+            is_temporarily_closed=is_temporarily_closed,
+            special_hours_notice=special_hours_notice,
             maps_url=maps_url,
             search_keyword=keyword,
             search_location=f"({search_lat:.4f}, {search_lng:.4f})",
