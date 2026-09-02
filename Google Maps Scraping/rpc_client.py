@@ -681,11 +681,8 @@ class GoogleMapsRpcClient:
             if cid_match:
                 cid = str(int(cid_match.group(1), 16))
 
-        # 9. Operating Hours & Schedule (p[203])
+        # 9. Operating Hours Schedule (p[203])
         operating_hours: Dict[str, str] = {}
-        current_status: Optional[str] = None
-        is_operational = False
-        special_hours_notice: Optional[str] = None
         if len(p) > 203 and isinstance(p[203], list):
             hours_data = p[203]
             if len(hours_data) > 0 and isinstance(hours_data[0], list):
@@ -697,22 +694,9 @@ class GoogleMapsRpcClient:
                             time_str = hours_list[0][0] if len(hours_list[0]) > 0 and isinstance(hours_list[0][0], str) else None
                             if time_str:
                                 operating_hours[day_name] = time_str
-                        if len(day_entry) > 6 and isinstance(day_entry[6], list) and len(day_entry[6]) > 0:
-                            if isinstance(day_entry[6][0], str):
-                                special_hours_notice = day_entry[6][0]
-            if len(hours_data) > 1 and isinstance(hours_data[1], list):
-                for item in hours_data[1]:
-                    if isinstance(item, list):
-                        for sub in item:
-                            if isinstance(sub, str) and any(kw in sub for kw in ("Open", "Closed")):
-                                current_status = sub
-                                break
-                    elif isinstance(item, str) and any(kw in item for kw in ("Open", "Closed")):
-                        current_status = item
-                        break
         has_operating_hours = len(operating_hours) > 0
 
-        # 10. Closure Status (p[88] and current_status)
+        # 10. Closure Status (p[88])
         is_permanently_closed = False
         is_temporarily_closed = False
         business_status = "OPERATIONAL"
@@ -727,20 +711,6 @@ class GoogleMapsRpcClient:
                     else:
                         is_permanently_closed = True
                         business_status = "CLOSED_PERMANENTLY"
-
-        lowered_current = (current_status or "").lower()
-        if "permanently closed" in lowered_current:
-            is_permanently_closed = True
-            business_status = "CLOSED_PERMANENTLY"
-        elif "temporarily closed" in lowered_current:
-            is_temporarily_closed = True
-            business_status = "CLOSED_TEMPORARILY"
-
-        is_operational = has_operating_hours or (
-            current_status is not None
-            and not is_permanently_closed
-            and not is_temporarily_closed
-        )
 
         # 11. Verified GBP Owner (p[57])
         is_claimed_owner = False
@@ -784,13 +754,10 @@ class GoogleMapsRpcClient:
             is_claimed=is_claimed,
             is_claimed_owner=is_claimed_owner,
             operating_hours=operating_hours,
-            current_status=current_status,
             business_status=business_status,
-            is_operational=is_operational,
             has_operating_hours=has_operating_hours,
             is_permanently_closed=is_permanently_closed,
             is_temporarily_closed=is_temporarily_closed,
-            special_hours_notice=special_hours_notice,
             maps_url=maps_url,
             search_keyword=keyword,
             search_location=f"({search_lat:.4f}, {search_lng:.4f})",

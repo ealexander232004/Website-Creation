@@ -133,14 +133,11 @@ class ReviewMetadata:
     latest_review_at: Optional[datetime]
     website_url: Optional[str]
     source: str
-    is_operational: Optional[bool] = None
     has_operating_hours: Optional[bool] = None
     is_claimed_owner: Optional[bool] = None
     is_permanently_closed: Optional[bool] = None
     is_temporarily_closed: Optional[bool] = None
-    current_status: Optional[str] = None
     regular_hours: Optional[dict[str, str]] = None
-    special_hours_notice: Optional[str] = None
 
 @dataclass(frozen=True)
 class WebsiteVerification:
@@ -616,14 +613,11 @@ def fetch_internal_review_metadata(
         latest_review_at=None,
         website_url=None,
         source=source,
-        is_operational=lead.is_operational,
         has_operating_hours=lead.has_operating_hours,
         is_claimed_owner=lead.is_claimed_owner,
         is_permanently_closed=lead.is_permanently_closed,
         is_temporarily_closed=lead.is_temporarily_closed,
-        current_status=lead.current_status,
         regular_hours=lead.operating_hours if lead.operating_hours else None,
-        special_hours_notice=lead.special_hours_notice,
     )
 
 
@@ -926,14 +920,11 @@ class EnrichmentRepository:
                 review_count = %s,
                 latest_review_at = %s,
                 review_metadata_source = %s,
-                is_operational = %s,
                 has_operating_hours = %s,
                 is_claimed_owner = %s,
                 is_permanently_closed = %s,
                 is_temporarily_closed = %s,
-                current_status = %s,
                 regular_hours = %s,
-                special_hours_notice = %s,
                 match_score = %s,
                 match_policy_version = %s,
                 match_threshold = %s,
@@ -968,14 +959,11 @@ class EnrichmentRepository:
                 review_metadata.review_count,
                 review_metadata.latest_review_at,
                 review_metadata.source,
-                review_metadata.is_operational,
                 review_metadata.has_operating_hours,
                 review_metadata.is_claimed_owner,
                 review_metadata.is_permanently_closed,
                 review_metadata.is_temporarily_closed,
-                review_metadata.current_status,
                 Jsonb(review_metadata.regular_hours) if review_metadata.regular_hours else None,
-                review_metadata.special_hours_notice,
                 best.composite_score if best else 0.0,
                 MATCH_POLICY_VERSION,
                 MATCH_THRESHOLD,
@@ -1334,11 +1322,11 @@ def run_maps_worker(
                                 official.latest_review_at,
                                 official.website_url,
                                 f"{metadata.source}+places_api_legacy_fallback",
-                                is_operational=metadata.is_operational,
-                                current_status=metadata.current_status,
-                                regular_hours=metadata.regular_hours,
+                                has_operating_hours=metadata.has_operating_hours,
                                 is_claimed_owner=metadata.is_claimed_owner,
-                                special_hours_notice=metadata.special_hours_notice,
+                                is_permanently_closed=metadata.is_permanently_closed,
+                                is_temporarily_closed=metadata.is_temporarily_closed,
+                                regular_hours=metadata.regular_hours,
                             )
                 with repository.connect() as connection:
                     repository.finish(
