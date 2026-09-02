@@ -639,9 +639,10 @@ def _website_network_error_status(error: Exception) -> str:
 def verify_website(
     client: GoogleMapsRpcClient,
     website_url: Optional[str],
-    max_attempts: int = 2,
+    max_attempts: int = 1,
 ) -> WebsiteVerification:
-    """Checks reachability through the worker's proxy without semantic matching."""
+    """Checks reachability through the worker's proxy without retries."""
+    del max_attempts
     if not website_url:
         return WebsiteVerification(None, None, None)
 
@@ -652,42 +653,27 @@ def verify_website(
     if parsed.hostname.lower() == "localhost" or parsed.hostname.lower().endswith(".local"):
         return WebsiteVerification(False, "invalid_url", checked_at)
 
-    last_error: Optional[Exception] = None
-    for attempt in range(1, max_attempts + 1):
-        try:
-            response = client._get(
-                website_url,
-                headers={
-                    "accept": "text/html,application/xhtml+xml,application/json;q=0.8,*/*;q=0.5",
-                    "accept-language": "en-US,en;q=0.9",
-                    "cache-control": "no-cache",
-                    "range": "bytes=0-65535",
-                    "user-agent": DEFAULT_HEADERS["user-agent"],
-                },
-            )
-            status_code = int(getattr(response, "status_code", 0) or 0)
-            if 200 <= status_code < 400:
-                return WebsiteVerification(True, "live", checked_at)
-            if attempt < max_attempts and (status_code in {408, 425, 429} or status_code >= 500):
-                time.sleep(min(3.0, (0.5 * (2 ** (attempt - 1))) + random.uniform(0.05, 0.35)))
-                continue
-            return WebsiteVerification(False, f"http_{status_code or 'unknown'}", checked_at)
-        except Exception as error:
-            last_error = error
-            # TLS/certificate, redirect, DNS, and connection-refused failures
-            # are deterministic for this reachability check. Only a timeout is
-            # retried once; replaying every network error caused the prior run's
-            # 60-90 second tail.
-            if attempt < max_attempts and _website_network_error_status(error) == "timeout":
-                time.sleep(min(3.0, (0.5 * (2 ** (attempt - 1))) + random.uniform(0.05, 0.35)))
-                continue
-            break
-
-    return WebsiteVerification(
-        False,
-        _website_network_error_status(last_error or RuntimeError("unknown website error")),
-        checked_at,
-    )
+    try:
+        response = client._get(
+            website_url,
+            headers={
+                "accept": "text/html,application/xhtml+xml,application/json;q=0.8,*/*;q=0.5",
+                "accept-language": "en-US,en;q=0.9",
+                "cache-control": "no-cache",
+                "range": "bytes=0-65535",
+                "user-agent": DEFAULT_HEADERS["user-agent"],
+            },
+        )
+        status_code = int(getattr(response, "status_code", 0) or 0)
+        if 200 <= status_code < 400:
+            return WebsiteVerification(True, "live", checked_at)
+        return WebsiteVerification(False, f"http_{status_code or 'unknown'}", checked_at)
+    except Exception as error:
+        return WebsiteVerification(
+            False,
+            _website_network_error_status(error),
+            checked_at,
+        )
 
 
 class EnrichmentRepository:

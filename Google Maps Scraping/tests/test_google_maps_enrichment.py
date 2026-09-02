@@ -406,25 +406,24 @@ class WebsiteVerificationTests(unittest.TestCase):
         verification = verify_website(
             client,
             "https://example.com/",
-            max_attempts=2,
         )
         self.assertFalse(verification.verified)
         self.assertEqual(verification.status, "timeout")
-        self.assertEqual(client.calls, 2)
+        self.assertEqual(client.calls, 1)
 
     def test_deterministic_network_error_is_not_retried(self) -> None:
         client = FakeWebsiteClient(OSError("connection refused"))
-        verification = verify_website(client, "https://example.com/", max_attempts=2)
+        verification = verify_website(client, "https://example.com/")
         self.assertFalse(verification.verified)
         self.assertEqual(verification.status, "network_error")
         self.assertEqual(client.calls, 1)
 
-    def test_transient_http_error_is_retried_once(self) -> None:
-        client = FakeWebsiteClient([FakeResponse(503), FakeResponse(200)])
-        verification = verify_website(client, "https://example.com/", max_attempts=2)
-        self.assertTrue(verification.verified)
-        self.assertEqual(client.calls, 2)
-
+    def test_http_503_error_is_not_retried(self) -> None:
+        client = FakeWebsiteClient([FakeResponse(503)])
+        verification = verify_website(client, "https://example.com/")
+        self.assertFalse(verification.verified)
+        self.assertEqual(verification.status, "http_503")
+        self.assertEqual(client.calls, 1)
 
 class ThrottleControllerTests(unittest.TestCase):
     def test_hard_throttle_rate_aborts_run(self) -> None:
