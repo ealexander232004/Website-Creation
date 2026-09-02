@@ -266,10 +266,9 @@ class ThrottleController:
             error,
             (GoogleMapsThrottleError, GoogleMapsChallengeError),
         )
-        payload_discovery_miss = isinstance(error, GoogleMapsPayloadDiscoveryError)
         with self._lock:
-            if not payload_discovery_miss:
-                route.mark_failure(base_cooldown=30.0 if throttled else 5.0)
+            if throttled:
+                route.mark_failure(base_cooldown=30.0)
             self._record_outcome(throttled)
         return throttled
 
