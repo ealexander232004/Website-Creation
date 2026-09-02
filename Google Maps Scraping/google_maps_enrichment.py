@@ -299,6 +299,8 @@ class WorkerStats:
     captchas_detected: int = 0
     captchas_solved: int = 0
     captchas_failed: int = 0
+    bytes_sent: int = 0
+    bytes_received: int = 0
     errors: list[str] = field(default_factory=list)
 
 
@@ -309,6 +311,8 @@ class WebsiteWorkerStats:
     live: int = 0
     errors: int = 0
     requeued: int = 0
+    bytes_sent: int = 0
+    bytes_received: int = 0
     error_samples: list[str] = field(default_factory=list)
 
 
@@ -1387,6 +1391,8 @@ def run_maps_worker(
         stats.captchas_detected = client.captcha_detected
         stats.captchas_solved = client.captcha_solved
         stats.captchas_failed = client.captcha_failed
+        stats.bytes_sent = client.bytes_sent
+        stats.bytes_received = client.bytes_received
         client.close()
     return stats
 
@@ -1458,6 +1464,8 @@ def run_website_worker(
             with repository.connect() as connection:
                 repository.requeue_website(connection, current_job.entity_id)
             stats.requeued += 1
+        stats.bytes_sent = client.bytes_sent
+        stats.bytes_received = client.bytes_received
         client.close()
     return stats
 

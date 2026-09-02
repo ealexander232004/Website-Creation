@@ -115,6 +115,8 @@ class GoogleMapsRpcClient:
         self.captcha_detected = 0
         self.captcha_solved = 0
         self.captcha_failed = 0
+        self.bytes_sent = 0
+        self.bytes_received = 0
         self._session = self._new_session()
         self._payload_url_cache: Dict[Tuple[str, float, float], Tuple[str, str]] = {}
         self._bootstrap_context_cache: Dict[Tuple[str, float, float], Tuple[str, str]] = {}
@@ -166,8 +168,27 @@ class GoogleMapsRpcClient:
             request_kwargs["impersonate"] = "chrome124"
         else:
             request_kwargs["follow_redirects"] = True
-        return self._session.request(method, url, **request_kwargs)
+        req_body_len = 0
+        if data is not None:
+            if isinstance(data, str):
+                req_body_len = len(data.encode("utf-8", errors="ignore"))
+            elif isinstance(data, (bytes, bytearray)):
+                req_body_len = len(data)
+            elif isinstance(data, dict):
+                req_body_len = sum(len(str(k)) + len(str(v)) + 2 for k, v in data.items())
+        headers_len = sum(len(str(k)) + len(str(v)) + 4 for k, v in headers.items()) + len(url) + 50
+        self.bytes_sent += req_body_len + headers_len
 
+        response = self._session.request(method, url, **request_kwargs)
+
+        resp_content = getattr(response, "content", b"") or b""
+        if isinstance(resp_content, str):
+            resp_content = resp_content.encode("utf-8", errors="ignore")
+        resp_headers = getattr(response, "headers", {}) or {}
+        resp_headers_len = sum(len(str(k)) + len(str(v)) + 4 for k, v in resp_headers.items()) + 50
+        self.bytes_received += len(resp_content) + resp_headers_len
+
+        return response
     def _get(self, url: str, headers: Dict[str, str]) -> Any:
         return self._request("GET", url, headers)
 

@@ -332,6 +332,20 @@ def main() -> int:
         for stats in sorted(website_worker_stats, key=lambda item: item.worker_number)
     ]
     throttle_snapshot = throttle_controller.snapshot()
+    total_bytes_sent = sum(getattr(w, "bytes_sent", 0) for w in maps_worker_stats) + sum(
+        getattr(w, "bytes_sent", 0) for w in website_worker_stats
+    )
+    total_bytes_received = sum(getattr(w, "bytes_received", 0) for w in maps_worker_stats) + sum(
+        getattr(w, "bytes_received", 0) for w in website_worker_stats
+    )
+    total_bandwidth_bytes = total_bytes_sent + total_bytes_received
+    bandwidth_summary = {
+        "total_mb": round(total_bandwidth_bytes / (1024 * 1024), 2),
+        "download_mb": round(total_bytes_received / (1024 * 1024), 2),
+        "upload_mb": round(total_bytes_sent / (1024 * 1024), 2),
+        "bytes_sent": total_bytes_sent,
+        "bytes_received": total_bytes_received,
+    }
     runtime = {
         "maps_workers": maps_workers_payload,
         "website_workers": website_workers_payload,
@@ -345,6 +359,7 @@ def main() -> int:
         "postgres_pool_size": args.postgres_pool_size,
         "postgres_pool_stats": repository.pool_stats(),
         "proxy_routes": proxy_manager.total_proxies,
+        "proxy_bandwidth": bandwidth_summary,
         "captcha_balance_at_start": captcha_balance,
         "throttle": throttle_snapshot,
     }
