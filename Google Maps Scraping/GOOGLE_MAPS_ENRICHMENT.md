@@ -33,7 +33,7 @@ All network workers share the bounded Postgres pool. Connections are borrowed
 only for queue claims and result updates, then returned before any HTTP call, so
 100 network workers use no more than 25 database connections.
 
-Website checks default to a 12-second timeout and two attempts. Only timeouts,
+Website checks default to a 6-second timeout and two attempts. Only timeouts,
 HTTP 429, and 5xx responses are retried; deterministic TLS, network, URL,
 redirect, and ordinary 4xx failures are recorded immediately.
 
