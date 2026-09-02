@@ -732,7 +732,7 @@ class EnrichmentRepository:
                 from (
                     select e.entity_id
                     from warehouse.entities e
-                    where (e.is_qualified_no_website_email_lead or e.primary_source = 'fmcsa')
+                    where e.is_qualified_no_website_email_lead
                       and exists (
                           select 1
                           from warehouse.entity_emails email
