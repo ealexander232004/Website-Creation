@@ -30,6 +30,8 @@ Facebook Last Post/private/
 *.sqlite3
 *.progress.json
 *.pid
+*.dump
+backups/
 
 # Runtime logs and generated lead data
 *.log
