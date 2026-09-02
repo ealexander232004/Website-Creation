@@ -1,13 +1,13 @@
 # Static ISP proxy bundle
 
-This folder is a self-contained, portable bundle for the 50 Oxylabs Dedicated
+This folder is a self-contained, portable bundle for the 55 Oxylabs Dedicated
 ISP (static ISP) routes assigned to this account.
 
 ## Files
 
-- `proxy-urls.txt` — one authenticated proxy URL per line, ports 8001–8050.
+- `proxy-urls.txt` — one authenticated proxy URL per line, ports 8001–8055.
 - `proxies.env` — a base `STATIC_ISP_PROXY_URL`, `PROXY_01_URL` through
-  `PROXY_50_URL`, and a comma-separated `STATIC_ISP_PROXY_URLS` value.
+  `PROXY_55_URL`, and a comma-separated `STATIC_ISP_PROXY_URLS` value.
 - `proxies.json` — structured provider, authentication, and route details.
 - `build-proxy-files.ps1` — rebuilds the three credential files from a source
   `.env` containing `STATIC_ISP_PROXY_URL`.
@@ -36,7 +36,7 @@ export HTTP_PROXY="$PROXY_01_URL"
 export HTTPS_PROXY="$PROXY_01_URL"
 ```
 
-To verify that the 50 ports currently resolve to 50 distinct public IPs:
+To verify that the 55 ports currently resolve to 55 distinct public IPs:
 ```powershell
 .\verify-proxies.ps1
 ```
