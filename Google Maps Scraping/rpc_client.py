@@ -517,18 +517,20 @@ class GoogleMapsRpcClient:
                 parts.fragment,
             )
         )
-
     def fetch_page(
         self,
         keyword: str,
         lat: float,
         lng: float,
         start_index: int = 0,
+        page_size: int = 20,
     ) -> List[Lead]:
-        """Fetches one page of 20 records from Google's current direct payload."""
+        """Fetches one page of records from Google's current direct payload."""
         try:
             bootstrap_url, base_payload_url = self._discover_payload_url(keyword, lat, lng)
-            payload_url = self._payload_url_with_offset(base_payload_url, start_index=start_index)
+            payload_url = self._payload_url_with_offset(
+                base_payload_url, start_index=start_index, page_size=page_size
+            )
             headers = {
                 **DEFAULT_HEADERS,
                 "accept": "*/*",
@@ -537,25 +539,21 @@ class GoogleMapsRpcClient:
             response = self._get_google(payload_url, headers=headers)
             if response.status_code != 200:
                 raise RuntimeError(
-                    f"Google Maps payload returned HTTP {response.status_code} "
-                    f"for {keyword!r} (offset={start_index})"
+                    f"Direct Maps endpoint returned HTTP {response.status_code}"
                 )
-
-            text = response.text.lstrip()
-            if text.startswith(")]}'"):
-                text = text[4:].lstrip("\r\n")
-
-            raw_data = json.loads(text)
+            clean_text = response.text.lstrip()
+            if clean_text.startswith(")]}'"):
+                clean_text = clean_text[4:].lstrip()
+            try:
+                raw_data = json.loads(clean_text)
+            except json.JSONDecodeError as e:
+                raise RuntimeError("Direct endpoint returned malformed JSON") from e
             return self._extract_leads_from_rpc_data(raw_data, keyword, lat, lng)
-
-        except GoogleMapsRpcError:
-            raise
         except Exception as e:
-            safe_error = self._safe_error(e)
-            logger.error("Direct Maps search failed for '%s': %s", keyword, safe_error)
-            raise GoogleMapsRpcError(
-                f"Direct Maps search failed for {keyword!r}: {safe_error}"
-            ) from e
+            if isinstance(e, (GoogleMapsThrottleError, GoogleMapsChallengeError)):
+                raise
+            logger.error("Failed to fetch Maps page: %s", self._safe_error(e))
+            raise
 
     def _extract_leads_from_rpc_data(
         self,

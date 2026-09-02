@@ -821,16 +821,21 @@ class EnrichmentRepository:
         return int(pending)
 
     @staticmethod
-    def claim(connection: psycopg.Connection, run_id: uuid.UUID, worker_number: int) -> Optional[EnrichmentJob]:
-        row = connection.execute(
+    def claim_batch(
+        connection: psycopg.Connection,
+        run_id: uuid.UUID,
+        worker_number: int,
+        batch_size: int = 10,
+    ) -> list[EnrichmentJob]:
+        rows = connection.execute(
             """
-            with next_job as (
+            with next_jobs as (
                 select enrichment.entity_id
                 from warehouse.google_maps_enrichment enrichment
                 where enrichment.run_id = %s and enrichment.status = 'queued'
                 order by enrichment.entity_id
                 for update skip locked
-                limit 1
+                limit %s
             )
             update warehouse.google_maps_enrichment enrichment
             set status = 'in_progress',
@@ -838,8 +843,8 @@ class EnrichmentRepository:
                 worker_number = %s,
                 started_at = current_timestamp,
                 updated_at = current_timestamp
-            from next_job, warehouse.entities entity
-            where enrichment.entity_id = next_job.entity_id
+            from next_jobs, warehouse.entities entity
+            where enrichment.entity_id = next_jobs.entity_id
               and entity.entity_id = enrichment.entity_id
             returning
                 entity.entity_id,
@@ -852,13 +857,20 @@ class EnrichmentRepository:
                 entity.latitude,
                 entity.longitude
             """,
-            (run_id, worker_number),
-        ).fetchone()
+            (run_id, batch_size, worker_number),
+        ).fetchall()
         connection.commit()
-        if row is None:
-            return None
-        return EnrichmentJob(**row)
+        return [EnrichmentJob(**row) for row in rows]
 
+    @classmethod
+    def claim(
+        cls,
+        connection: psycopg.Connection,
+        run_id: uuid.UUID,
+        worker_number: int,
+    ) -> Optional[EnrichmentJob]:
+        jobs = cls.claim_batch(connection, run_id, worker_number, batch_size=1)
+        return jobs[0] if jobs else None
     @staticmethod
     def finish(
         connection: psycopg.Connection,
@@ -977,20 +989,21 @@ class EnrichmentRepository:
         connection.commit()
 
     @staticmethod
-    def claim_website(
+    def claim_website_batch(
         connection: psycopg.Connection,
         run_id: uuid.UUID,
         worker_number: int,
-    ) -> Optional[WebsiteJob]:
-        row = connection.execute(
+        batch_size: int = 10,
+    ) -> list[WebsiteJob]:
+        rows = connection.execute(
             """
-            with next_job as (
+            with next_jobs as (
                 select entity_id
                 from warehouse.google_maps_enrichment
                 where run_id = %s and website_check_state = 'queued'
                 order by entity_id
                 for update skip locked
-                limit 1
+                limit %s
             )
             update warehouse.google_maps_enrichment enrichment
             set website_check_state = 'in_progress',
@@ -998,17 +1011,24 @@ class EnrichmentRepository:
                 website_check_attempt_count = enrichment.website_check_attempt_count + 1,
                 website_check_started_at = current_timestamp,
                 updated_at = current_timestamp
-            from next_job
-            where enrichment.entity_id = next_job.entity_id
+            from next_jobs
+            where enrichment.entity_id = next_jobs.entity_id
             returning enrichment.entity_id, enrichment.website_url
             """,
-            (run_id, worker_number),
-        ).fetchone()
+            (run_id, batch_size, worker_number),
+        ).fetchall()
         connection.commit()
-        if row is None:
-            return None
-        return WebsiteJob(**row)
+        return [WebsiteJob(**row) for row in rows]
 
+    @classmethod
+    def claim_website(
+        cls,
+        connection: psycopg.Connection,
+        run_id: uuid.UUID,
+        worker_number: int,
+    ) -> Optional[WebsiteJob]:
+        jobs = cls.claim_website_batch(connection, run_id, worker_number, batch_size=1)
+        return jobs[0] if jobs else None
     @staticmethod
     def finish_website(
         connection: psycopg.Connection,
@@ -1248,131 +1268,147 @@ def run_maps_worker(
     try:
         while not throttle_controller.stop_requested:
             with repository.connect() as connection:
-                job = repository.claim(connection, run_id, worker_number)
-            if job is None:
+                jobs = repository.claim_batch(connection, run_id, worker_number, batch_size=10)
+            if not jobs:
                 break
-            query = build_search_query(job)
-            try:
-                leads: Sequence[Lead] = ()
-                last_error: Optional[Exception] = None
-                for attempt in range(1, max_attempts + 1):
-                    if not throttle_controller.wait_for_route(route):
-                        raise RunAborted(throttle_controller.abort_reason or "run aborted")
-                    if not rate_limiter.acquire(throttle_controller):
-                        raise RunAborted(throttle_controller.abort_reason or "run aborted")
-                    captcha_before = client.captcha_detected
-                    stats.search_attempts += 1
-                    try:
-                        leads = client.fetch_page(
-                            keyword=query,
-                            lat=job.latitude if job.latitude is not None else 39.8283,
-                            lng=job.longitude if job.longitude is not None else -98.5795,
-                            start_index=0,
-                        )
-                        challenge_detected = client.captcha_detected > captcha_before
-                        throttle_controller.record_success(route, challenge_detected)
-                        if challenge_detected:
-                            stats.throttled_searches += 1
-                        last_error = None
-                        break
-                    except Exception as error:  # network failures are retryable
-                        last_error = error
-                        challenge_detected = client.captcha_detected > captcha_before
-                        throttled = throttle_controller.record_failure(
-                            route,
-                            error,
-                            challenge_detected,
-                        )
-                        if throttled:
-                            stats.throttled_searches += 1
-                        if throttle_controller.stop_requested:
-                            raise RunAborted(throttle_controller.abort_reason or "run aborted") from error
-                        if isinstance(error, GoogleMapsPayloadDiscoveryError):
-                            # This failure was concentrated in a single stale
-                            # persistent session in the prior run. Retry it once
-                            # with fresh cookies/connections; repeating it more
-                            # than once only replays the same bad bootstrap.
-                            if attempt < min(max_attempts, 2):
+            for idx, job in enumerate(jobs):
+                if throttle_controller.stop_requested:
+                    with repository.connect() as connection:
+                        for rem_job in jobs[idx:]:
+                            repository.requeue(
+                                connection,
+                                rem_job.entity_id,
+                                build_search_query(rem_job),
+                                "worker stopped",
+                            )
+                            stats.requeued += 1
+                    break
+                query = build_search_query(job)
+                try:
+                    leads: Sequence[Lead] = ()
+                    last_error: Optional[Exception] = None
+                    for attempt in range(1, max_attempts + 1):
+                        if not throttle_controller.wait_for_route(route):
+                            raise RunAborted(throttle_controller.abort_reason or "run aborted")
+                        if not rate_limiter.acquire(throttle_controller):
+                            raise RunAborted(throttle_controller.abort_reason or "run aborted")
+                        captcha_before = client.captcha_detected
+                        stats.search_attempts += 1
+                        try:
+                            leads = client.fetch_page(
+                                keyword=query,
+                                lat=job.latitude if job.latitude is not None else 39.8283,
+                                lng=job.longitude if job.longitude is not None else -98.5795,
+                                start_index=0,
+                            )
+                            challenge_detected = client.captcha_detected > captcha_before
+                            throttle_controller.record_success(route, challenge_detected)
+                            if challenge_detected:
+                                stats.throttled_searches += 1
+                            last_error = None
+                            break
+                        except Exception as error:  # network failures are retryable
+                            last_error = error
+                            challenge_detected = client.captcha_detected > captcha_before
+                            throttled = throttle_controller.record_failure(
+                                route,
+                                error,
+                                challenge_detected,
+                            )
+                            if throttled:
+                                stats.throttled_searches += 1
+                            if throttle_controller.stop_requested:
+                                raise RunAborted(throttle_controller.abort_reason or "run aborted") from error
+                            if isinstance(error, GoogleMapsPayloadDiscoveryError):
+                                if attempt < min(max_attempts, 2):
+                                    stats.retries += 1
+                                    stats.payload_session_resets += 1
+                                    client.reset_session()
+                                    if not throttle_controller.wait(random.uniform(0.25, 0.75)):
+                                        raise RunAborted(
+                                            throttle_controller.abort_reason or "run aborted"
+                                        ) from error
+                                    continue
+                                break
+                            if attempt < max_attempts:
                                 stats.retries += 1
-                                stats.payload_session_resets += 1
-                                client.reset_session()
-                                if not throttle_controller.wait(random.uniform(0.25, 0.75)):
+                                backoff = min(
+                                    30.0,
+                                    float(2 ** (attempt - 1)) + random.uniform(0.15, 0.85),
+                                )
+                                if not throttle_controller.wait(backoff):
                                     raise RunAborted(
                                         throttle_controller.abort_reason or "run aborted"
                                     ) from error
-                                continue
-                            break
-                        if attempt < max_attempts:
-                            stats.retries += 1
-                            backoff = min(
-                                30.0,
-                                float(2 ** (attempt - 1)) + random.uniform(0.15, 0.85),
+                    if last_error is not None:
+                        raise last_error
+
+                    decision = choose_match(job, leads)
+                    metadata = ReviewMetadata(None, None, None, "not_applicable")
+                    if decision.status == "matched" and decision.best:
+                        matched_lead = decision.best.lead
+                        metadata = fetch_internal_review_metadata(client, matched_lead)
+                        if metadata.review_count is not None:
+                            stats.review_counts_found += 1
+
+                        # Optional Places API key fallback if explicitly configured
+                        if (
+                            api_key
+                            and matched_lead.place_id
+                            and metadata.latest_review_at is None
+                        ):
+                            official = fetch_official_review_metadata(
+                                client,
+                                matched_lead.place_id,
+                                api_key,
                             )
-                            if not throttle_controller.wait(backoff):
-                                raise RunAborted(
-                                    throttle_controller.abort_reason or "run aborted"
-                                ) from error
-                if last_error is not None:
-                    raise last_error
-
-                decision = choose_match(job, leads)
-                metadata = ReviewMetadata(None, None, None, "not_applicable")
-                if decision.status == "matched" and decision.best:
-                    matched_lead = decision.best.lead
-                    metadata = fetch_internal_review_metadata(client, matched_lead)
-                    if metadata.review_count is not None:
-                        stats.review_counts_found += 1
-
-                    # Optional Places API key fallback if explicitly configured
-                    if (
-                        api_key
-                        and matched_lead.place_id
-                        and metadata.latest_review_at is None
-                    ):
-                        official = fetch_official_review_metadata(
-                            client,
-                            matched_lead.place_id,
-                            api_key,
+                            if official.latest_review_at is not None:
+                                metadata = ReviewMetadata(
+                                    official.review_count
+                                    if official.review_count is not None
+                                    else metadata.review_count,
+                                    official.latest_review_at,
+                                    official.website_url,
+                                    f"{metadata.source}+places_api_legacy_fallback",
+                                    has_operating_hours=metadata.has_operating_hours,
+                                    is_claimed_owner=metadata.is_claimed_owner,
+                                    is_permanently_closed=metadata.is_permanently_closed,
+                                    is_temporarily_closed=metadata.is_temporarily_closed,
+                                    regular_hours=metadata.regular_hours,
+                                )
+                    with repository.connect() as connection:
+                        repository.finish(
+                            connection,
+                            job,
+                            query,
+                            decision,
+                            metadata,
                         )
-                        if official.latest_review_at is not None:
-                            metadata = ReviewMetadata(
-                                official.review_count
-                                if official.review_count is not None
-                                else metadata.review_count,
-                                official.latest_review_at,
-                                official.website_url,
-                                f"{metadata.source}+places_api_legacy_fallback",
-                                has_operating_hours=metadata.has_operating_hours,
-                                is_claimed_owner=metadata.is_claimed_owner,
-                                is_permanently_closed=metadata.is_permanently_closed,
-                                is_temporarily_closed=metadata.is_temporarily_closed,
-                                regular_hours=metadata.regular_hours,
+                    stats.processed += 1
+                    if decision.status == "matched":
+                        stats.matched += 1
+                    else:
+                        stats.not_found += 1
+                except RunAborted as error:
+                    with repository.connect() as connection:
+                        for rem_job in jobs[idx:]:
+                            repository.requeue(
+                                connection,
+                                rem_job.entity_id,
+                                build_search_query(rem_job),
+                                str(error),
                             )
-                with repository.connect() as connection:
-                    repository.finish(
-                        connection,
-                        job,
-                        query,
-                        decision,
-                        metadata,
-                    )
-                stats.processed += 1
-                if decision.status == "matched":
-                    stats.matched += 1
-                else:
-                    stats.not_found += 1
-            except RunAborted as error:
-                with repository.connect() as connection:
-                    repository.requeue(connection, job.entity_id, query, str(error))
-                stats.requeued += 1
-                break
-            except Exception as error:
-                with repository.connect() as connection:
-                    repository.fail(connection, job.entity_id, query, error)
-                stats.processed += 1
-                stats.failed += 1
-                if len(stats.errors) < 10:
-                    stats.errors.append(f"entity_id={job.entity_id}: {type(error).__name__}: {error}")
+                            stats.requeued += 1
+                    break
+                except Exception as error:
+                    with repository.connect() as connection:
+                        repository.fail(connection, job.entity_id, query, error)
+                    stats.processed += 1
+                    stats.failed += 1
+                    if len(stats.errors) < 10:
+                        stats.errors.append(
+                            f"entity_id={job.entity_id}: {type(error).__name__}: {error}"
+                        )
     finally:
         stats.captchas_detected = client.captcha_detected
         stats.captchas_solved = client.captcha_solved
@@ -1403,48 +1439,58 @@ def run_website_worker(
     try:
         while not throttle_controller.stop_requested:
             with repository.connect() as connection:
-                current_job = repository.claim_website(connection, run_id, worker_number)
-            if current_job is None:
+                jobs = repository.claim_website_batch(connection, run_id, worker_number, batch_size=10)
+            if not jobs:
                 if maps_done.is_set():
-                    break
+                    with repository.connect() as connection:
+                        jobs = repository.claim_website_batch(connection, run_id, worker_number, batch_size=10)
+                    if not jobs:
+                        break
                 maps_done.wait(0.20)
                 continue
 
-            try:
-                verification = verify_website(
-                    client,
-                    current_job.website_url,
-                    max_attempts=max_attempts,
-                )
-                with repository.connect() as connection:
-                    repository.finish_website(connection, current_job, verification)
-                stats.processed += 1
-                if verification.verified:
-                    stats.live += 1
-                else:
-                    stats.errors += 1
-            except Exception as error:
-                verification = WebsiteVerification(
-                    False,
-                    _website_network_error_status(error),
-                    datetime.now(timezone.utc),
-                )
-                try:
-                    with repository.connect() as connection:
-                        repository.finish_website(connection, current_job, verification)
-                    stats.processed += 1
-                    stats.errors += 1
-                except Exception:
+            for current_job in jobs:
+                if throttle_controller.stop_requested:
                     with repository.connect() as connection:
                         repository.requeue_website(connection, current_job.entity_id)
                     stats.requeued += 1
-                    raise
-                if len(stats.error_samples) < 10:
-                    stats.error_samples.append(
-                        f"entity_id={current_job.entity_id}: {type(error).__name__}: {error}"
+                    continue
+
+                try:
+                    verification = verify_website(
+                        client,
+                        current_job.website_url,
+                        max_attempts=max_attempts,
                     )
-            finally:
-                current_job = None
+                    with repository.connect() as connection:
+                        repository.finish_website(connection, current_job, verification)
+                    stats.processed += 1
+                    if verification.verified:
+                        stats.live += 1
+                    else:
+                        stats.errors += 1
+                except Exception as error:
+                    verification = WebsiteVerification(
+                        False,
+                        _website_network_error_status(error),
+                        datetime.now(timezone.utc),
+                    )
+                    try:
+                        with repository.connect() as connection:
+                            repository.finish_website(connection, current_job, verification)
+                        stats.processed += 1
+                        stats.errors += 1
+                    except Exception:
+                        with repository.connect() as connection:
+                            repository.requeue_website(connection, current_job.entity_id)
+                        stats.requeued += 1
+                        raise
+                    if len(stats.error_samples) < 10:
+                        stats.error_samples.append(
+                            f"entity_id={current_job.entity_id}: {type(error).__name__}: {error}"
+                        )
+                finally:
+                    current_job = None
     finally:
         if current_job is not None:
             with repository.connect() as connection:
