@@ -121,6 +121,9 @@ class GoogleMapsRpcClient:
         self._payload_url_cache: Dict[Tuple[str, float, float], Tuple[str, str]] = {}
         self._bootstrap_context_cache: Dict[Tuple[str, float, float], Tuple[str, str]] = {}
         self._last_bootstrap_context: Optional[Tuple[str, str]] = None
+        self._session_base_pb: Optional[str] = None
+        self._session_bootstrap_url: Optional[str] = None
+        self._session_pb_uses = 0
         self._review_client_context: Optional[int] = None
         self._review_request_id = random.randint(100_000, 999_999)
 
@@ -146,8 +149,10 @@ class GoogleMapsRpcClient:
         self._payload_url_cache.clear()
         self._bootstrap_context_cache.clear()
         self._last_bootstrap_context = None
+        self._session_base_pb = None
+        self._session_bootstrap_url = None
+        self._session_pb_uses = 0
         self._review_client_context = None
-
     def _request(
         self,
         method: str,
@@ -525,9 +530,59 @@ class GoogleMapsRpcClient:
         start_index: int = 0,
         page_size: int = 20,
     ) -> List[Lead]:
-        """Fetches one page of records from Google's current direct payload."""
+        """Fetches one page of records using session-cached pb template."""
+        # 1. Fast path: reuse established session pb template to avoid downloading 220KB HTML
+        if self._session_base_pb is not None and self._session_pb_uses < 300:
+            self._session_pb_uses += 1
+            encoded_kw = urllib.parse.quote_plus(keyword)
+            pb = self._session_base_pb
+            pb = re.sub(r"!1s[^!]+", f"!1s{encoded_kw}", pb, count=1)
+            pb = re.sub(r"!2d[-0-9.]+", f"!2d{lng}", pb, count=1)
+            pb = re.sub(r"!3d[-0-9.]+", f"!3d{lat}", pb, count=1)
+            if start_index > 0:
+                pb = re.sub(r"!8i\d+", f"!8i{start_index}", pb, count=1)
+
+            query_params = {
+                "tbm": "map",
+                "authuser": "0",
+                "hl": "en",
+                "gl": "us",
+                "q": keyword,
+                "pb": pb,
+            }
+            payload_url = f"{GMAPS_BOOTSTRAP_ORIGIN}/search?{urllib.parse.urlencode(query_params)}"
+            headers = {
+                **DEFAULT_HEADERS,
+                "accept": "*/*",
+                "referer": self._session_bootstrap_url or "https://www.google.com/maps",
+            }
+            try:
+                response = self._get_google(payload_url, headers=headers)
+                if response.status_code == 200:
+                    clean_text = response.text.lstrip()
+                    if clean_text.startswith(")]}'"):
+                        clean_text = clean_text[4:].lstrip()
+                    try:
+                        raw_data = json.loads(clean_text)
+                        leads = self._extract_leads_from_rpc_data(raw_data, keyword, lat, lng)
+                        if leads:
+                            return leads
+                    except json.JSONDecodeError:
+                        pass
+            except (GoogleMapsThrottleError, GoogleMapsChallengeError):
+                raise
+            except Exception:
+                pass
+
+        # 2. Bootstrap path: initialize or refresh session template
         try:
             bootstrap_url, base_payload_url = self._discover_payload_url(keyword, lat, lng)
+            q_dict = dict(urllib.parse.parse_qsl(urllib.parse.urlsplit(base_payload_url).query))
+            if "pb" in q_dict:
+                self._session_base_pb = q_dict["pb"]
+                self._session_bootstrap_url = bootstrap_url
+                self._session_pb_uses = 1
+
             payload_url = self._payload_url_with_offset(
                 base_payload_url, start_index=start_index, page_size=page_size
             )
