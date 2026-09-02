@@ -40,8 +40,8 @@ $basePort = [int] $match.Groups['port'].Value
 if ($hostName -ne 'disp.oxylabs.io') {
     throw "Expected Oxylabs Dedicated ISP host disp.oxylabs.io"
 }
-if ($basePort -lt 8001 -or $basePort -gt 8050) {
-    throw "Expected an assigned static ISP port from 8001 through 8050"
+if ($basePort -lt 8001 -or $basePort -gt 8055) {
+    throw "Expected an assigned static ISP port from 8001 through 8055"
 }
 
 $credentialParts = $userinfo -split ':', 2
@@ -51,7 +51,7 @@ if ($credentialParts.Count -ne 2) {
 
 $username = [Uri]::UnescapeDataString($credentialParts[0])
 $password = [Uri]::UnescapeDataString($credentialParts[1])
-$routes = 1..50 | ForEach-Object {
+$routes = 1..55 | ForEach-Object {
     $routePort = 8000 + $_
     [ordered]@{
         id = ('proxy-{0:D2}' -f $_)
@@ -101,5 +101,5 @@ $document = [ordered]@{
 $json = $document | ConvertTo-Json -Depth 6
 [IO.File]::WriteAllText($jsonPath, $json + [Environment]::NewLine, $utf8NoBom)
 
-Write-Host "Created 50-route proxy bundle in $PSScriptRoot"
+Write-Host "Created 55-route proxy bundle in $PSScriptRoot"
 Write-Host "Credentials were written to ignored files and were not printed."

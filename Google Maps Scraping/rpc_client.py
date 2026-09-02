@@ -128,7 +128,7 @@ class GoogleMapsRpcClient:
         self._review_request_id = random.randint(100_000, 999_999)
 
     def _new_session(self) -> Any:
-        session = (
+        return (
             cffi_requests.Session()
             if CURL_CFFI_AVAILABLE
             else cffi_requests.Client(
@@ -137,13 +137,6 @@ class GoogleMapsRpcClient:
                 follow_redirects=True,
             )
         )
-        if hasattr(session, "cookies") and hasattr(session.cookies, "set"):
-            session.cookies.set(
-                "SOCS",
-                "CAESEwgDEgk2ODE4OTM5NDQaAmVuIAEaBgiA_LyaBg",
-                domain=".google.com",
-            )
-        return session
 
     def close(self) -> None:
         """Release sockets held by the underlying proxied HTTP session."""
