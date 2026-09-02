@@ -60,11 +60,18 @@ GENERIC_NAME_TOKENS = LEGAL_SUFFIXES | {
     "and",
     "at",
     "by",
+    "carrier",
+    "carriers",
     "center",
     "centre",
     "company",
+    "express",
+    "freight",
     "group",
+    "hauling",
     "home",
+    "lines",
+    "logistics",
     "market",
     "of",
     "realty",
@@ -77,6 +84,9 @@ GENERIC_NAME_TOKENS = LEGAL_SUFFIXES | {
     "spa",
     "store",
     "the",
+    "transport",
+    "transportation",
+    "trucking",
 }
 
 # Binary, deliberately recall-favoring policy selected by replaying the prior
@@ -521,6 +531,8 @@ def choose_match(job: EnrichmentJob, leads: Sequence[Lead]) -> MatchDecision:
     )
     best = assessments[0]
     if best.composite_score >= MATCH_THRESHOLD:
+        if not best.meaningful_name_overlap and not best.meaningful_name_containment:
+            return MatchDecision("not_found", best, assessments, "no_meaningful_name_agreement")
         return MatchDecision("matched", best, assessments, "binary_score_at_or_above_threshold")
     return MatchDecision("not_found", best, assessments, "binary_score_below_threshold")
 
@@ -723,16 +735,23 @@ class EnrichmentRepository:
             )
         return run_id
 
-    def enqueue(self, run_id: uuid.UUID, limit: int) -> int:
+    def enqueue(self, run_id: uuid.UUID, limit: int, source: str = "smb") -> int:
+        if source == "fmcsa":
+            filter_clause = "e.primary_source = 'fmcsa'"
+        elif source == "all":
+            filter_clause = "(e.is_qualified_no_website_email_lead or e.primary_source = 'fmcsa')"
+        else:
+            filter_clause = "e.is_qualified_no_website_email_lead"
+
         with self.connect() as connection:
             rows = connection.execute(
-                """
+                f"""
                 insert into warehouse.google_maps_enrichment (entity_id, run_id, status)
                 select candidate.entity_id, %s, 'queued'
                 from (
                     select e.entity_id
                     from warehouse.entities e
-                    where e.is_qualified_no_website_email_lead
+                    where {filter_clause}
                       and exists (
                           select 1
                           from warehouse.entity_emails email
