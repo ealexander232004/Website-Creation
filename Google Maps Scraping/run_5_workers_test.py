@@ -47,7 +47,7 @@ async def run_multi_worker_test(max_batches: int = 25) -> None:
         detail_extraction=False,
     )
 
-    db = Database(config.database_path)
+    db = Database(config.database_url)
     proxy_manager = ProxyManager(proxy_urls_file=PROXIES_DIR / "proxy-urls.txt")
     
     stats_init = db.get_stats()

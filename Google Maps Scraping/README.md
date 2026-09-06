@@ -10,7 +10,7 @@ A high-performance, modular Google Maps scraper designed to extract small busine
    - **True No-Website**: Identifies listings with zero website link in their Google profile.
    - **Social-Media-Only Substitutes**: Automatically identifies when a business owner linked a Facebook page, Instagram profile, Yelp listing, or directory page instead of a real website.
    - **Dead Google Sites**: Detects defunct `*.business.site` domains (which Google officially deprecated in March 2024, leaving those businesses with non-functional pages).
-   - **Free Site Builders**: Flags listings using `linktr.ee`, `carrd.co`, `wixsite.com`, `wordpress.com`, etc.
+   - **Free Site Builders**: Flags listings using `linktr.ee`, `carrd.co`, `wixsite.com`, `wordpress.com`, etc., and treats them as having a website (excluded from no-website email enrichment).
 
 2. **Unclaimed Google Business Profile Detection**:
    - Identifies businesses showing the "Claim this business" badge—a key signal for high-converting outreach.
@@ -27,8 +27,8 @@ A high-performance, modular Google Maps scraper designed to extract small busine
    - Automatically detects and routes requests through the user's static ISP proxies (`Proxies/proxy-urls.txt`).
    - Integrated with CapSolver (`Captcha Solver/capsolver_client.py`) for automated reCAPTCHA v2 challenge resolution.
 
-6. **WAL-Mode SQLite Persistence & Resumable Queue**:
-   - Concurrent-safe local database (`gmaps_leads.db`) with deduplication on `place_id`, `cid`, and compound address keys.
+6. **PostgreSQL Persistence & Resumable Queue**:
+   - Docker Compose-managed PostgreSQL storage with deduplication on `place_id` and atomic multi-worker job claiming.
    - Persistent queue enables pause, resume, and recovery across long scraping sessions.
 
 7. **Multi-Format Lead Export**:
@@ -48,7 +48,10 @@ Google Maps Scraping/
 ├── captcha_handler.py        # CapSolver bridge for Google bot challenge handling
 ├── parser.py                 # HTML & detail sidebar data extraction
 ├── browser_engine.py         # Headless Playwright engine with stealth scripts
-├── database.py               # SQLite WAL-mode storage & task queue
+├── database.py               # PostgreSQL storage & task queue
+├── compose.yaml              # Local PostgreSQL service
+├── postgres/init/            # PostgreSQL schema
+├── migrate_sqlite_to_postgres.py # Legacy data migration
 ├── export.py                 # Export engine (CSV, Multi-tab Excel, JSONL)
 ├── scraper.py                # Multi-worker async orchestrator
 ├── cli.py                    # Rich CLI interface
@@ -60,6 +63,22 @@ Google Maps Scraping/
 ---
 
 ## Quick Start & Usage
+
+### 0. Start PostgreSQL
+
+Copy `.env.example` to `.env`, choose a password, install the Python dependencies,
+and start the database:
+
+```powershell
+pip install -r requirements.txt
+docker compose up -d
+```
+
+To migrate a legacy `gmaps_leads.db` file, run:
+
+```powershell
+python migrate_sqlite_to_postgres.py
+```
 
 ### 1. Diagnostic Check
 Verify your proxy bundle and CapSolver balance:
@@ -89,6 +108,26 @@ Resume processing pending queue jobs at any time:
 python run.py resume --workers 5 --headless
 ```
 
+Prepared integrated campaigns can use the proxy-enforced direct Maps payload
+transport, with the Playwright path retained as a fallback:
+
+```powershell
+python run_integrated_campaign.py --campaign-id 2 --mode rpc --search-workers 10 --email-workers 20
+python run_integrated_campaign.py --campaign-id 2 --mode browser --search-workers 10 --email-workers 20
+```
+
+Direct mode refuses to run without a configured proxy route. Because it follows
+an undocumented Google web payload, use browser mode if Google changes that payload.
+Email enrichment also fails closed without a proxy; it never falls back to the
+machine's normal network connection.
+
+New campaigns automatically queue no-website leads for concurrent email enrichment.
+Monitor the latest integrated campaign with:
+
+```powershell
+python monitor_campaign.py --watch
+```
+
 ### 4. Inspect Database Statistics
 ```powershell
 python run.py stats
@@ -114,7 +153,7 @@ python run.py export --format excel --output exports/leads_master.xlsx
 - **Enriched Profile Data**: Extracts business name, primary and secondary categories, direct phone number, full street address, city, state, zip code, rating, review count, price tier, and maps URL.
 - **Unclaimed Profile Identification**: Flags businesses eligible for Google Business Profile claim outreach.
 - **Nationwide Coverage**: Penetrates beyond the 120-result Google Maps cap via spatial subdivision.
-- **Fault-Tolerant Resumption**: Interrupted jobs retain progress in SQLite; only uncompleted grid cells run on restart.
+- **Fault-Tolerant Resumption**: Interrupted jobs retain progress in PostgreSQL; only uncompleted grid cells run on restart.
 - **Headless Background Execution**: Low CPU and RAM consumption with zero GUI windows needed.
 
 ### Limitations & Considerations:

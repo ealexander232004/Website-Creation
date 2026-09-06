@@ -9,3 +9,9 @@ Thumbs.db
 
 .vercel
 .env*
+!.env.example
+Google Maps Scraping/logs/
+Google Maps Scraping/experiments/artifacts/
+Google Maps Scraping/experiments/*_stdout.log
+Google Maps Scraping/experiments/*_stderr.log
+Google Maps Scraping/experiments/*_pid.txt

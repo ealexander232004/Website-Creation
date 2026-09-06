@@ -69,6 +69,16 @@ SYSTEM_PREFIXES: Set[str] = {
     "name", "user", "test", "admin"
 }
 
+GENERIC_BUSINESS_TOKENS: Set[str] = {
+    "and", "company", "corp", "corporation", "inc", "incorporated", "llc",
+    "ltd", "service", "services", "solutions", "the"
+}
+
+GENERIC_INDUSTRY_TOKENS: Set[str] = {
+    "ac", "air", "construction", "contractor", "electric", "electrical", "electrician",
+    "heating", "hvac", "motor", "plumber", "plumbing", "roof", "roofer", "roofing",
+}
+
 # Common public email providers utilized by small trade businesses
 FREE_EMAIL_PROVIDERS: Set[str] = {
     "gmail.com", "yahoo.com", "outlook.com", "hotmail.com", "aol.com", "icloud.com",
@@ -77,6 +87,8 @@ FREE_EMAIL_PROVIDERS: Set[str] = {
 }
 
 EMAIL_REGEX = re.compile(r'\b[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Z|a-z]{2,}\b')
+MAX_EMAILS_PER_LEAD = 3
+MIN_LANDING_PAGE_CONFIDENCE = 0.75
 
 
 @dataclass
@@ -109,6 +121,133 @@ def decode_bing_url(href: str) -> str:
     return href
 
 
+def _normalized_tokens(value: Optional[str]) -> List[str]:
+    return re.findall(r"[a-z0-9]+", (value or "").lower())
+
+
+def _distinctive_business_tokens(business_name: str, category: str = "") -> List[str]:
+    category_tokens = set(_normalized_tokens(category))
+    return [
+        token
+        for token in _normalized_tokens(business_name)
+        if len(token) > 2
+        and token not in GENERIC_BUSINESS_TOKENS
+        and token not in GENERIC_INDUSTRY_TOKENS
+        and token not in category_tokens
+    ]
+
+
+def _brand_acronyms(business_name: str) -> Set[str]:
+    """Return standalone uppercase brand acronyms, excluding apostrophe surnames."""
+    return {
+        token.lower()
+        for token in re.findall(r"(?<![A-Za-z'’])[A-Z]{2,5}(?![A-Za-z])", business_name)
+        if token.lower() not in GENERIC_BUSINESS_TOKENS
+        and token.lower() not in GENERIC_INDUSTRY_TOKENS
+    }
+
+
+def _email_contexts(html: str, radius: int = 700) -> List[Tuple[str, str]]:
+    """Return each address with nearby visible text instead of one whole-page blob."""
+    contexts: List[Tuple[str, str]] = []
+    for match in EMAIL_REGEX.finditer(html or ""):
+        fragment = html[max(0, match.start() - radius):match.end() + radius]
+        visible = BeautifulSoup(fragment, "html.parser").get_text(" ", strip=True)
+        contexts.append((match.group(0), visible))
+    return contexts
+
+
+def email_matches_business(
+    email: str,
+    business_name: str,
+    *,
+    category: str = "",
+    phone: str = "",
+    local_context: str = "",
+    result_context: str = "",
+    source_url: str = "",
+) -> bool:
+    """Require address-level evidence tying an email to this specific business."""
+    local_part, domain = email.lower().split("@", 1)
+    identity = re.sub(r"[^a-z0-9]", "", f"{local_part}{domain.split('.')[0]}")
+    local_identity = re.sub(r"[^a-z0-9]", "", local_part)
+    name_tokens = [
+        token
+        for token in _normalized_tokens(business_name)
+        if token not in GENERIC_BUSINESS_TOKENS
+    ]
+    distinctive = _distinctive_business_tokens(business_name, category)
+    meaningful_matches = {token for token in name_tokens if len(token) > 2 and token in identity}
+    distinctive_matches = {token for token in distinctive if token in identity}
+    brand_acronyms = _brand_acronyms(business_name)
+    clean_phone = re.sub(r"\D", "", phone)
+    evidence_phone = re.sub(r"\D", "", f"{local_context} {result_context}")
+    phone_confirmed = len(clean_phone) >= 7 and clean_phone[-10:] in evidence_phone
+
+    # Initial-only generic names such as B & S Electric are too ambiguous without
+    # a matching phone in the actual result or nearby page fragment.
+    if not distinctive and not brand_acronyms and not phone_confirmed:
+        return False
+
+    # Multiple brand tokens are strong evidence (for example central-valley.com).
+    if len(distinctive_matches) >= 2:
+        return True
+
+    # One long brand token in the mailbox is useful for names such as
+    # psmith@... while avoiding short collisions such as Star vs All Star.
+    if any(len(token) >= 5 and token in local_identity for token in distinctive):
+        return True
+
+    # A long brand token plus another meaningful name/trade token in the domain
+    # accepts domains such as eliteroofinc.com without trusting generic trade words alone.
+    if any(len(token) >= 5 and token in identity for token in distinctive) and len(meaningful_matches) >= 2:
+        return True
+
+    # Uppercase business acronyms such as SOS or BR are intentional brand signals.
+    if any(len(token) >= 2 and token in identity for token in brand_acronyms):
+        return True
+
+    compact_name = "".join(name_tokens)
+    if len(compact_name) >= 5 and compact_name in identity:
+        return True
+
+    return False
+
+
+def is_search_result_relevant(
+    result_text: str,
+    business_name: str,
+    phone: str = "",
+    city: str = "",
+    category: str = "",
+) -> bool:
+    """Require result-level evidence before accepting its emails or links."""
+    result_tokens = _normalized_tokens(result_text)
+    normalized_result = " ".join(result_tokens)
+    normalized_name = " ".join(_normalized_tokens(business_name))
+    clean_phone = re.sub(r"\D", "", phone)
+    result_phone = re.sub(r"\D", "", result_text)
+    phone_matches = len(clean_phone) >= 7 and clean_phone[-10:] in result_phone
+    name_tokens = _distinctive_business_tokens(business_name, category)
+    brand_acronyms = _brand_acronyms(business_name)
+
+    if normalized_name and normalized_name in normalized_result:
+        return bool(name_tokens or brand_acronyms or phone_matches)
+
+    if phone_matches:
+        return True
+
+    if not name_tokens:
+        return False
+
+    matched = sum(token in result_tokens for token in set(name_tokens))
+    if matched >= 2:
+        return True
+
+    normalized_city = " ".join(_normalized_tokens(city))
+    return bool(normalized_city and normalized_city in normalized_result and matched >= 2)
+
+
 def clean_extracted_email(email_str: str) -> Optional[str]:
     """Strictly validates and normalizes an email address string."""
     if not email_str or "@" not in email_str:
@@ -128,7 +267,7 @@ def clean_extracted_email(email_str: str) -> Optional[str]:
     if tld in INVALID_EXTENSIONS or tld not in VALID_TLDS:
         return None
         
-    if domain in BLACKLIST_DOMAINS:
+    if any(domain == blocked or domain.endswith(f".{blocked}") for blocked in BLACKLIST_DOMAINS):
         return None
         
     if any(local.startswith(p) or local == p for p in SYSTEM_PREFIXES):
@@ -180,6 +319,10 @@ class EmailFootprintExtractor:
         self.db = database
         self.config = config or DEFAULT_CONFIG
         self.proxy_manager = proxy_manager or ProxyManager(proxy_urls_file=self.config.proxy_urls_file)
+        if self.proxy_manager.total_proxies < 1:
+            raise RuntimeError(
+                "Email extraction requires at least one configured proxy; direct-network fallback is disabled"
+            )
         self.concurrency = concurrency
         self._headers = {
             "User-Agent": self.config.user_agent or "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/128.0.0.0 Safari/537.36",
@@ -189,45 +332,22 @@ class EmailFootprintExtractor:
         self._ensure_email_schema()
 
     def _ensure_email_schema(self) -> None:
-        """Ensures the lead_emails and email_extraction_status database tables exist."""
-        with self.db._get_connection() as conn:
-            conn.execute("""
-                CREATE TABLE IF NOT EXISTS lead_emails (
-                    id INTEGER PRIMARY KEY AUTOINCREMENT,
-                    place_id TEXT NOT NULL,
-                    email TEXT NOT NULL,
-                    source_url TEXT,
-                    source_type TEXT,
-                    confidence REAL DEFAULT 0.70,
-                    is_free_provider INTEGER DEFAULT 1,
-                    discovered_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-                    FOREIGN KEY (place_id) REFERENCES leads(place_id),
-                    UNIQUE(place_id, email)
-                )
-            """)
-            conn.execute("""
-                CREATE TABLE IF NOT EXISTS email_extraction_status (
-                    place_id TEXT PRIMARY KEY,
-                    status TEXT NOT NULL, -- 'completed', 'no_email', 'error'
-                    emails_found_count INTEGER DEFAULT 0,
-                    processed_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-                    FOREIGN KEY (place_id) REFERENCES leads(place_id)
-                )
-            """)
-            conn.execute("CREATE INDEX IF NOT EXISTS idx_lead_emails_place_id ON lead_emails(place_id)")
-            conn.execute("CREATE INDEX IF NOT EXISTS idx_lead_emails_email ON lead_emails(email)")
-            conn.execute("CREATE INDEX IF NOT EXISTS idx_email_status ON email_extraction_status(status)")
+        """Verifies that the PostgreSQL schema initialized by Database is available."""
+        self.db.ping()
 
-    def _get_proxy_dict(self) -> Optional[Dict[str, str]]:
-        if self.proxy_manager and self.proxy_manager.total_proxies > 0:
-            route = self.proxy_manager.get_next_proxy()
-            if route:
-                return {"http": route.raw_url, "https": route.raw_url}
-        return None
+    def _get_proxy_dict(self) -> Dict[str, str]:
+        """Return one required proxy mapping; never permit direct-network fallback."""
+        route = self.proxy_manager.get_next_proxy()
+        if route is None or not route.raw_url or not route.host:
+            raise RuntimeError(
+                "No valid email proxy route is available; direct-network fallback is disabled"
+            )
+        return {"http": route.raw_url, "https": route.raw_url}
 
     def search_lead_footprint(self, lead: Dict[str, Any]) -> List[ExtractedEmail]:
         """Synchronous worker that searches and extracts email footprints for a single lead."""
         name = lead["name"]
+        category = lead.get("category") or ""
         phone = lead.get("phone") or ""
         city = lead.get("city") or ""
         place_id = lead["place_id"]
@@ -239,6 +359,8 @@ class EmailFootprintExtractor:
         seen_emails: Set[str] = set()
 
         proxies = self._get_proxy_dict()
+        successful_search_responses = 0
+        last_search_error: Optional[Exception] = None
 
         # Query Strategies:
         queries = []
@@ -261,37 +383,68 @@ class EmailFootprintExtractor:
                     impersonate="chrome120"
                 )
                 if resp.status_code != 200:
+                    last_search_error = RuntimeError(
+                        f"Bing returned HTTP {resp.status_code} through the configured proxy"
+                    )
                     continue
+                successful_search_responses += 1
                     
                 soup = BeautifulSoup(resp.text, "html.parser")
                 
-                # 1. Check raw SERP snippets
-                serp_text = " ".join([b.get_text() for b in soup.select("li.b_algo, .b_caption, p")])
-                for raw_em in EMAIL_REGEX.findall(serp_text):
-                    cleaned = clean_extracted_email(raw_em)
-                    if cleaned and cleaned not in seen_emails:
-                        seen_emails.add(cleaned)
-                        domain = cleaned.split("@")[-1]
-                        conf = calculate_email_confidence(cleaned, name, city)
-                        discovered.append(ExtractedEmail(
-                            email=cleaned,
-                            source_url=url,
-                            source_type="search_snippet",
-                            confidence=conf,
-                            is_free_provider=domain in FREE_EMAIL_PROVIDERS,
-                            lead_place_id=place_id
-                        ))
-
-                # 2. Extract and visit top landing URLs
-                candidate_links = []
+                # Evaluate each result independently. Concatenating the entire SERP
+                # imports addresses from unrelated results and directory chrome.
+                candidate_links: List[Tuple[str, str]] = []
                 for item in soup.select("li.b_algo"):
+                    item_text = item.get_text(" ", strip=True)
+                    if not is_search_result_relevant(
+                        item_text,
+                        business_name=name,
+                        phone=phone,
+                        city=city,
+                        category=category,
+                    ):
+                        continue
+
                     a = item.select_one("h2 a")
+                    real_url = ""
                     if a and a.get("href"):
                         real_url = decode_bing_url(a.get("href"))
-                        if real_url.startswith("http") and not any(d in real_url for d in ["bing.com", "microsoft.com", "google.com", "wikipedia.org"]):
-                            candidate_links.append(real_url)
 
-                for link in candidate_links[:3]:
+                    for raw_em in EMAIL_REGEX.findall(item_text):
+                        cleaned = clean_extracted_email(raw_em)
+                        if (
+                            cleaned
+                            and cleaned not in seen_emails
+                            and email_matches_business(
+                                cleaned,
+                                name,
+                                category=category,
+                                phone=phone,
+                                local_context=item_text,
+                                result_context=item_text,
+                                source_url=real_url,
+                            )
+                        ):
+                            seen_emails.add(cleaned)
+                            domain = cleaned.split("@")[-1]
+                            conf = max(calculate_email_confidence(cleaned, name, city), 0.80)
+                            discovered.append(ExtractedEmail(
+                                email=cleaned,
+                                source_url=url,
+                                source_type="search_snippet",
+                                confidence=conf,
+                                is_free_provider=domain in FREE_EMAIL_PROVIDERS,
+                                lead_place_id=place_id
+                            ))
+
+                    if real_url.startswith("http") and not any(
+                        domain in real_url
+                        for domain in ["bing.com", "microsoft.com", "google.com", "wikipedia.org"]
+                    ):
+                        candidate_links.append((real_url, item_text))
+
+                # Visit only landing URLs from result cards already matched to the lead.
+                for link, result_context in candidate_links[:3]:
                     try:
                         page_resp = requests.get(
                             link,
@@ -301,16 +454,30 @@ class EmailFootprintExtractor:
                             impersonate="chrome120"
                         )
                         if page_resp.status_code == 200:
-                            for raw_em in EMAIL_REGEX.findall(page_resp.text):
+                            for raw_em, local_context in _email_contexts(page_resp.text):
                                 cleaned = clean_extracted_email(raw_em)
                                 if cleaned and cleaned not in seen_emails:
-                                    seen_emails.add(cleaned)
                                     domain = cleaned.split("@")[-1]
                                     conf = calculate_email_confidence(cleaned, name, city)
+                                    # Directory pages commonly contain many businesses.
+                                    # Require evidence for this individual address in its
+                                    # nearby fragment; never trust the whole page at once.
+                                    if not email_matches_business(
+                                        cleaned,
+                                        name,
+                                        category=category,
+                                        phone=phone,
+                                        local_context=local_context,
+                                        result_context=result_context,
+                                        source_url=link,
+                                    ):
+                                        continue
+                                    conf = max(conf, MIN_LANDING_PAGE_CONFIDENCE)
+                                    seen_emails.add(cleaned)
                                     discovered.append(ExtractedEmail(
                                         email=cleaned,
                                         source_url=link,
-                                        source_type="directory_landing_page",
+                                        source_type="contextual_landing_page",
                                         confidence=conf,
                                         is_free_provider=domain in FREE_EMAIL_PROVIDERS,
                                         lead_place_id=place_id
@@ -322,64 +489,89 @@ class EmailFootprintExtractor:
                     break  # Break early once qualified emails are found
 
             except Exception as e:
+                last_search_error = e
                 logger.debug("Footprint search error for %s: %s", name, e)
 
-        return discovered
+        if successful_search_responses == 0:
+            detail = f": {last_search_error}" if last_search_error else ""
+            raise RuntimeError(
+                f"All proxied email search requests failed for {name!r}{detail}"
+            )
+
+        # Prefer the strongest, search-specific evidence and prevent a directory
+        # page from attaching an unbounded staff list to one business lead.
+        discovered.sort(
+            key=lambda email: (
+                email.confidence,
+                email.source_type == "search_snippet",
+            ),
+            reverse=True,
+        )
+        return discovered[:MAX_EMAILS_PER_LEAD]
 
     def save_extracted_emails(self, emails: List[ExtractedEmail]) -> int:
-        """Persists extracted emails to SQLite."""
+        """Persists extracted emails to PostgreSQL."""
         if not emails:
             return 0
-        saved = 0
         with self.db._get_connection() as conn:
-            for em in emails:
-                try:
-                    conn.execute("""
-                        INSERT OR IGNORE INTO lead_emails (
-                            place_id, email, source_url, source_type, confidence, is_free_provider
-                        ) VALUES (?, ?, ?, ?, ?, ?)
-                    """, (
+            with conn.cursor() as cursor:
+                cursor.executemany(
+                    """
+                    INSERT INTO lead_emails (
+                        place_id, email, source_url, source_type, confidence, is_free_provider
+                    ) VALUES (%s, %s, %s, %s, %s, %s)
+                    ON CONFLICT (place_id, email) DO NOTHING
+                    """,
+                    [(
                         em.lead_place_id,
                         em.email,
                         em.source_url,
                         em.source_type,
                         em.confidence,
-                        1 if em.is_free_provider else 0
-                    ))
-                    saved += 1
-                except Exception as e:
-                    logger.debug("Failed saving email: %s", e)
-        return saved
+                        em.is_free_provider,
+                    ) for em in emails],
+                )
+                return max(cursor.rowcount, 0)
 
     def mark_lead_status(self, place_id: str, status: str, count: int) -> None:
         """Records lead extraction completion status to enable resume capabilities."""
         with self.db._get_connection() as conn:
             conn.execute("""
-                INSERT OR REPLACE INTO email_extraction_status (place_id, status, emails_found_count, processed_at)
-                VALUES (?, ?, ?, CURRENT_TIMESTAMP)
+                INSERT INTO email_extraction_status (place_id, status, emails_found_count, processed_at)
+                VALUES (%s, %s, %s, CURRENT_TIMESTAMP)
+                ON CONFLICT (place_id) DO UPDATE SET
+                    status = EXCLUDED.status,
+                    emails_found_count = EXCLUDED.emails_found_count,
+                    processed_at = EXCLUDED.processed_at
             """, (place_id, status, count))
 
     def get_pending_leads_count(self) -> int:
         """Returns the number of remaining unprocessed no-website leads."""
         with self.db._get_connection() as conn:
             return conn.execute("""
-                SELECT count(*) FROM leads 
-                WHERE has_website = 0 
-                  AND place_id NOT IN (SELECT place_id FROM email_extraction_status)
-            """).fetchone()[0]
+                SELECT count(*) AS pending_count FROM leads AS lead
+                WHERE NOT lead.has_website
+                  AND NOT EXISTS (
+                      SELECT 1 FROM email_extraction_status AS status
+                      WHERE status.place_id = lead.place_id
+                  )
+            """).fetchone()["pending_count"]
 
     def get_pending_leads(self, limit: Optional[int] = None) -> List[Dict[str, Any]]:
         """Queries the next batch of unprocessed no-website leads."""
         query = """
             SELECT place_id, name, category, phone, full_address, city, state 
-            FROM leads 
-            WHERE has_website = 0 
-              AND place_id NOT IN (SELECT place_id FROM email_extraction_status)
+            FROM leads AS lead
+            WHERE NOT lead.has_website
+              AND NOT EXISTS (
+                  SELECT 1 FROM email_extraction_status AS status
+                  WHERE status.place_id = lead.place_id
+              )
             ORDER BY (phone IS NOT NULL) DESC
         """
         params: Tuple[Any, ...] = ()
         if limit:
-            query += " LIMIT ?"
+            query += " LIMIT %s"
             params = (limit,)
 
         with self.db._get_connection() as conn:
@@ -482,12 +674,17 @@ class EmailFootprintExtractor:
                     e.source_type AS email_source,
                     CASE WHEN e.email IS NOT NULL THEN 1 ELSE 0 END AS has_discovered_email
                 FROM leads l
-                LEFT JOIN lead_emails e ON l.place_id = e.place_id
-                WHERE l.has_website = 0
-                GROUP BY l.place_id
+                LEFT JOIN LATERAL (
+                    SELECT email, confidence, source_type
+                    FROM lead_emails
+                    WHERE place_id = l.place_id
+                    ORDER BY confidence DESC, discovered_at ASC
+                    LIMIT 1
+                ) e ON TRUE
+                WHERE NOT l.has_website
                 ORDER BY (e.email IS NOT NULL) DESC, e.confidence DESC, l.reviews_count DESC
             """
-            df_all_no_web = pd.read_sql_query(query, conn)
+            df_all_no_web = pd.DataFrame(conn.execute(query).fetchall())
             
             # Query leads that have emails discovered
             df_with_emails = df_all_no_web[df_all_no_web["has_discovered_email"] == 1]
@@ -520,7 +717,7 @@ def main() -> None:
     parser.add_argument("--export-only", action="store_true", help="Export existing extracted emails without scraping")
     args = parser.parse_args()
 
-    db = Database(DEFAULT_CONFIG.database_path)
+    db = Database(DEFAULT_CONFIG.database_url)
     pm = ProxyManager(proxy_urls_file=DEFAULT_CONFIG.proxy_urls_file)
     extractor = EmailFootprintExtractor(database=db, config=DEFAULT_CONFIG, proxy_manager=pm, concurrency=args.workers)
 

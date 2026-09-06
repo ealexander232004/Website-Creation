@@ -176,8 +176,8 @@ def classify_website(raw_url: Optional[str]) -> Tuple[WebsiteType, bool, str]:
         if domain == builder or domain.endswith("." + builder):
             return (
                 WebsiteType.FREE_BUILDER,
-                False,
-                f"Hosted on free builder/link-tree subdomain ({builder})",
+                True,
+                f"Hosted website on free builder/link-tree domain ({builder})",
             )
 
     # 5. Dedicated Custom Domain Website
@@ -193,7 +193,7 @@ def is_target_lead(
     no_website_only: bool = True,
     include_social: bool = True,
     include_deprecated_google: bool = True,
-    include_free_builders: bool = True,
+    include_free_builders: bool = False,
 ) -> bool:
     """Evaluates whether a lead meets the user's 'no website' filter criteria."""
     if not no_website_only:
