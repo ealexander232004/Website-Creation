@@ -16,14 +16,14 @@ def _result(status: FetchStatus) -> FetchResult:
     )
 
 
-def test_access_control_becomes_terminal_blocked_state() -> None:
+def test_access_control_becomes_terminal_restricted_state() -> None:
     decision = decide_persistence(
         _result(FetchStatus.LOGIN_REQUIRED),
         attempt_count=1,
         max_attempts=3,
     )
 
-    assert decision.state == "blocked"
+    assert decision.state == "restricted"
     assert decision.next_attempt_at is None
 
 

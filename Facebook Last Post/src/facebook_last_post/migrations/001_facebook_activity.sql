@@ -9,7 +9,7 @@ create table if not exists facebook_enrichment.profile_activity (
     state text not null default 'pending'
         check (state in (
             'pending', 'leased', 'retry', 'succeeded', 'no_data',
-            'unavailable', 'blocked', 'failed'
+            'unavailable', 'blocked', 'restricted', 'failed'
         )),
     fetch_status text,
     last_post_at timestamptz,

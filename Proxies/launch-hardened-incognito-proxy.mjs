@@ -119,7 +119,11 @@ relay.listen(0, "127.0.0.1", () => {
   const address = relay.address();
   if (!address || typeof address === "string") process.exit(4);
 
-  const chromePath = "C:\\Program Files\\Google\\Chrome\\Application\\chrome.exe";
+  const chromePath = process.env.CHROME_PATH || (process.platform === "win32"
+    ? "C:\\Program Files\\Google\\Chrome\\Application\\chrome.exe"
+    : process.platform === "darwin"
+      ? "/Applications/Google Chrome.app/Contents/MacOS/Google Chrome"
+      : "google-chrome");
   const profile = path.join(os.tmpdir(), `CodexHardenedProxy${route}-${process.pid}`);
   const chrome = spawn(
     chromePath,

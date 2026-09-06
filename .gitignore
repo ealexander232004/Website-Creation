@@ -48,3 +48,6 @@ Overture/*.csv
 # OS metadata
 .DS_Store
 Thumbs.db
+
+# Private machine-transfer packages (normally stored outside the repository)
+linux-handoff*/

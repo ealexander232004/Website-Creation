@@ -47,6 +47,11 @@ class FetchResult:
     error_code: str | None = None
     error_detail: str | None = None
     proxy_label: str | None = None
+    canonical_url: str | None = None
+    likes_count: int | None = None
+    talking_about_count: int | None = None
+    was_here_count: int | None = None
+    page_category: str | None = None
 
 
 @dataclass(frozen=True, slots=True)
@@ -67,4 +72,5 @@ class RunSummary:
     unavailable: int
     blocked: int
     retried_or_failed: int
+    restricted: int = 0
     halted_reason: str | None = None

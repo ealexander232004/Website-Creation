@@ -2,4 +2,7 @@
 proxy-urls.txt
 proxies.env
 proxies.json
+datacenter-proxies.env
+datacenter-proxies.json
+datacenter-proxy-urls.txt
 

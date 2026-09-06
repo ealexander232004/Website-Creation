@@ -16,12 +16,15 @@ from typing import Any
 
 import psycopg
 
+from dotenv import load_dotenv
+
+load_dotenv(Path(__file__).resolve().parent / '.env')
 DB_CONFIG = {
-    "host": "localhost",
-    "port": 5432,
-    "user": "gmaps_scraper",
-    "password": "7sK9mQ4vN2xR8pL6cT5wH3jF",
-    "dbname": "lead_warehouse",
+    'host': os.getenv('POSTGRES_HOST', 'localhost'),
+    'port': int(os.getenv('POSTGRES_PORT', '5432')),
+    'user': os.environ['POSTGRES_USER'],
+    'password': os.environ['POSTGRES_PASSWORD'],
+    'dbname': 'lead_warehouse',
 }
 
 # 24 Diverse Configurations to sweep the parameter space

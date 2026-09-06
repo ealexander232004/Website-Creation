@@ -40,8 +40,10 @@ def decide_persistence(
         return PersistenceDecision("no_data", None)
     if result.status in {FetchStatus.NOT_FOUND, FetchStatus.UNAVAILABLE}:
         return PersistenceDecision("unavailable", None)
+    if result.status is FetchStatus.LOGIN_REQUIRED:
+        return PersistenceDecision("restricted", None)
     if result.status.is_access_control:
-        return PersistenceDecision("blocked", None)
+        return PersistenceDecision("retry", result.checked_at)
     if result.status is FetchStatus.DOCUMENT_TOO_LARGE:
         return PersistenceDecision("failed", None)
     if attempt_count >= max_attempts:
@@ -60,13 +62,14 @@ class FacebookActivityStore:
         return psycopg.connect(self._conninfo, autocommit=True, row_factory=dict_row)
 
     def migrate(self) -> None:
-        migration = (
-            files("facebook_last_post.migrations")
-            .joinpath("001_facebook_activity.sql")
-            .read_text(encoding="utf-8")
+        migrations = sorted(
+            (entry for entry in files("facebook_last_post.migrations").iterdir()
+             if entry.name.endswith(".sql")),
+            key=lambda entry: entry.name,
         )
         with self.connect() as connection, connection.transaction():
-            connection.execute(migration)
+            for migration in migrations:
+                connection.execute(migration.read_text(encoding="utf-8"))
 
     def enqueue_from_socials(
         self,
@@ -206,6 +209,11 @@ class FacebookActivityStore:
                 error_code = %s,
                 error_detail = %s,
                 proxy_label = %s,
+                canonical_url = coalesce(%s, canonical_url),
+                likes_count = coalesce(%s, likes_count),
+                talking_about_count = coalesce(%s, talking_about_count),
+                was_here_count = coalesce(%s, was_here_count),
+                page_category = coalesce(%s, page_category),
                 lease_owner = null,
                 lease_expires_at = null,
                 updated_at = current_timestamp
@@ -226,6 +234,11 @@ class FacebookActivityStore:
                 result.error_code,
                 result.error_detail,
                 result.proxy_label,
+                result.canonical_url,
+                result.likes_count,
+                result.talking_about_count,
+                result.was_here_count,
+                result.page_category,
                 job.profile_id,
                 worker_id,
             ),
