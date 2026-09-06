@@ -1,8 +1,28 @@
-import { notFound, redirect } from "next/navigation";
-import { isDemoSlug } from "@/components/demo-detail-pages";
+import type { Metadata } from "next";
+import { notFound } from "next/navigation";
+import {
+  isDemoSlug,
+  templates,
+  demoHref,
+} from "@/components/templates/catalog";
+import { DemoWebsite } from "@/components/templates/template-pages";
 
-export default async function PricingPage({ params }: { params: Promise<{ demo: string }> }) {
+type Props = { params: Promise<{ demo: string }> };
+export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const { demo } = await params;
   if (!isDemoSlug(demo)) notFound();
-  redirect(`/demos?demo=${demo}&page=pricing`);
+  const b = templates[demo];
+  const title = `Services & pricing / ${b.name}`;
+  const description = `${b.category} concept website by Keeplyn. ${b.intro}`;
+  return {
+    title,
+    description,
+    alternates: { canonical: demoHref(demo, "pricing") },
+    openGraph: { title, description, url: demoHref(demo, "pricing") },
+  };
+}
+export default async function DemoPage({ params }: Props) {
+  const { demo } = await params;
+  if (!isDemoSlug(demo)) notFound();
+  return <DemoWebsite demo={demo} page="pricing" />;
 }
