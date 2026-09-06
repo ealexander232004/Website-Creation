@@ -50,3 +50,10 @@ npm run build
 - TypeScript
 
 The repository is connected to Vercel with `Keeplyn.com` configured as the project root.
+
+## Reusable website templates
+
+The `/demos` collection includes three original, image-led templates, each with
+six complete page routes. Business content and route prefixes are separate from
+the landscape, care, and bakery layouts. See [the template guide](docs/website-templates.md)
+for the repository map, reuse instructions, assets, and demo form behavior.

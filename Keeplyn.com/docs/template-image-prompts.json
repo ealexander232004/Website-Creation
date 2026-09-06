@@ -1,0 +1,30 @@
+{
+  "generation": "Built-in image_gen, GPT Image 2",
+  "generatedOn": "2026-09-06",
+  "assets": [
+    {
+      "file": "public/demos/templates/moss-hero.webp",
+      "prompt": "Use case: photorealistic-natural. Asset type: wide website hero photograph, landscape 3:2. Create an exceptional editorial architectural photograph of a Northern California courtyard garden: a low monolithic rammed-earth wall on the right, sculptural multi-stem olive tree off center right, a shallow reflective pool, large weathered limestone stepping slabs leading from foreground into lush native grasses and ferns. Dawn haze and long low sunlight, deep shadowed forest greens, beautifully irregular foliage, tactile stone. Shot on medium format for a landscape architecture magazine. Composition fills the whole image with a real garden, no sky at top left, generous dark leafy area in upper left for white overlay heading, panoramic depth, no people. Understated, cinematic and natural, not a render. No text, no logo, no collage, no borders."
+    },
+    {
+      "file": "public/demos/templates/northline-hero.webp",
+      "prompt": "Use case: photorealistic-natural. Asset type: portrait 4:5 dental brand editorial campaign photograph. Close cropped candid portrait of an adult woman about 30 with freckles and dark brown hair swept back loosely, joyful broad natural smile showing realistic healthy teeth, head turned slightly left, relaxed shoulders in white cotton tee. Face dominates frame, forehead and hair touch top edge, mouth near center. Bright direct afternoon sunlight, gorgeous realistic skin pores and flyaway hairs, soft blue sky background, fresh carefree California mood. Modern independent magazine photography shot on film, subtle fine grain. Natural face proportions and teeth, not a beauty retouch ad, not medical stock photography. No props, no words, no logo, no watermark."
+    },
+    {
+      "file": "public/demos/templates/sera-hero.webp",
+      "prompt": "Use case: photorealistic-natural. Asset type: wide 3:2 bakery campaign photograph. Extreme appetizing close-up of three hand-laminated golden croissants casually stacked on a glossy cherry-red bistro table, foreground one broken open to show honeycomb crumb, a little pool of butter and scattered flaky crumbs. Small white ceramic espresso cup partially cropped at far upper right. Warm direct early morning side sunlight with crisp deep shadows, rich golden toasted pastry and saturated dark cherry red. Shot by a high-end food editorial photographer with a 50mm macro lens, shallow depth of field, genuine imperfect flaky texture. The pastries should fill most of the shot. No text, no logo, no border, no graphics."
+    },
+    {
+      "file": "public/demos/templates/moss-detail.webp",
+      "prompt": "Use case: photorealistic-natural. Asset type: portrait 4:5 landscape architecture portfolio photo. A beautifully considered small California garden with tall wispy bronze native grasses in foreground, offset pale limestone stair treads winding toward an old olive tree, low rough sand-colored plaster walls and a curved sunken seating alcove. Dry meadow plants mixed with vibrant green rosemary. Shot from slightly elevated eye level in late afternoon backlight with no visible sky, lush yet restrained architecture editorial, complex natural plant textures, subtle 35mm film grain. No people, no text, no illustration, no collage."
+    },
+    {
+      "file": "public/demos/templates/northline-space.webp",
+      "prompt": "Use case: photorealistic-natural. Asset type: landscape 3:2 architecture editorial photograph for an independent dental practice. A sunlit contemporary dental clinic in Oakland: one beautifully minimal white dental chair and realistic dental lamp, cobalt-blue tiled partition, stainless steel fixtures, a large frosted window casting graphic afternoon shadows, pale polished terrazzo floor, single sculptural timber stool. View through a wide rounded doorway, architectural magazine quality, lived-in natural materials and realistic clinical equipment. Room feels spacious, confident, calm, immaculate. No people, no logos, no letters, no text."
+    },
+    {
+      "file": "public/demos/templates/sera-table.webp",
+      "prompt": "Use case: photorealistic-natural. Asset type: landscape 3:2 independent bakery editorial lifestyle photograph. Overhead photograph of an intimate breakfast on a butter-yellow outdoor cafe table in early sun: a torn rustic country sourdough loaf, a bowl with a generous swirl of whipped butter, little dish of glossy dark cherry jam, two small cups of coffee, linen napkin, a red enamel bread knife. Just two human hands entering opposite frame edges to tear and share the bread naturally. Tactile floury crust, crisp warm sunlight and strong shadows. Effortless artisanal magazine photography, natural imperfections, bold simple composition. No text, no logo, no collage."
+    }
+  ]
+}

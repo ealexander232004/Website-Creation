@@ -1,19 +1,27 @@
-import { demoSlugs } from "@/components/demo-detail-pages";
-import { SiteFooter } from "@/components/home-sections";
-import { SiteHeader } from "@/components/site-header";
+import { notFound } from "next/navigation";
+import { demoSlugs, isDemoSlug } from "@/components/templates/catalog";
+import { DemoToolbar } from "@/components/templates/template-chrome";
+import { templateFonts } from "@/components/templates/typography";
+import "@/components/templates/templates.css";
 
 export const dynamicParams = false;
-
 export function generateStaticParams() {
   return demoSlugs.map((demo) => ({ demo }));
 }
 
-export default function DemoSiteLayout({ children }: Readonly<{ children: React.ReactNode }>) {
+export default async function DemoSiteLayout({
+  children,
+  params,
+}: {
+  children: React.ReactNode;
+  params: Promise<{ demo: string }>;
+}) {
+  const { demo } = await params;
+  if (!isDemoSlug(demo)) notFound();
   return (
-    <>
-      <SiteHeader />
-      <main className="bg-[#050505]">{children}</main>
-      <SiteFooter />
-    </>
+    <div className={templateFonts}>
+      <DemoToolbar active={demo} />
+      <main>{children}</main>
+    </div>
   );
 }
