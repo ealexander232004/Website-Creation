@@ -2,6 +2,7 @@ export interface WebsitePlan {
   id: "starter" | "pro";
   name: string;
   price: string;
+  amount: number;
   hosting: string;
   summary: string;
   featured?: boolean;
@@ -18,6 +19,7 @@ export const websitePlans: WebsitePlan[] = [
     id: "starter",
     name: "Starter",
     price: "$749.99",
+    amount: 74999,
     hosting: "$49.99/mo",
     summary: "Everything a small business needs to launch with confidence.",
   },
@@ -25,6 +27,7 @@ export const websitePlans: WebsitePlan[] = [
     id: "pro",
     name: "Pro",
     price: "$1,499.99",
+    amount: 149999,
     hosting: "$99.99/mo",
     summary: "Advanced systems for businesses ready to sell, automate, and scale.",
     featured: true,

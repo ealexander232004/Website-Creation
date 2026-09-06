@@ -16,7 +16,7 @@ logger = logging.getLogger("gmaps_scraper.export")
 
 
 class LeadExporter:
-    """Exports scraped leads from SQLite database into structured data files."""
+    """Exports scraped leads from PostgreSQL into structured data files."""
 
     def __init__(self, db: Database) -> None:
         self.db = db

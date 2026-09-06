@@ -58,7 +58,7 @@ class Lead(BaseModel):
     website_raw: Optional[str] = Field(None, description="Raw website URL from Google Maps profile")
     website_type: WebsiteType = Field(WebsiteType.NO_WEBSITE, description="Categorized website status")
     website_explanation: Optional[str] = Field(None, description="Explanation for classification")
-    has_website: bool = Field(False, description="True if business has a true custom dedicated website")
+    has_website: bool = Field(False, description="True if the listed URL counts as a website for targeting")
 
     # Reputation & Profile Metadata
     rating: Optional[float] = Field(None, description="Average review rating (0.0 - 5.0)")
@@ -106,6 +106,7 @@ class SearchJob(BaseModel):
     """A single geographic search task in the execution queue."""
 
     id: Optional[int] = None
+    campaign_id: Optional[int] = None
     keyword: str
     location_name: str
     latitude: Optional[float] = None

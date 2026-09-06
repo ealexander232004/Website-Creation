@@ -147,7 +147,7 @@ def export(
     unclaimed_only: bool,
 ) -> None:
     """Exports collected leads to CSV, Excel, or JSONL with advanced filtering."""
-    db = Database(DEFAULT_CONFIG.database_path)
+    db = Database(DEFAULT_CONFIG.database_url)
     exporter = LeadExporter(db)
 
     ext = "xlsx" if format == "excel" else format
@@ -180,7 +180,7 @@ def export(
 @cli.command()
 def stats() -> None:
     """Displays summary statistics of scraped leads and campaign progress."""
-    db = Database(DEFAULT_CONFIG.database_path)
+    db = Database(DEFAULT_CONFIG.database_url)
     s = db.get_stats()
 
     table = Table(title="Google Maps Leads Database Overview", border_style="cyan")
@@ -236,12 +236,14 @@ def check() -> None:
         )
 
     # Database
-    db_exists = config.database_path.is_file()
-    table.add_row(
-        "SQLite Database",
-        "[green]Active[/green]" if db_exists else "[cyan]Ready to create[/cyan]",
-        str(config.database_path),
-    )
+    try:
+        db = Database(config.database_url)
+        database_status = "[green]Connected[/green]" if db.ping() else "[red]Unavailable[/red]"
+        database_details = db.display_url
+    except Exception as exc:
+        database_status = "[red]Unavailable[/red]"
+        database_details = f"{config.database_url.split('@')[-1]} ({exc})"
+    table.add_row("PostgreSQL Database", database_status, database_details)
 
     console.print(table)
 

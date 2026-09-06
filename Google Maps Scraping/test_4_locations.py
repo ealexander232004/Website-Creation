@@ -82,14 +82,7 @@ async def run_live_test() -> None:
         detail_extraction=False,   # Fast feed extraction
     )
     
-    test_db_path = Path(__file__).resolve().parent / "test_leads.db"
-    if test_db_path.exists():
-        try:
-            test_db_path.unlink()
-        except Exception:
-            pass
-
-    db = Database(test_db_path)
+    db = Database(config.database_url)
     engine = BrowserEngine(config=config, proxy_manager=proxy_manager)
     await engine.initialize()
 
