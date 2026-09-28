@@ -10,6 +10,7 @@ import {
   ImagePlus,
   LoaderCircle,
   LockKeyhole,
+  MailCheck,
   Plus,
   Sparkles,
   Trash2,
@@ -46,6 +47,7 @@ type WebsiteRequestFlowProps = {
   initialAccountMode: "signup" | "signin";
   initialUser: InitialUser | null;
   initialPlan: PlanId | null;
+  expiredLink?: boolean;
 };
 
 const flowSteps = [
@@ -110,6 +112,7 @@ export function WebsiteRequestFlow({
   initialAccountMode,
   initialUser,
   initialPlan,
+  expiredLink = false,
 }: WebsiteRequestFlowProps) {
   const supabase = useMemo(() => createClient(), []);
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -128,8 +131,12 @@ export function WebsiteRequestFlow({
   const [themeDescription, setThemeDescription] = useState("");
   const [additionalNotes, setAdditionalNotes] = useState("");
   const [dragging, setDragging] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+  const [error, setError] = useState<string | null>(
+    expiredLink ? "That email link has expired or was already used. Sign in, or create your account again." : null,
+  );
   const [busy, setBusy] = useState(false);
+  const [confirmationEmail, setConfirmationEmail] = useState<string | null>(null);
+  const [resent, setResent] = useState(false);
   const [requestId, setRequestId] = useState<number | null>(null);
 
   const selectedPlan = websitePlans.find((item) => item.id === plan) ?? null;
@@ -157,6 +164,7 @@ export function WebsiteRequestFlow({
         password,
         options: {
           data: { full_name: fullName.trim() },
+          emailRedirectTo: confirmRedirect(),
         },
       });
 
@@ -167,8 +175,14 @@ export function WebsiteRequestFlow({
         return;
       }
 
-      if (!data.session || !data.user) {
+      if (!data.user) {
         setError("We couldn't finish creating your account. Please try again.");
+        return;
+      }
+
+      // Email confirmation is on: the session starts when they click the link.
+      if (!data.session) {
+        setConfirmationEmail(email.trim());
         return;
       }
 
@@ -189,6 +203,10 @@ export function WebsiteRequestFlow({
     setBusy(false);
 
     if (signInError) {
+      if (signInError.code === "email_not_confirmed") {
+        setConfirmationEmail(email.trim());
+        return;
+      }
       setError("We couldn't sign you in with that email and password.");
       return;
     }
@@ -202,6 +220,27 @@ export function WebsiteRequestFlow({
           : "",
     });
     setStep(1);
+  }
+
+  function confirmRedirect() {
+    return `${window.location.origin}/auth/confirm?next=/start`;
+  }
+
+  async function resendConfirmation() {
+    if (!confirmationEmail) return;
+    setError(null);
+    setBusy(true);
+    const { error: resendError } = await supabase.auth.resend({
+      type: "signup",
+      email: confirmationEmail,
+      options: { emailRedirectTo: confirmRedirect() },
+    });
+    setBusy(false);
+    if (resendError) {
+      setError("We couldn't resend the email yet. Wait a minute and try again.");
+      return;
+    }
+    setResent(true);
   }
 
   function goNext() {
@@ -497,6 +536,32 @@ export function WebsiteRequestFlow({
                     : "Sign in to continue a new website request with your account."
                 }
               />
+              {confirmationEmail ? (
+                <div className="max-w-2xl border border-[#c9ff3b]/30 bg-[#c9ff3b]/[0.05] p-6 sm:p-8" role="status">
+                  <MailCheck className="size-8 text-[#c9ff3b]" strokeWidth={1.5} aria-hidden="true" />
+                  <p className="mt-5 text-2xl font-semibold tracking-[-0.04em]">Check your inbox.</p>
+                  <p className="mt-3 text-sm leading-6 text-white/52">
+                    We sent a confirmation link to <strong className="text-white/80">{confirmationEmail}</strong>. Open it on this device to confirm your email and pick up right where you left off.
+                  </p>
+                  <div className="mt-6 flex flex-wrap items-center gap-4">
+                    <button type="button" className="button-secondary" onClick={resendConfirmation} disabled={busy || resent}>
+                      {busy ? <LoaderCircle className="size-4 animate-spin" aria-hidden="true" /> : null}
+                      {resent ? "Email sent again" : "Resend email"}
+                    </button>
+                    <button
+                      type="button"
+                      className="text-sm text-white/42 underline decoration-white/18 underline-offset-4 transition hover:text-white"
+                      onClick={() => {
+                        setConfirmationEmail(null);
+                        setResent(false);
+                        setError(null);
+                      }}
+                    >
+                      Use a different email
+                    </button>
+                  </div>
+                </div>
+              ) : (
               <form onSubmit={handleAccountSubmit} className="max-w-2xl space-y-6">
                 {accountMode === "signup" ? (
                   <label className="block text-xs font-semibold text-white/62">
@@ -554,7 +619,16 @@ export function WebsiteRequestFlow({
                     {accountMode === "signup" ? "Already have an account? Sign in" : "Need an account? Sign up"}
                   </button>
                 </div>
+                {accountMode === "signin" ? (
+                  <Link
+                    href="/auth/forgot-password"
+                    className="inline-block text-sm text-white/42 underline decoration-white/18 underline-offset-4 transition hover:text-white"
+                  >
+                    Forgot your password?
+                  </Link>
+                ) : null}
               </form>
+              )}
             </>
           ) : null}
 
