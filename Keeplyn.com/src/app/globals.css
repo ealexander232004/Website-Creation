@@ -73,9 +73,15 @@
       color 200ms ease;
   }
 
-  .button-primary:hover {
+  .button-primary:hover:not(:disabled) {
     transform: translateY(-2px);
     background: #c9ff3b;
+  }
+
+  .button-primary:disabled,
+  .button-secondary:disabled {
+    cursor: not-allowed;
+    opacity: 0.38;
   }
 
   .button-secondary {
@@ -95,7 +101,7 @@
       background-color 200ms ease;
   }
 
-  .button-secondary:hover {
+  .button-secondary:hover:not(:disabled) {
     transform: translateY(-2px);
     border-color: rgb(255 255 255 / 70%);
     background: rgb(255 255 255 / 8%);

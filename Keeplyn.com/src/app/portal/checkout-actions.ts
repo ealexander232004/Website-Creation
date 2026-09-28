@@ -6,6 +6,7 @@ import type { SupabaseClient } from "@supabase/supabase-js";
 import type { WebsiteRequest } from "@/lib/customer-lifecycle";
 import { getSiteOrigin } from "@/lib/site-url";
 import { createClient } from "@/lib/supabase/server";
+import { checkDomain } from "@/lib/domain-check";
 import { getStripe, getStripePriceId, stripeIntegrationIdentifier } from "@/lib/stripe";
 
 const requestIdSchema = z.coerce.number().int().positive();
@@ -29,6 +30,9 @@ async function checkout(request: WebsiteRequest, supabase: SupabaseClient) {
     if (existing.status === "open" && existing.url) redirect(existing.url);
   }
   if (!request.domain_name || !request.approved_at) throw new Error("Approve the website and add a domain before checkout.");
+  // Never charge until the customer's domain exists and points at Keeplyn.
+  const dns = await checkDomain(request.domain_name);
+  if (!dns.ready) redirect(`/portal/requests/${request.id}/domain?check=failed`);
   const origin = await getSiteOrigin();
   const prices = getStripePriceId(request.plan_id, request.hosting_selected);
   const metadata = { request_id: String(request.id), plan_id: request.plan_id, domain_name: request.domain_name };
@@ -57,11 +61,24 @@ async function checkout(request: WebsiteRequest, supabase: SupabaseClient) {
   redirect(session.url);
 }
 
+/** Step 2 of domain setup: record the domain without starting payment. */
+export async function saveDomain(formData: FormData) {
+  const requestId = requestIdSchema.parse(formData.get("requestId"));
+  const parsed = domainSchema.safeParse(formData.get("domain"));
+  if (!parsed.success) redirect(`/portal/requests/${requestId}/domain?error=domain`);
+  const { supabase, request } = await requireCheckoutRequest(requestId);
+  const { error } = await supabase.rpc("set_request_domain", { p_request_id: requestId, p_domain_name: parsed.data, p_hosting_selected: request.hosting_selected });
+  if (error) throw new Error(error.message);
+  redirect(`/portal/requests/${requestId}/domain#connect`);
+}
+
+/** Step 5: confirm the care plan choice, re-check DNS, then go to Stripe. */
 export async function saveDomainAndCheckout(formData: FormData) {
   const requestId = requestIdSchema.parse(formData.get("requestId"));
-  const domain = domainSchema.parse(formData.get("domain"));
   const hostingSelected = formData.get("hosting") === "on";
-  const { supabase } = await requireCheckoutRequest(requestId);
+  const { supabase, request: current } = await requireCheckoutRequest(requestId);
+  if (!current.domain_name) redirect(`/portal/requests/${requestId}/domain`);
+  const domain = current.domain_name;
   const { error } = await supabase.rpc("set_request_domain", { p_request_id: requestId, p_domain_name: domain, p_hosting_selected: hostingSelected });
   if (error) throw new Error(error.message);
   const { data, error: reloadError } = await supabase.from("website_requests").select("*").eq("id", requestId).single();
