@@ -11,7 +11,7 @@ import { createClient } from "@/lib/supabase/server";
 
 export const dynamic = "force-dynamic";
 export const metadata: Metadata = { title: "Domain setup" };
-type PageProps = { params: Promise<{ id: string }>; searchParams: Promise<{ check?: string; error?: string }> };
+type PageProps = { params: Promise<{ id: string }>; searchParams: Promise<{ step?: string; error?: string }> };
 
 const PORKBUN = "https://porkbun.com";
 
@@ -117,6 +117,9 @@ export default async function DomainSetupPage({ params, searchParams }: PageProp
   if (!request.approved_at) redirect(`/portal/requests/${request.id}`);
   const plan = websitePlans.find((item) => item.id === request.plan_id)!;
   const check = request.domain_name ? await checkDomain(request.domain_name) : null;
+  // Payment is the last step: it opens after the customer has worked through
+  // DNS setup, or if they already reached checkout before.
+  const paymentOpen = Boolean(request.domain_name) && (query.step === "pay" || request.payment_status !== "ready");
 
   return (
     <main className="min-h-svh bg-[#050505] text-white">
@@ -133,13 +136,6 @@ export default async function DomainSetupPage({ params, searchParams }: PageProp
             <p className="mt-7 max-w-2xl text-sm leading-7 text-white/48">
               Your website is approved. Before payment, we’ll get your domain bought and pointed at Keeplyn, so your site can go live the moment you check out. It takes about 10 minutes and you only do it once.
             </p>
-
-            {query.check === "failed" ? (
-              <p className="mt-8 flex items-start gap-3 border border-[#ff8f7e]/30 bg-[#ff725e]/8 px-4 py-3 text-sm text-[#ffb4a8]" role="alert">
-                <TriangleAlert className="mt-0.5 size-4 shrink-0" aria-hidden="true" />
-                Your domain isn’t pointing to Keeplyn yet, so you haven’t been charged. Finish step 3, then check again.
-              </p>
-            ) : null}
 
             <div className="mt-10 space-y-5">
               <Step number={1} title="Buy your domain at Porkbun" done={Boolean(check?.registered)}>
@@ -193,9 +189,17 @@ export default async function DomainSetupPage({ params, searchParams }: PageProp
                 <RecordTable />
                 <p className="text-white/42">Leaving the Host blank means the record applies to the plain domain (yourbusiness.com). Porkbun fills in the rest of the name for you, so type exactly what’s shown.</p>
                 {check ? <ConnectionPanel check={check} requestId={request.id} /> : <p className="text-white/38">Save your domain in step 2 to see its live connection status here.</p>}
+                {request.domain_name && !paymentOpen ? (
+                  <Link href={`/portal/requests/${request.id}/domain?step=pay#pay`} className="button-primary">
+                    I’ve added the records — continue <ArrowRight className="size-4" aria-hidden="true" />
+                  </Link>
+                ) : null}
               </Step>
 
-              <Step number={4} title="Choose care and pay" done={false}>
+              <Step number={4} title="Choose care and pay" done={false} id="pay">
+                {!paymentOpen ? (
+                  <p className="text-white/38">Finish the steps above, then continue here to review and pay.</p>
+                ) : (
                 <form action={saveDomainAndCheckout} className="space-y-5">
                   <input type="hidden" name="requestId" value={request.id} />
                   <label className="flex cursor-pointer items-start gap-4 border border-white/14 bg-white/[0.025] p-5">
@@ -209,15 +213,14 @@ export default async function DomainSetupPage({ params, searchParams }: PageProp
                     <ShieldCheck className="mt-0.5 size-4 shrink-0 text-[#c9ff3b]" />
                     No card details are collected by Keeplyn. The next page is Stripe’s secure checkout. After payment we connect your domain and launch — usually the same day.
                   </div>
-                  <button className="button-primary" disabled={!check?.ready}>
+                  {check && !check.ready ? (
+                    <p className="text-xs leading-5 text-white/40">Your domain isn’t showing as connected yet — that’s fine if you just added the records. We’ll finish connecting it after payment and email you if anything needs fixing.</p>
+                  ) : null}
+                  <button className="button-primary">
                     Continue to Stripe <ArrowRight className="size-4" />
                   </button>
-                  {!check?.ready ? (
-                    <p className="text-xs text-white/40">
-                      {request.domain_name ? "Payment unlocks once step 3 shows your domain connected." : "Add your domain in step 2 first."}
-                    </p>
-                  ) : null}
                 </form>
+                )}
               </Step>
             </div>
           </div>
