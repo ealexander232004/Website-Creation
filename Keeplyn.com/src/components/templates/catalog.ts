@@ -35,6 +35,8 @@ export type BusinessTemplate = {
   closing: string;
   hero: TemplateImage;
   detail: TemplateImage;
+  /** Supporting photography used by the project, story, and about compositions. */
+  gallery: [TemplateImage, ...TemplateImage[]];
   nav: { about: string; pricing: string; contact: string };
   about: { title: string; text: string; principles: [string, string][] };
   packages: {
@@ -164,7 +166,7 @@ const mossFaqs: FaqItem[] = [
   {
     question: "What kinds of spaces do you design?",
     answer:
-      "Courtyards, front gardens, backyards, and full residential landscapes across Northern California.",
+      "Courtyards, front gardens, backyards, and full residential landscapes across Central Texas and the Hill Country.",
   },
   {
     question: "Can you work with an existing garden?",
@@ -235,7 +237,7 @@ const seraFaqs: FaqItem[] = [
   {
     question: "Is local delivery available?",
     answer:
-      "Yes for catering orders over $150 within central Long Beach. Smaller orders are ready for pickup from seven.",
+      "Yes for catering orders over $150 on the Portland peninsula. Smaller orders are ready for pickup from seven.",
   },
   {
     question: "Do you bake for wholesale partners?",
@@ -254,8 +256,8 @@ export const templates: Record<DemoSlug, BusinessTemplate> = {
     shortName: "Moss",
     category: "Landscape studio",
     collection: "The landscape collection",
-    location: "Northern California",
-    address: "Sacramento · Davis · San Francisco Bay Area",
+    location: "Central Texas",
+    address: "Austin · Dripping Springs · San Antonio",
     hours: "Monday–Friday · 9am–5pm",
     eyebrow: "Gardens for a slower life",
     headline: ["A little closer", "to the wild."],
@@ -271,10 +273,20 @@ export const templates: Record<DemoSlug, BusinessTemplate> = {
       src: "/demos/templates/moss-detail.webp",
       alt: "Sunlit native grasses and limestone steps around an olive tree",
     },
+    gallery: [
+      {
+        src: "/demos/templates/moss-water.webp",
+        alt: "Evening light on ornamental grasses beside a dry-stone wall and still water",
+      },
+      {
+        src: "/demos/templates/moss-passage.webp",
+        alt: "A softly lit stone passage lined with ferns, boxwood, and multi-stem trees",
+      },
+    ],
     nav: { about: "The studio", pricing: "Services", contact: "Get in touch" },
     about: {
       title: "A garden, not a grand gesture.",
-      text: "We are a small landscape studio working with the grain of Northern California. We listen to the land, keep what belongs, and make room for life outside.",
+      text: "We are a small landscape studio working with the grain of the Texas Hill Country. We listen to the land, keep what belongs, and make room for life outside.",
       principles: [
         [
           "Listen to the land",
@@ -305,8 +317,8 @@ export const templates: Record<DemoSlug, BusinessTemplate> = {
     shortName: "Northline",
     category: "Family dentistry",
     collection: "The care collection",
-    location: "Oakland, California",
-    address: "411 Grand Avenue · Oakland, CA",
+    location: "Chicago, Illinois",
+    address: "2150 N Clark Street · Chicago, IL",
     hours: "Monday–Thursday · 8am–5pm",
     eyebrow: "A fresh take on dentistry",
     headline: ["Less nerves.", "More you."],
@@ -316,12 +328,18 @@ export const templates: Record<DemoSlug, BusinessTemplate> = {
     closing: "Your next chapter. With a smile.",
     hero: {
       src: "/demos/templates/northline-hero.webp",
-      alt: "A woman with freckles smiling naturally in the California sunshine",
+      alt: "A woman with freckles smiling naturally in warm afternoon sunshine",
     },
     detail: {
       src: "/demos/templates/northline-space.webp",
       alt: "A bright dental suite with a cobalt tiled wall and soft natural light",
     },
+    gallery: [
+      {
+        src: "/demos/templates/northline-consult.webp",
+        alt: "A dentist and a relaxed patient talking in a bright treatment room",
+      },
+    ],
     nav: { about: "Our approach", pricing: "Care & costs", contact: "Find us" },
     about: {
       title: "People first. Teeth, too.",
@@ -353,8 +371,8 @@ export const templates: Record<DemoSlug, BusinessTemplate> = {
     shortName: "Sera",
     category: "Neighborhood bakery",
     collection: "The neighborhood collection",
-    location: "Long Beach, California",
-    address: "207 Pine Avenue · Long Beach, CA",
+    location: "Portland, Maine",
+    address: "88 Exchange Street · Portland, ME",
     hours: "Tuesday–Sunday · 7am–2pm",
     eyebrow: "Bread. Butter. Better mornings.",
     headline: ["Oh,", "crumbs."],
@@ -369,6 +387,12 @@ export const templates: Record<DemoSlug, BusinessTemplate> = {
       src: "/demos/templates/sera-table.webp",
       alt: "Hands sharing sourdough with whipped butter, cherry jam, and coffee",
     },
+    gallery: [
+      {
+        src: "/demos/templates/sera-loaves.webp",
+        alt: "A counter piled with scored, flour-dusted sourdough loaves",
+      },
+    ],
     nav: { about: "Our story", pricing: "The menu", contact: "Come by" },
     about: {
       title: "A little flour. A lot of feeling.",

@@ -1,27 +1,64 @@
 import Link from "next/link";
-import { ArrowDown, ArrowUpRight, Asterisk, Plus } from "lucide-react";
+import type { CSSProperties } from "react";
+import {
+  ArrowDown,
+  ArrowUpRight,
+  Asterisk,
+  CalendarDays,
+  Plus,
+} from "lucide-react";
 import { dailyBake, businessHref, type BusinessTemplate } from "./catalog";
 import { Photo, TemplateButton } from "./template-chrome";
+import {
+  Contours,
+  Glyph,
+  MENU_GLYPHS,
+  Marquee,
+  SpinBadge,
+  Sprig,
+  TemplateMap,
+  TimeDial,
+} from "./template-art";
+
+const delay = (ms: number) => ({ "--d": `${ms}ms` }) as CSSProperties;
+
+const nativePlants = [
+  "Live oak",
+  "Gulf muhly",
+  "Texas sage",
+  "Bluebonnet",
+  "Mexican feathergrass",
+  "Texas redbud",
+  "Cedar sage",
+  "Black-eyed Susan",
+];
 
 export function LandscapeTemplate({
   business: b,
 }: {
   business: BusinessTemplate;
 }) {
+  const [water, passage = water] = b.gallery;
+  const projects = [
+    { image: b.detail, title: "The quiet courtyard", meta: "Austin · Residential" },
+    { image: water, title: "A place to linger", meta: "Dripping Springs · Rain garden" },
+    { image: passage, title: "Evening passage", meta: "San Antonio · Light & planting" },
+  ];
+  const serviceImages = [b.detail, water, b.hero];
   return (
     <>
       <section className="moss-hero">
-        <Photo image={b.hero} eager sizes="100vw" />
+        <Photo image={b.hero} eager sizes="100vw" className="t-kenburns" />
         <div className="moss-hero-shade" />
         <div className="moss-hero-copy">
-          <p className="template-eyebrow">{b.eyebrow}</p>
-          <h1>
+          <p className="template-eyebrow t-enter">{b.eyebrow}</p>
+          <h1 className="t-enter" style={delay(140)}>
             {b.headline[0]}
             <br />
             <em>{b.headline[1]}</em>
           </h1>
         </div>
-        <div className="moss-hero-bottom">
+        <div className="moss-hero-bottom t-enter" style={delay(420)}>
           <p>
             Landscape design
             <br />
@@ -37,19 +74,27 @@ export function LandscapeTemplate({
         </div>
       </section>
       <section className="moss-intro template-pad">
-        <span className="template-eyebrow">Rooted in place</span>
-        <div>
-          <h2>
+        <div className="moss-intro-aside">
+          <span className="template-eyebrow">Rooted in place</span>
+          <div className="moss-arch t-rise">
+            <Photo
+              image={passage}
+              className="t-parallax"
+              sizes="(min-width: 900px) 28vw, 70vw"
+            />
+          </div>
+        </div>
+        <div className="moss-intro-main">
+          <Contours className="moss-intro-contours" />
+          <Sprig className="moss-intro-sprig" />
+          <h2 className="t-rise">
             Less interruption.
             <br />
             <em>More belonging.</em>
           </h2>
-          <div className="moss-intro-bottom">
+          <div className="moss-intro-bottom t-rise">
             <p>{b.intro}</p>
-            <Link
-              href={businessHref(b, "about")}
-              className="template-text-link"
-            >
+            <Link href={businessHref(b, "about")} className="template-text-link">
               Meet the studio <ArrowUpRight size={18} aria-hidden="true" />
             </Link>
           </div>
@@ -58,44 +103,80 @@ export function LandscapeTemplate({
       <section className="moss-projects template-pad" id="gardens">
         <div className="template-section-label">
           <span>Selected gardens</span>
-          <span>01—02 / California</span>
+          <span>{b.location}</span>
         </div>
         <div className="moss-project-grid">
-          <Link href={businessHref(b, "about")} className="moss-project">
-            <Photo image={b.detail} />
-            <div>
-              <h3>The quiet courtyard</h3>
-              <span>Sacramento · Residential</span>
-              <ArrowUpRight size={20} aria-hidden="true" />
+          {[projects.slice(0, 1), projects.slice(1)].map((column, c) => (
+            <div key={c} className="moss-project-column">
+              {column.map((p, i) => (
+                <Link
+                  key={p.title}
+                  href={businessHref(b, "about")}
+                  className="moss-project t-rise"
+                >
+                  <Photo
+                    image={p.image}
+                    className="t-parallax"
+                    sizes={c === 0 ? "(min-width: 900px) 52vw, 100vw" : "(min-width: 900px) 40vw, 100vw"}
+                  />
+                  <div>
+                    <span className="moss-project-index">0{c + i + 1}</span>
+                    <h3>{p.title}</h3>
+                    <span>{p.meta}</span>
+                    <ArrowUpRight size={20} aria-hidden="true" />
+                  </div>
+                </Link>
+              ))}
+              {c === 0 && (
+                <div className="moss-project-note t-rise">
+                  <Sprig />
+                  <p>
+                    Native planting.
+                    <br />
+                    <em>Four good seasons.</em>
+                  </p>
+                </div>
+              )}
             </div>
-          </Link>
-          <Link href={businessHref(b, "about")} className="moss-project">
-            <Photo image={b.hero} />
-            <div>
-              <h3>A place to linger</h3>
-              <span>Bay Area · Garden retreat</span>
-              <ArrowUpRight size={20} aria-hidden="true" />
-            </div>
-          </Link>
+          ))}
         </div>
       </section>
+      <Marquee className="moss-species" decorative>
+        {nativePlants.map((plant) => (
+          <span key={plant}>
+            <em>{plant}</em>
+            <Glyph kind="seedling" />
+          </span>
+        ))}
+      </Marquee>
       <section className="moss-services template-pad">
-        <p className="template-eyebrow">From first sketch to first bloom</p>
+        <div className="moss-services-aside">
+          <p className="template-eyebrow">From first sketch to first bloom</p>
+          <div className="moss-services-glyphs" aria-hidden="true">
+            <Glyph kind="seedling" />
+            <Glyph kind="garden" />
+            <Glyph kind="landscape" />
+          </div>
+        </div>
         <div className="moss-service-list">
           {b.packages.map((p, i) => (
-            <Link href={businessHref(b, "pricing")} key={p.name}>
+            <Link href={businessHref(b, "pricing")} key={p.name} className="t-rise">
               <span>0{i + 1}</span>
               <h3>{p.name}</h3>
+              <span className="moss-service-price">{p.price}</span>
+              <span className="moss-service-thumb" aria-hidden="true">
+                <Photo image={serviceImages[i]} sizes="260px" />
+              </span>
               <ArrowUpRight aria-hidden="true" />
             </Link>
           ))}
         </div>
       </section>
       <section className="moss-closing-image">
-        <Photo image={b.detail} sizes="100vw" />
+        <Photo image={water} sizes="100vw" className="t-parallax" />
         <div>
           <span className="template-eyebrow">Something to come home to</span>
-          <p>
+          <p className="t-rise">
             Let life
             <br />
             <em>grow around you.</em>
@@ -107,31 +188,45 @@ export function LandscapeTemplate({
   );
 }
 
+const careNotes = [
+  "Whole-person care",
+  "Clear costs",
+  "Your pace, always",
+  "A little less dental",
+  "Same-day spaces",
+];
+
 export function CareTemplate({ business: b }: { business: BusinessTemplate }) {
+  const [consult] = b.gallery;
   return (
     <>
       <section className="northline-hero">
         <div className="northline-hero-copy">
+          <Glyph kind="plus" className="northline-hero-plus" />
           <span className="northline-status">
             <span />
             New faces welcome
           </span>
           <div>
-            <p className="template-eyebrow">{b.eyebrow}</p>
-            <h1>
+            <p className="template-eyebrow t-enter">{b.eyebrow}</p>
+            <h1 className="t-enter" style={delay(120)}>
               {b.headline[0]}
               <br />
               <span>{b.headline[1]}</span>
             </h1>
-            <p className="northline-hero-description">{b.intro}</p>
-            <TemplateButton business={b} />
+            <p className="northline-hero-description t-enter" style={delay(260)}>
+              {b.intro}
+            </p>
+            <div className="t-enter" style={delay(360)}>
+              <TemplateButton business={b} />
+            </div>
           </div>
           <div className="northline-hero-meta">
             <Plus size={20} aria-hidden="true" />
             <span>
               Great care.
               <br />
-              Right here in Oakland.
+              Right here in {b.location.split(",")[0]}.
             </span>
             <span>
               YOU CAN
@@ -141,10 +236,20 @@ export function CareTemplate({ business: b }: { business: BusinessTemplate }) {
           </div>
         </div>
         <div className="northline-portrait">
-          <Photo image={b.hero} eager />
+          <Photo image={b.hero} eager className="t-kenburns" />
+          <div className="northline-appointment t-enter" style={delay(520)}>
+            <span className="northline-appointment-icon">
+              <CalendarDays size={20} aria-hidden="true" />
+            </span>
+            <span>
+              <small>Next opening</small>
+              <strong>Tue · 9:30 AM</strong>
+            </span>
+            <span className="northline-appointment-live" aria-hidden="true" />
+          </div>
           <div className="northline-smile-sticker">
             <svg viewBox="0 0 100 70" aria-hidden="true">
-              <path d="M10 15 Q50 92 90 15" />
+              <path d="M10 15 Q50 92 90 15" pathLength="1" />
             </svg>
             <span>Feel like yourself.</span>
           </div>
@@ -153,25 +258,22 @@ export function CareTemplate({ business: b }: { business: BusinessTemplate }) {
           </span>
         </div>
       </section>
-      <div className="northline-care-strip">
-        <span>
-          <Plus aria-hidden="true" />
-          Whole-person care
-        </span>
-        <span>Clear costs</span>
-        <span>Your pace, always</span>
-        <span>A little less dental</span>
-      </div>
+      <Marquee className="northline-care-strip">
+        {careNotes.map((note) => (
+          <span key={note}>
+            <Asterisk aria-hidden="true" />
+            {note}
+          </span>
+        ))}
+      </Marquee>
       <section className="northline-approach template-pad">
         <div>
           <p className="template-eyebrow">Dentistry, with a human side</p>
-          <h2>
+          <h2 className="t-rise">
             A better kind
             <br />
             of <span>open wide.</span>
           </h2>
-        </div>
-        <div>
           <p>
             No lectures. No mysteries. Just thoughtful care in a space that
             feels good to be in.
@@ -180,9 +282,20 @@ export function CareTemplate({ business: b }: { business: BusinessTemplate }) {
             Get to know us <ArrowUpRight size={18} aria-hidden="true" />
           </Link>
         </div>
+        <div className="northline-approach-visual t-rise">
+          <Photo
+            image={consult}
+            className="t-parallax"
+            sizes="(min-width: 900px) 45vw, 100vw"
+          />
+          <span className="northline-bubble">Every question welcome</span>
+          <span className="northline-approach-smile" aria-hidden="true">
+            <Glyph kind="smile" />
+          </span>
+        </div>
       </section>
-      <section className="northline-space">
-        <Photo image={b.detail} sizes="100vw" />
+      <section className="northline-space t-unveil">
+        <Photo image={b.detail} sizes="100vw" className="t-parallax" />
         <div className="northline-space-note">
           <span className="template-eyebrow">Come on in</span>
           <p>
@@ -207,26 +320,17 @@ export function CareTemplate({ business: b }: { business: BusinessTemplate }) {
           </Link>
         </div>
         <div className="northline-service-grid">
-          {[
-            ["01", "Keep it healthy.", "Prevention & cleanings", "prevent"],
-            ["02", "Bring it back.", "Restorative dentistry", "restore"],
-            ["03", "Make it yours.", "Cosmetic care", "smile"],
-          ].map(([n, name, label, icon]) => (
-            <Link href={businessHref(b, "pricing")} key={n}>
+          {(
+            [
+              ["01", "Keep it healthy.", "Prevention & cleanings", "asterisk"],
+              ["02", "Bring it back.", "Restorative dentistry", "plus"],
+              ["03", "Make it yours.", "Cosmetic care", "smile"],
+            ] as const
+          ).map(([n, name, label, icon]) => (
+            <Link href={businessHref(b, "pricing")} key={n} className="t-rise">
               <span>{n} /</span>
-              <div
-                className={`northline-care-symbol symbol-${icon}`}
-                aria-hidden="true"
-              >
-                {icon === "restore" ? (
-                  <Plus />
-                ) : icon === "prevent" ? (
-                  <Asterisk />
-                ) : (
-                  <svg viewBox="0 0 100 80">
-                    <path d="M10 20 Q50 98 90 20" />
-                  </svg>
-                )}
+              <div className={`northline-care-symbol symbol-${icon}`}>
+                <Glyph kind={icon} />
               </div>
               <h3>{name}</h3>
               <p>
@@ -248,9 +352,12 @@ export function CareTemplate({ business: b }: { business: BusinessTemplate }) {
           <TemplateButton business={b} light />
         </div>
         <div className="northline-time">
-          <strong>
-            90<span>min</span>
-          </strong>
+          <div className="northline-dial">
+            <TimeDial minutes={90} />
+            <strong>
+              90<span>min</span>
+            </strong>
+          </div>
           <p>
             A conversation. An exam.
             <br />A clear plan, made together.
@@ -266,6 +373,7 @@ export function BakeryTemplate({
 }: {
   business: BusinessTemplate;
 }) {
+  const [loaves] = b.gallery;
   return (
     <>
       <div className="sera-announcement">
@@ -275,21 +383,24 @@ export function BakeryTemplate({
       </div>
       <section className="sera-hero">
         <div className="sera-hero-title">
-          <p className="template-eyebrow">{b.eyebrow}</p>
-          <h1>
+          <p className="template-eyebrow t-enter">{b.eyebrow}</p>
+          <h1 className="t-enter" style={delay(120)}>
             {b.headline[0]} <em>{b.headline[1]}</em>
           </h1>
         </div>
         <div className="sera-hero-photo">
-          <Photo image={b.hero} eager sizes="100vw" />
-          <a href="#daily-bake" className="sera-sticker">
-            <span>
-              ALWAYS
-              <br />
-              FROM SCRATCH
-            </span>
-            <Asterisk size={38} aria-hidden="true" />
-            <span>NEVER BORING</span>
+          <Photo image={b.hero} eager sizes="100vw" className="t-kenburns" />
+          <a
+            href="#daily-bake"
+            className="sera-sticker"
+            aria-label="Always from scratch, never boring. See the daily bake."
+          >
+            <SpinBadge
+              id="sera-hero-badge"
+              text="ALWAYS FROM SCRATCH • NEVER BORING • "
+            >
+              <Asterisk size={38} aria-hidden="true" />
+            </SpinBadge>
           </a>
           <div className="sera-hero-caption">
             <p>{b.intro}</p>
@@ -299,13 +410,23 @@ export function BakeryTemplate({
           </div>
         </div>
       </section>
-      <div className="sera-ribbon" aria-hidden="true">
-        <span>GOOD THINGS RISE</span>
-        <Asterisk />
-        <span>PASS THE BUTTER</span>
-        <Asterisk />
-        <span>GOOD THINGS RISE</span>
-        <Asterisk />
+      <div className="sera-ribbons" aria-hidden="true">
+        <Marquee className="sera-ribbon" decorative>
+          {[
+            "Good things rise",
+            "Pass the butter",
+            "Baked before sunrise",
+            "Crumbs welcome",
+            "Still warm",
+            "Worth the early alarm",
+            "Slow dough, good mornings",
+          ].map((t) => (
+            <span key={t}>
+              {t}
+              <Asterisk />
+            </span>
+          ))}
+        </Marquee>
       </div>
       <section className="sera-menu-section template-pad" id="daily-bake">
         <div className="sera-menu-heading">
@@ -326,11 +447,17 @@ export function BakeryTemplate({
           >
             The full menu <ArrowUpRight size={20} aria-hidden="true" />
           </Link>
+          <figure className="sera-polaroid t-rise">
+            <Photo image={loaves} sizes="(min-width: 900px) 30vw, 80vw" />
+            <figcaption>Out of the oven, 6:40am</figcaption>
+          </figure>
         </div>
         <div className="sera-menu-list">
           {dailyBake.map((item, i) => (
-            <Link key={item.name} href={businessHref(b, "pricing")}>
-              <span className="sera-menu-number">0{i + 1}</span>
+            <Link key={item.name} href={businessHref(b, "pricing")} className="t-rise">
+              <span className="sera-menu-icon">
+                <Glyph kind={MENU_GLYPHS[i % MENU_GLYPHS.length]} />
+              </span>
               <div>
                 <h3>{item.name}</h3>
                 <p>{item.note}</p>
@@ -344,13 +471,13 @@ export function BakeryTemplate({
         </div>
       </section>
       <section className="sera-table-story">
-        <Photo image={b.detail} />
+        <Photo image={b.detail} className="t-parallax" />
         <div>
           <span className="template-eyebrow">
             Your neighborhood morning ritual
           </span>
           <Asterisk className="sera-story-star" aria-hidden="true" />
-          <h2>
+          <h2 className="t-rise">
             Made to
             <br />
             <em>be shared.</em>
@@ -372,13 +499,16 @@ export function BakeryTemplate({
             <br />
             <em>Fresh every day.</em>
           </h2>
+          <div className="sera-visit-details">
+            <p>{b.address}</p>
+            <p>{b.hours}</p>
+            <TemplateButton business={b} page="contact">
+              Come say hello
+            </TemplateButton>
+          </div>
         </div>
-        <div>
-          <p>{b.address}</p>
-          <p>{b.hours}</p>
-          <TemplateButton business={b} page="contact">
-            Come say hello
-          </TemplateButton>
+        <div className="sera-visit-map t-rise">
+          <TemplateMap id="sera" />
         </div>
       </section>
     </>
