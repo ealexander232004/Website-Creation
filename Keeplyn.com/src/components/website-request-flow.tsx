@@ -254,7 +254,7 @@ export function WebsiteRequestFlow({
     if (step === 2) {
       const result = websiteRequestSchema.shape.offerings.safeParse(offerings);
       if (!result.success) {
-        setError("Give every offering a title, description, and valid price.");
+        setError("Give every offering a title and description. Prices are optional, but must be valid if you add one.");
         return;
       }
     }
@@ -673,7 +673,7 @@ export function WebsiteRequestFlow({
               <StepHeading
                 kicker="Step 03 / Offerings"
                 title="What do you offer?"
-                description="Add the products, services, packages, or menu items you want customers to see. Use the price you want displayed."
+                description="Add the products, services, packages, or menu items you want customers to see. Add a price if you want one shown."
               />
               <div className="space-y-5">
                 {offerings.map((offering, index) => (
@@ -703,7 +703,9 @@ export function WebsiteRequestFlow({
                         />
                       </label>
                       <label className="block text-xs font-semibold text-white/62">
-                        Price
+                        <span>
+                          Price <span className="font-normal text-white/34">(optional)</span>
+                        </span>
                         <span className="relative block">
                           <span className="pointer-events-none absolute left-4 top-[1.4rem] -translate-y-1/2 text-sm text-white/34">$</span>
                           <input
@@ -712,7 +714,7 @@ export function WebsiteRequestFlow({
                             value={offering.price}
                             onChange={(event) => updateOffering(index, "price", event.target.value)}
                             placeholder="125.00"
-                            aria-label={`Offering ${index + 1} price in dollars`}
+                            aria-label={`Offering ${index + 1} price in dollars, optional`}
                           />
                         </span>
                       </label>

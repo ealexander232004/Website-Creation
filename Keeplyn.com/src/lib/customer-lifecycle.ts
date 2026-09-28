@@ -7,7 +7,13 @@ export const statusLabels: Record<RequestStatus, string> = {
 
 export const editableRequestStatuses: RequestStatus[] = ["submitted", "in_review", "in_progress", "demo_ready", "changes_requested"];
 
-export type RequestOffering = { id: number; title: string; description: string; price: number | string; position: number };
+export type RequestOffering = { id: number; title: string; description: string; price: number | string | null; position: number };
+
+/** "$25.00", or null when the customer left the price blank. */
+export function formatOfferingPrice(price: RequestOffering["price"]) {
+  if (price === null || price === "") return null;
+  return `$${Number(price).toFixed(2)}`;
+}
 export type RequestAsset = { id: number; storage_path: string; original_filename: string; mime_type: string; size_bytes: number; signedUrl?: string | null };
 export type UpdateTicket = { id: number; request_id: number; title: string; description: string; status: "new" | "in_progress" | "completed"; admin_response: string | null; created_at: string; completed_at: string | null };
 export type WebsiteRequest = {
