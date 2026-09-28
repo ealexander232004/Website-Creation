@@ -14,11 +14,15 @@ export const acceptedPhotoTypes = [
 export const offeringSchema = z.object({
   title: z.string().trim().min(2, "Add a title.").max(100),
   description: z.string().trim().min(2, "Add a description.").max(1000),
-  price: z
-    .string()
-    .trim()
-    .regex(/^\d{1,10}(?:\.\d{1,2})?$/, "Use a valid price, such as 25 or 25.00.")
-    .refine((value) => Number(value) <= 9_999_999_999.99, "That price is too large."),
+  // Optional: leave blank when a price shouldn't be shown.
+  price: z.union([
+    z.string().trim().length(0),
+    z
+      .string()
+      .trim()
+      .regex(/^\d{1,10}(?:\.\d{1,2})?$/, "Use a valid price, such as 25 or 25.00, or leave it blank.")
+      .refine((value) => Number(value) <= 9_999_999_999.99, "That price is too large."),
+  ]),
 });
 
 export const websiteRequestSchema = z.object({
