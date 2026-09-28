@@ -46,3 +46,62 @@ export async function sendCustomerNotification(input: NotificationInput) {
   if (error) throw new Error(error.message);
   return data?.id ?? null;
 }
+
+export const KEEPLYN_SUPPORT_EMAIL = "support@keeplyn.com";
+
+function sender() {
+  const apiKey = process.env.RESEND_API_KEY;
+  if (!apiKey) throw new Error("RESEND_API_KEY is not configured.");
+  return { resend: new Resend(apiKey), domain: process.env.RESEND_EMAIL_DOMAIN || "keeplyn.com" };
+}
+
+function plainEmail(lines: string[]) {
+  const body = lines.map((line) => (line ? `<p style="margin:0 0 12px">${escapeHtml(line)}</p>` : "")).join("");
+  return `<!doctype html><html><body style="margin:0;padding:28px;background:#f4f5f0;color:#151515;font:15px/1.6 Arial,Helvetica,sans-serif">${body}</body></html>`;
+}
+
+/** Tells Keeplyn a new website request is waiting in /admin. */
+export async function sendAdminNewRequestAlert(input: {
+  requestId: number;
+  planId: string;
+  customerName?: string | null;
+  customerEmail: string;
+  adminUrl: string;
+}) {
+  const { resend, domain } = sender();
+  const requestNumber = formatRequestNumber(input.requestId);
+  const who = input.customerName?.trim() ? `${input.customerName.trim()} <${input.customerEmail}>` : input.customerEmail;
+  const lines = [
+    `New ${input.planId} website request ${requestNumber}.`,
+    `Customer: ${who}`,
+    `Review it: ${input.adminUrl}`,
+    "The customer was promised a demo within two business days.",
+  ];
+  const { error } = await resend.emails.send(
+    {
+      from: `Keeplyn <updates@${domain}>`,
+      to: KEEPLYN_SUPPORT_EMAIL,
+      replyTo: input.customerEmail,
+      subject: `New website request ${requestNumber} (${input.planId})`,
+      html: plainEmail(lines),
+      text: lines.join("\n\n"),
+    },
+    { headers: { "Idempotency-Key": `admin-new-request-${input.requestId}` } },
+  );
+  if (error) throw new Error(error.message);
+}
+
+/** Delivers a /contact inquiry to Keeplyn; replying goes straight to the visitor. */
+export async function sendContactInquiry(input: { name: string; email: string; message: string }) {
+  const { resend, domain } = sender();
+  const lines = [`From: ${input.name} <${input.email}>`, "", ...input.message.split(/\n+/)];
+  const { error } = await resend.emails.send({
+    from: `Keeplyn website <updates@${domain}>`,
+    to: KEEPLYN_SUPPORT_EMAIL,
+    replyTo: input.email,
+    subject: `Website inquiry from ${input.name}`,
+    html: plainEmail(lines),
+    text: lines.join("\n"),
+  });
+  if (error) throw new Error(error.message);
+}

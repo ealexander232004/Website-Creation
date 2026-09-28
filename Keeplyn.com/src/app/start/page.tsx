@@ -14,6 +14,7 @@ type StartPageProps = {
   searchParams: Promise<{
     mode?: string;
     plan?: string;
+    link?: string;
   }>;
 };
 
@@ -27,6 +28,7 @@ export default async function StartPage({ searchParams }: StartPageProps) {
   return (
     <WebsiteRequestFlow
       initialAccountMode={params.mode === "signin" ? "signin" : "signup"}
+      expiredLink={params.link === "expired"}
       initialPlan={params.plan === "starter" || params.plan === "pro" ? params.plan : null}
       initialUser={
         user

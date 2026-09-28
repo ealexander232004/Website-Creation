@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { createClient as createSupabaseClient } from "@supabase/supabase-js";
 import type Stripe from "stripe";
+import { sendCustomerNotification } from "@/lib/email";
 import { getStripe } from "@/lib/stripe";
 
 export const runtime = "nodejs";
@@ -76,6 +77,31 @@ export async function POST(request: Request) {
   if (error) {
     console.error("Stripe event persistence failed", { eventId: event.id, type: event.type, message: error.message });
     return NextResponse.json({ error: "Event processing failed." }, { status: 500 });
+  }
+
+  // Confirm payment to the customer once the build is actually paid.
+  if (
+    (event.type === "checkout.session.completed" || event.type === "checkout.session.async_payment_succeeded") &&
+    paymentStatus === "paid" &&
+    requestId
+  ) {
+    const session = event.data.object as Stripe.Checkout.Session;
+    const to = session.customer_details?.email ?? session.customer_email;
+    if (to) {
+      try {
+        await sendCustomerNotification({
+          kind: "payment_received",
+          to,
+          customerName: session.customer_details?.name,
+          requestId,
+          detailUrl: `${new URL(request.url).origin}/portal/requests/${requestId}`,
+          idempotencyKey: `payment-received-${requestId}`,
+        });
+      } catch (emailError) {
+        // The payment is recorded; a failed receipt must not make Stripe retry.
+        console.error("Payment confirmation email failed", { requestId, emailError });
+      }
+    }
   }
   return NextResponse.json({ received: true });
 }
