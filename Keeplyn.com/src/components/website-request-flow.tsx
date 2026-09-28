@@ -490,7 +490,7 @@ export function WebsiteRequestFlow({
             <>
               <StepHeading
                 kicker="Step 01 / Account"
-                title={accountMode === "signup" ? "First, let’s know you." : "Welcome back."}
+                title={accountMode === "signup" ? "First, let’s get to know you." : "Welcome back."}
                 description={
                   accountMode === "signup"
                     ? "Create a secure account so your request, photos, and future website updates stay connected to you."
