@@ -17,11 +17,12 @@ Three complete six-page templates replace the old canvas demos. The live collect
 - `src/components/templates/catalog.ts` owns typed business records, image references, navigation labels, service packages, FAQs, and common page copy.
 - `template-homes.tsx` contains three independent homepage compositions. Sector-specific section headings and arrangements live here.
 - `template-pages.tsx` renders the home, about, FAQ, pricing/menu, contact, and booking pages through `BusinessWebsite`.
+- `template-art.tsx` holds each template's inline SVG illustration: Moss's contour lines, olive sprig, and plant glyphs; Northline's care symbols and 90-minute dial; Sera's pastry drawings and turning badge; the three illustrated contact maps; and the shared marquee. Everything is drawn in `currentColor`, so it follows the template's ink.
 - `template-chrome.tsx` supplies the business header, wordmark, footer, image component, and navigation. The Keeplyn demo switcher is a separate component in the route layout.
 - `templates.css` scopes the three design systems under `.template-moss`, `.template-northline`, and `.template-sera`. The `id` selects the visual family, while `basePath` controls business navigation.
 - `typography.ts` loads the display fonts only on demo routes and the collection.
 
-Copy a business record, keeping its `id` to choose a visual family. Set `basePath` to the new website's route root (`""` for a standalone site), update its name, optional two-line wordmark, location, images, copy, services, and FAQs, then pass it to `BusinessWebsite`. Mount the six routes with the matching `page` property. Include `templateFonts` on the parent and import `templates.css` once. Review the sector-specific homepage copy and brand sublabel for the new business. Use the existing demo routes as the route and metadata pattern.
+Copy a business record, keeping its `id` to choose a visual family. Set `basePath` to the new website's route root (`""` for a standalone site), update its name, optional two-line wordmark, location, images (`hero`, `detail`, and at least one `gallery` photograph), copy, services, and FAQs, then pass it to `BusinessWebsite`. Mount the six routes with the matching `page` property. Include `templateFonts` on the parent and import `templates.css` once. Review the sector-specific homepage copy and brand sublabel for the new business. Use the existing demo routes as the route and metadata pattern.
 
 For example:
 
@@ -40,9 +41,15 @@ const business: BusinessTemplate = {
 
 The component keeps form values in memory and validates required fields, email, dates, and preferred time before showing a preview receipt. Demo submissions never send email, save personal information, make an appointment, or place an order. For a real business, replace `TemplateForm` with its approved booking/contact integration, update availability and submission messages, and remove the concept-business notice. No production backend is implied by these templates.
 
+## Motion
+
+Motion is progressive. Headlines and hero photographs ease in on load; `.t-rise`, `.t-parallax`, and `.t-unveil` use CSS scroll-driven animations where supported (`@supports (animation-timeline: view())`), and marquees, the Sera badge, and map pins loop gently. Browsers without scroll timelines show the finished static layout, and `prefers-reduced-motion: reduce` turns every template animation off.
+
 ## Images
 
-Six original GPT Image 2 photographs were created through the built-in image tool. Optimized WebP assets live in `public/demos/templates/`, total approximately 1.8 MB before responsive Next.js image delivery. Hero images load eagerly; supporting images load lazily. The exact generation prompts and asset mapping are in `template-image-prompts.json`. These portray concept businesses, not real clients or patients.
+Six original GPT Image 2 photographs were created through the built-in image tool. Optimized WebP assets live in `public/demos/templates/`, total approximately 1.8 MB before responsive Next.js image delivery. Hero images load eagerly; supporting images load lazily. The exact generation prompts and asset mapping are in `template-image-prompts.json`. These portray concept businesses, not real clients or patients. Four further photographs from the earlier demo set were cropped and optimized into `moss-water.webp`, `moss-passage.webp`, `northline-consult.webp`, and `sera-loaves.webp` for the `gallery` fields.
+
+The Keeplyn homepage and `/demos` collection show real screenshots of each template's homepage from `public/demos/previews/`. Recapture them with `scripts/capture-demo-previews.mjs` (instructions at the top of the script) whenever a template homepage changes.
 
 ## Design research
 

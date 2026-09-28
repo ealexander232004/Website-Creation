@@ -20,6 +20,35 @@ import {
   BakeryTemplate,
 } from "./template-homes";
 import { TemplateForm } from "./template-form";
+import {
+  Glyph,
+  MENU_GLYPHS,
+  SpinBadge,
+  Sprig,
+  TemplateMap,
+  packageGlyph,
+  principleGlyph,
+} from "./template-art";
+
+/** A small brand flourish layered on each page's lead photograph. */
+function PhotoFlourish({ business: b }: { business: BusinessTemplate }) {
+  if (b.id === "moss") return <Sprig className="template-flourish" />;
+  if (b.id === "northline")
+    return (
+      <span className="template-flourish">
+        <Glyph kind="smile" />
+      </span>
+    );
+  return (
+    <SpinBadge
+      id={`sera-flourish-${b.basePath.replace(/\W/g, "") || "site"}`}
+      text="BAKED FRESH • EVERY MORNING • "
+      className="template-flourish"
+    >
+      <Glyph kind="croissant" />
+    </SpinBadge>
+  );
+}
 
 function About({ business: b }: { business: BusinessTemplate }) {
   return (
@@ -33,13 +62,20 @@ function About({ business: b }: { business: BusinessTemplate }) {
           <p>{b.about.text}</p>
           <TemplateButton business={b} />
         </div>
-        <Photo image={b.detail} eager />
+        <div className="template-lead-photo">
+          <Photo image={b.detail} eager className="t-kenburns" />
+          <PhotoFlourish business={b} />
+        </div>
       </section>
       <section className="template-principles template-pad">
         <p className="template-eyebrow">A few things we believe</p>
         <div>
           {b.about.principles.map(([title, text], i) => (
-            <article key={title}>
+            <article key={title} className="t-rise">
+              <Glyph
+                kind={principleGlyph(b.id, i)}
+                className="template-principle-glyph"
+              />
               <span>0{i + 1}</span>
               <h2>{title}</h2>
               <p>{text}</p>
@@ -48,7 +84,7 @@ function About({ business: b }: { business: BusinessTemplate }) {
         </div>
       </section>
       <section className="template-about-image">
-        <Photo image={b.hero} sizes="100vw" />
+        <Photo image={b.gallery[0]} sizes="100vw" className="t-parallax" />
         <p>{b.intro}</p>
       </section>
     </>
@@ -67,7 +103,10 @@ function Faq({ business: b }: { business: BusinessTemplate }) {
               ? "Good questions. Fresh answers."
               : "Feel a little more ready."}
         </h1>
-        <Photo image={b.detail} />
+        <div className="template-faq-photo">
+          <Photo image={b.gallery[b.gallery.length - 1]} />
+          <PhotoFlourish business={b} />
+        </div>
         <Link href={businessHref(b, "contact")} className="template-text-link">
           Ask us something else <ArrowUpRight size={18} aria-hidden="true" />
         </Link>
@@ -107,14 +146,20 @@ function Pricing({ business: b }: { business: BusinessTemplate }) {
               : "A clear starting point. A thoughtful way forward."}
           </p>
         </div>
-        <Photo image={b.id === "sera" ? b.hero : b.detail} eager />
+        <div className="template-lead-photo">
+          <Photo image={b.id === "sera" ? b.hero : b.detail} eager className="t-kenburns" />
+          <PhotoFlourish business={b} />
+        </div>
       </section>
       {b.id === "sera" && (
         <section className="template-daily-menu template-pad">
           <h2>The daily bake</h2>
           <div>
-            {dailyBake.map((item) => (
+            {dailyBake.map((item, i) => (
               <article key={item.name}>
+                <span className="template-daily-icon">
+                  <Glyph kind={MENU_GLYPHS[i % MENU_GLYPHS.length]} />
+                </span>
                 <div>
                   <h3>{item.name}</h3>
                   <p>{item.note}</p>
@@ -134,11 +179,11 @@ function Pricing({ business: b }: { business: BusinessTemplate }) {
                 ? "Design services"
                 : "Self-pay options"}
           </span>
-          <span>01—03</span>
         </div>
         <div className="template-price-grid">
           {b.packages.map((p, i) => (
-            <article key={p.name}>
+            <article key={p.name} className="t-rise">
+              <Glyph kind={packageGlyph(b.id, i)} className="template-price-glyph" />
               <span className="template-eyebrow">
                 0{i + 1} /{" "}
                 {b.id === "moss"
@@ -194,7 +239,13 @@ function Contact({
           </h1>
           <p>{b.contactNote}</p>
         </div>
-        <Photo image={b.detail} />
+        {booking ? (
+          <Photo image={b.detail} className="template-contact-photo" />
+        ) : (
+          <div className="template-contact-map t-rise">
+            <TemplateMap id={b.id} />
+          </div>
+        )}
         <div className="template-contact-details">
           <p>{b.address}</p>
           <p>{b.hours}</p>

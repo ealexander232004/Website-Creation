@@ -3,15 +3,16 @@ import Link from "next/link";
 import { BrandLogo } from "./brand-logo";
 import { ContactInquiryForm } from "./contact-inquiry-form";
 import { PoliciesMenu } from "./policies-menu";
+import { HeroShowcase } from "./site-showcase";
 
 export function HeroSection() {
   return (
-    <section className="relative min-h-[calc(100svh-68px)] overflow-hidden text-white">
-      <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,rgba(5,5,5,0.42),transparent_48%)]" />
+    <section className="relative overflow-hidden text-white">
+      <div className="absolute inset-0 bg-[radial-gradient(circle_at_50%_30%,rgba(5,5,5,0.5),transparent_52%)]" />
 
-      <div className="site-container relative z-10 flex min-h-[calc(100svh-68px)] flex-col justify-between py-10 sm:py-14">
-        <div className="reveal-on-load mx-auto mt-auto mb-auto max-w-6xl text-center">
-          <h1 className="text-[clamp(3.6rem,9.5vw,9rem)] font-semibold leading-[0.82] tracking-[-0.085em]">
+      <div className="site-container relative z-10 pt-16 text-center sm:pt-24">
+        <div className="reveal-on-load mx-auto max-w-6xl">
+          <h1 className="text-[clamp(3.3rem,8.4vw,8rem)] font-semibold leading-[0.84] tracking-[-0.085em]">
             <span className="text-white/78">The </span>springboard{" "}
             <span className="block text-white/78">for your small business.</span>
           </h1>
@@ -26,6 +27,9 @@ export function HeroSection() {
           </div>
         </div>
       </div>
+
+      <HeroShowcase />
+      <div className="pointer-events-none absolute inset-x-0 bottom-0 z-10 h-40 bg-gradient-to-b from-transparent to-[#050505]" aria-hidden="true" />
     </section>
   );
 }
@@ -33,8 +37,12 @@ export function HeroSection() {
 export function ContactSection() {
   return (
     <section id="contact" className="relative overflow-hidden bg-[#050505] py-16 text-white sm:py-24">
-      <div className="absolute -left-32 top-1/2 size-[38rem] -translate-y-1/2 rounded-full border border-[#7568ff]/35 shadow-[0_0_160px_rgba(117,104,255,0.24)]" aria-hidden="true" />
-      <div className="absolute -left-10 top-1/2 size-[22rem] -translate-y-1/2 rounded-full border border-white/15" aria-hidden="true" />
+      <div className="orbit absolute -left-32 top-1/2 size-[38rem] -translate-y-1/2 rounded-full border border-[#7568ff]/35 shadow-[0_0_160px_rgba(117,104,255,0.24)]" aria-hidden="true">
+        <span className="orbit-dot" />
+      </div>
+      <div className="orbit orbit-reverse absolute -left-10 top-1/2 size-[22rem] -translate-y-1/2 rounded-full border border-white/15" aria-hidden="true">
+        <span className="orbit-dot is-violet" />
+      </div>
       <div className="site-container relative z-10 w-full">
         <div className="grid min-h-[calc(100svh-68px-8rem)] items-center gap-14 lg:grid-cols-[1.05fr_.95fr] lg:gap-20">
           <div>

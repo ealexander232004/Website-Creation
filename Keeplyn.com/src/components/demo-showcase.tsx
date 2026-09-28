@@ -3,6 +3,7 @@ import { ArrowUpRight } from "lucide-react";
 import { demoSlugs, templates, demoHref } from "./templates/catalog";
 import { Brand, Photo } from "./templates/template-chrome";
 import { templateFonts } from "./templates/typography";
+import { BrowserFrame } from "./site-showcase";
 import "./templates/templates.css";
 
 export function DemoShowcase() {
@@ -10,11 +11,11 @@ export function DemoShowcase() {
     <section className={`template-collection site-container ${templateFonts}`}>
       <div className="template-collection-heading">
         <div>
-          <p className="template-eyebrow">The Keeplyn collection / 01—03</p>
+          <p className="template-eyebrow">The Keeplyn collection</p>
           <h1>
-            Different businesses.
+            Different businesses,
             <br />
-            Different by design.
+            different designs.
           </h1>
         </div>
         <p>
@@ -51,6 +52,12 @@ export function DemoShowcase() {
                   <ArrowUpRight aria-hidden="true" />
                 </span>
               </div>
+              <BrowserFrame
+                slug={id}
+                variant="full"
+                sizes="(min-width: 900px) 30vw, 1px"
+                className="template-collection-browser"
+              />
               <div className="template-collection-caption">
                 <div>
                   <h2>{b.name}</h2>

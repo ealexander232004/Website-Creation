@@ -11,6 +11,7 @@ import {
   type DemoSlug,
   type TemplateImage,
 } from "./catalog";
+import { Contours, Glyph } from "./template-art";
 
 export function Photo({
   image,
@@ -151,6 +152,14 @@ export function TemplateFooter({
 }) {
   return (
     <footer className="template-footer">
+      {b.id === "moss" ? (
+        <Contours className="template-footer-art" />
+      ) : (
+        <Glyph
+          kind={b.id === "northline" ? "smile" : "croissant"}
+          className="template-footer-art"
+        />
+      )}
       <div className="template-footer-top">
         <p>{b.closing}</p>
         <Link

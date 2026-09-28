@@ -1,6 +1,7 @@
 import { ArrowUpRight } from "lucide-react";
 import Link from "next/link";
 import { websitePlans } from "@/lib/plans";
+import { PlanArt } from "./site-showcase";
 
 export function PricingSection() {
   return (
@@ -41,7 +42,9 @@ export function PricingSection() {
                   <p className="mt-5 max-w-sm text-sm leading-6 text-white/48">{plan.summary}</p>
                 </div>
 
-                <div className="relative z-10 mt-16">
+                <PlanArt plan={plan.id} className="relative z-10 mt-10" />
+
+                <div className="relative z-10 mt-10">
                   <p className="text-[clamp(3.75rem,7vw,6rem)] font-semibold leading-none tracking-[-0.085em]">{plan.price}</p>
                   <p className="mt-3 text-sm text-[#c9ff3b]">+ {plan.hosting} for hosting &amp; updates, optionally</p>
                   <Link
