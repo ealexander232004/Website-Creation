@@ -1,7 +1,8 @@
 import { NextResponse } from "next/server";
 import { createClient as createSupabaseClient } from "@supabase/supabase-js";
 import type Stripe from "stripe";
-import { sendCustomerNotification } from "@/lib/email";
+import { sendAdminPaymentAlert, sendCustomerNotification } from "@/lib/email";
+import { getEmailOrigin } from "@/lib/site-url";
 import { getStripe } from "@/lib/stripe";
 
 export const runtime = "nodejs";
@@ -87,6 +88,7 @@ export async function POST(request: Request) {
   ) {
     const session = event.data.object as Stripe.Checkout.Session;
     const to = session.customer_details?.email ?? session.customer_email;
+    const origin = await getEmailOrigin();
     if (to) {
       try {
         await sendCustomerNotification({
@@ -94,12 +96,26 @@ export async function POST(request: Request) {
           to,
           customerName: session.customer_details?.name,
           requestId,
-          detailUrl: `${new URL(request.url).origin}/portal/requests/${requestId}`,
+          detailUrl: `${origin}/portal/requests/${requestId}`,
           idempotencyKey: `payment-received-${requestId}`,
         });
       } catch (emailError) {
         // The payment is recorded; a failed receipt must not make Stripe retry.
         console.error("Payment confirmation email failed", { requestId, emailError });
+      }
+      try {
+        const amount = session.amount_total === null ? null : new Intl.NumberFormat("en-US", { style: "currency", currency: (session.currency ?? "usd").toUpperCase() }).format(session.amount_total / 100);
+        await sendAdminPaymentAlert({
+          customerName: session.customer_details?.name,
+          customerEmail: to,
+          requestId,
+          amount,
+          domainName: session.metadata?.domain_name,
+          hosting: session.mode === "subscription",
+          adminUrl: `${origin}/admin/requests/${requestId}`,
+        });
+      } catch (alertError) {
+        console.error("Payment admin alert failed", { requestId, alertError });
       }
     }
   }

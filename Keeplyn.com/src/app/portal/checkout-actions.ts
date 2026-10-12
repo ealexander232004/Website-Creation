@@ -1,5 +1,6 @@
 "use server";
 
+import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { z } from "zod";
 import type { SupabaseClient } from "@supabase/supabase-js";
@@ -65,6 +66,8 @@ export async function saveDomain(formData: FormData) {
   const { supabase, request } = await requireCheckoutRequest(requestId);
   const { error } = await supabase.rpc("set_request_domain", { p_request_id: requestId, p_domain_name: parsed.data, p_hosting_selected: request.hosting_selected });
   if (error) throw new Error(error.message);
+  // The redirect only adds a hash, so the page must be revalidated to show the saved domain.
+  revalidatePath(`/portal/requests/${requestId}/domain`);
   redirect(`/portal/requests/${requestId}/domain#connect`);
 }
 

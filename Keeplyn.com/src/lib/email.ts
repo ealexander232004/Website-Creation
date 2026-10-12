@@ -60,35 +60,91 @@ function plainEmail(lines: string[]) {
   return `<!doctype html><html><body style="margin:0;padding:28px;background:#f4f5f0;color:#151515;font:15px/1.6 Arial,Helvetica,sans-serif">${body}</body></html>`;
 }
 
-/** Tells Keeplyn a new website request is waiting in /admin. */
-export async function sendAdminNewRequestAlert(input: {
-  requestId: number;
-  planId: string;
-  customerName?: string | null;
-  customerEmail: string;
-  adminUrl: string;
-}) {
+type AdminCustomer = { customerName?: string | null; customerEmail: string };
+
+function describeCustomer({ customerName, customerEmail }: AdminCustomer) {
+  return customerName?.trim() ? `${customerName.trim()} <${customerEmail}>` : customerEmail;
+}
+
+/** Plain internal alert to Keeplyn; replying goes straight to the customer. */
+async function sendAdminAlert(input: AdminCustomer & { subject: string; lines: string[]; idempotencyKey: string }) {
   const { resend, domain } = sender();
-  const requestNumber = formatRequestNumber(input.requestId);
-  const who = input.customerName?.trim() ? `${input.customerName.trim()} <${input.customerEmail}>` : input.customerEmail;
-  const lines = [
-    `New ${input.planId} website request ${requestNumber}.`,
-    `Customer: ${who}`,
-    `Review it: ${input.adminUrl}`,
-    "The customer was promised a demo within two business days.",
-  ];
   const { error } = await resend.emails.send(
     {
       from: `Keeplyn <updates@${domain}>`,
       to: KEEPLYN_SUPPORT_EMAIL,
       replyTo: input.customerEmail,
-      subject: `New website request ${requestNumber} (${input.planId})`,
-      html: plainEmail(lines),
-      text: lines.join("\n\n"),
+      subject: input.subject,
+      html: plainEmail(input.lines),
+      text: input.lines.join("\n\n"),
     },
-    { headers: { "Idempotency-Key": `admin-new-request-${input.requestId}` } },
+    { headers: { "Idempotency-Key": input.idempotencyKey } },
   );
   if (error) throw new Error(error.message);
+}
+
+/** Tells Keeplyn a new website request is waiting in /admin. */
+export async function sendAdminNewRequestAlert(input: AdminCustomer & { requestId: number; planId: string; adminUrl: string }) {
+  const requestNumber = formatRequestNumber(input.requestId);
+  await sendAdminAlert({
+    ...input,
+    subject: `New website request ${requestNumber} (${input.planId})`,
+    lines: [
+      `New ${input.planId} website request ${requestNumber}.`,
+      `Customer: ${describeCustomer(input)}`,
+      `Review it: ${input.adminUrl}`,
+      "The customer was promised a demo within two business days.",
+    ],
+    idempotencyKey: `admin-new-request-${input.requestId}`,
+  });
+}
+
+/** Tells Keeplyn a customer opened an update ticket (a demo revision or a post-launch change). */
+export async function sendAdminTicketAlert(input: AdminCustomer & { requestId: number; ticketId: number; title: string; description: string; adminUrl: string }) {
+  const requestNumber = formatRequestNumber(input.requestId);
+  await sendAdminAlert({
+    ...input,
+    subject: `Update ticket on ${requestNumber}: ${input.title}`,
+    lines: [
+      `${describeCustomer(input)} opened an update ticket on request ${requestNumber}.`,
+      input.title,
+      ...input.description.split(/\n+/),
+      `Respond in the admin: ${input.adminUrl}`,
+      "Updates are promised in under two business days.",
+    ],
+    idempotencyKey: `admin-ticket-${input.ticketId}`,
+  });
+}
+
+/** Tells Keeplyn a customer approved their demo and moved on to domain setup. */
+export async function sendAdminApprovalAlert(input: AdminCustomer & { requestId: number; adminUrl: string }) {
+  const requestNumber = formatRequestNumber(input.requestId);
+  await sendAdminAlert({
+    ...input,
+    subject: `Request ${requestNumber} approved`,
+    lines: [
+      `${describeCustomer(input)} approved the demo for request ${requestNumber}.`,
+      "They're now buying and connecting their domain, then paying through Stripe.",
+      `Request: ${input.adminUrl}`,
+    ],
+    idempotencyKey: `admin-approved-${input.requestId}`,
+  });
+}
+
+/** Tells Keeplyn a request is paid and ready to launch. */
+export async function sendAdminPaymentAlert(input: AdminCustomer & { requestId: number; amount: string | null; domainName?: string | null; hosting: boolean; adminUrl: string }) {
+  const requestNumber = formatRequestNumber(input.requestId);
+  await sendAdminAlert({
+    ...input,
+    subject: `Payment received for ${requestNumber}${input.amount ? ` (${input.amount})` : ""}`,
+    lines: [
+      `${describeCustomer(input)} paid${input.amount ? ` ${input.amount}` : ""} for request ${requestNumber}.`,
+      `Domain: ${input.domainName || "not recorded"}`,
+      `Care plan: ${input.hosting ? "yes" : "no"}`,
+      `Connect the domain, then mark the site live: ${input.adminUrl}`,
+    ],
+    idempotencyKey: `admin-payment-${input.requestId}`,
+  });
 }
 
 /** Delivers a /contact inquiry to Keeplyn; replying goes straight to the visitor. */

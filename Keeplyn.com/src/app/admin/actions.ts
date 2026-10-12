@@ -4,7 +4,7 @@ import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { z } from "zod";
 import { sendCustomerNotification } from "@/lib/email";
-import { getSiteOrigin } from "@/lib/site-url";
+import { getEmailOrigin } from "@/lib/site-url";
 import { createClient } from "@/lib/supabase/server";
 
 const idSchema = z.coerce.number().int().positive();
@@ -32,7 +32,7 @@ export async function publishDemo(formData: FormData) {
   const { error } = await supabase.rpc("admin_set_demo", { p_request_id: requestId, p_demo_url: demoUrl });
   if (error) throw new Error(error.message);
   const request = await getRequestForEmail(supabase, requestId);
-  const origin = await getSiteOrigin();
+  const origin = await getEmailOrigin();
   await sendCustomerNotification({ kind: "demo_ready", to: request.customer_email, customerName: request.customer_name, requestId, detailUrl: `${origin}/portal/requests/${requestId}`, demoUrl, idempotencyKey: `demo-ready-${requestId}-${encodeURIComponent(demoUrl).slice(-40)}` });
   revalidatePath(`/admin/requests/${requestId}`);
   revalidatePath(`/portal/requests/${requestId}`);
@@ -52,12 +52,18 @@ export async function updateTicket(formData: FormData) {
   const ticketId = idSchema.parse(formData.get("ticketId"));
   const status = z.enum(["in_progress", "completed"]).parse(formData.get("status"));
   const response = z.string().trim().max(5000).parse(formData.get("response") ?? "");
+  // Optional revised demo, published with the completed ticket so the customer gets one email.
+  const demoUrl = status === "completed" && formData.get("demoUrl") ? httpsUrl.parse(formData.get("demoUrl")) : null;
   const supabase = await requireAdmin();
   const { data: requestId, error } = await supabase.rpc("admin_set_update_ticket", { p_ticket_id: ticketId, p_status: status, p_admin_response: response || null });
   if (error || !requestId) throw new Error(error?.message || "Update ticket was not found.");
+  if (demoUrl) {
+    const { error: demoError } = await supabase.rpc("admin_set_demo", { p_request_id: Number(requestId), p_demo_url: demoUrl });
+    if (demoError) throw new Error(demoError.message);
+  }
   if (status === "completed") {
     const request = await getRequestForEmail(supabase, Number(requestId));
-    const origin = await getSiteOrigin();
+    const origin = await getEmailOrigin();
     await sendCustomerNotification({ kind: "update_complete", to: request.customer_email, customerName: request.customer_name, requestId: Number(requestId), detailUrl: `${origin}/portal/requests/${requestId}`, demoUrl: request.demo_url, message: response || null, idempotencyKey: `update-complete-${ticketId}` });
   }
   revalidatePath(`/admin/requests/${requestId}`);
@@ -71,7 +77,7 @@ export async function markWebsiteLive(formData: FormData) {
   const { error } = await supabase.rpc("admin_set_request_status", { p_request_id: requestId, p_status: "live", p_live_url: liveUrl });
   if (error) throw new Error(error.message);
   const request = await getRequestForEmail(supabase, requestId);
-  const origin = await getSiteOrigin();
+  const origin = await getEmailOrigin();
   await sendCustomerNotification({ kind: "website_live", to: request.customer_email, customerName: request.customer_name, requestId, detailUrl: `${origin}/portal/requests/${requestId}`, liveUrl, idempotencyKey: `website-live-${requestId}` });
   revalidatePath(`/admin/requests/${requestId}`);
   revalidatePath(`/portal/requests/${requestId}`);
