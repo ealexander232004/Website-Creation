@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { sendAdminNewRequestAlert, sendCustomerNotification } from "@/lib/email";
-import { getSiteOrigin } from "@/lib/site-url";
+import { getEmailOrigin } from "@/lib/site-url";
 import { createClient } from "@/lib/supabase/server";
 
 type RouteContext = { params: Promise<{ id: string }> };
@@ -13,7 +13,7 @@ export async function POST(_request: Request, { params }: RouteContext) {
   if (!user) return NextResponse.json({ error: "Authentication required." }, { status: 401 });
   const { data } = await supabase.from("website_requests").select("id, plan_id, customer_name, customer_email").eq("id", requestId).single();
   if (!data?.customer_email) return NextResponse.json({ error: "Request not found." }, { status: 404 });
-  const origin = await getSiteOrigin();
+  const origin = await getEmailOrigin();
   try {
     await sendAdminNewRequestAlert({ requestId, planId: data.plan_id, customerName: data.customer_name, customerEmail: data.customer_email, adminUrl: `${origin}/admin/requests/${requestId}` });
   } catch (error) {
