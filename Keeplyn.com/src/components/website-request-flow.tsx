@@ -124,6 +124,7 @@ export function WebsiteRequestFlow({
   const [email, setEmail] = useState(initialUser?.email ?? "");
   const [password, setPassword] = useState("");
   const [plan, setPlan] = useState<PlanId | null>(initialPlan);
+  const [businessName, setBusinessName] = useState("");
   const [offerings, setOfferings] = useState<Offering[]>([emptyOffering()]);
   const [photos, setPhotos] = useState<File[]>([]);
   const [photoBrief, setPhotoBrief] = useState("");
@@ -252,6 +253,10 @@ export function WebsiteRequestFlow({
     }
 
     if (step === 2) {
+      if (!websiteRequestSchema.shape.businessName.safeParse(businessName).success) {
+        setError("Enter your business name.");
+        return;
+      }
       const result = websiteRequestSchema.shape.offerings.safeParse(offerings);
       if (!result.success) {
         setError("Give every offering a title and description. Prices are optional, but must be valid if you add one.");
@@ -328,6 +333,7 @@ export function WebsiteRequestFlow({
       .join("\n\n");
 
     const parsed = websiteRequestSchema.safeParse({
+      businessName,
       plan,
       offerings,
       photoBrief,
@@ -336,7 +342,7 @@ export function WebsiteRequestFlow({
     });
 
     if (!parsed.success) {
-      setError("Please review the required plan and offering details before submitting.");
+      setError("Please review your business name, plan, and offering details before submitting.");
       return;
     }
 
@@ -390,6 +396,7 @@ export function WebsiteRequestFlow({
         p_theme_description: parsed.data.themeDescription || null,
         p_additional_notes: parsed.data.additionalNotes || null,
         p_assets: assets,
+        p_business_name: parsed.data.businessName,
       });
 
       if (requestError) throw requestError;
@@ -675,6 +682,18 @@ export function WebsiteRequestFlow({
                 title="What do you offer?"
                 description="Add the products, services, packages, or menu items you want customers to see. Add a price if you want one shown."
               />
+              <label className="mb-7 block text-xs font-semibold text-white/62">
+                Business name
+                <input
+                  className={fieldClass}
+                  value={businessName}
+                  onChange={(event) => setBusinessName(event.target.value)}
+                  placeholder="Riverside Bakery"
+                  maxLength={120}
+                  autoComplete="organization"
+                  required
+                />
+              </label>
               <div className="space-y-5">
                 {offerings.map((offering, index) => (
                   <fieldset key={index} className="relative border border-white/14 bg-white/[0.025] p-5 sm:p-7">
@@ -922,6 +941,10 @@ export function WebsiteRequestFlow({
               <div>
                 <dt className="text-[10px] uppercase tracking-[0.12em] text-white/26">Account</dt>
                 <dd className="mt-1.5 truncate text-sm text-white/62">{currentUser?.email || email || "Not created"}</dd>
+              </div>
+              <div>
+                <dt className="text-[10px] uppercase tracking-[0.12em] text-white/26">Business</dt>
+                <dd className="mt-1.5 truncate text-sm text-white/62">{businessName.trim() || "Not entered"}</dd>
               </div>
               <div>
                 <dt className="text-[10px] uppercase tracking-[0.12em] text-white/26">Plan</dt>
