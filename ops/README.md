@@ -19,7 +19,7 @@ You're alerted by email at support@keeplyn.com (and on your phone if
 - `worker/keeplyn_worker.py` — the worker. `doctor` checks setup; `run --lane fast` (replies, sending, promotions, every 30 s) and `run --lane build` (demos/revisions, one at a time) run as user services via `worker/install.sh`.
 - `site-starter/` — the Next.js scaffold every customer site starts from. The Moss/Northline/Sera templates are copied in fresh from `Keeplyn.com/` for each new site. `site-starter/CLAUDE.md` is the builder's playbook.
 - Customer sites live in `~/keeplyn-sites/kl-r<request>-<name>/`, one Vercel project each. Customer briefs (`job/`) never leave the PC.
-- Database: `Keeplyn.com/supabase/migrations/20261029120000_ops_approval_queue.sql` (`ops_items`).
+- Database: `Keeplyn.com/supabase/migrations/20261029100017_ops_approval_queue.sql` (`ops_items`).
 
 ## Safety
 
