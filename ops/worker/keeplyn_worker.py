@@ -57,7 +57,9 @@ PHOTO_BUCKET = "website-request-photos"
 CLAUDE_MODEL = os.environ.get("KEEPLYN_CLAUDE_MODEL", "claude-opus-5-5")
 OMP_PROFILE = "keeplyn-img"
 UA = "keeplyn-worker/1.0 (+https://keeplyn.com)"
-SAMPLE_NAMES = ("Moss & Mortar", "Moss &amp; Mortar", "Northline", "Sera Bakery", "Sera &")
+# Text that only the template sample businesses use; none of it may appear on a rendered customer page.
+SAMPLE_MARKERS = ("Moss & Mortar", "Moss &amp; Mortar", "Dripping Springs", "Northline", "2150 N Clark", "Portland, Maine",
+                  "88 Exchange Street", "Portland, ME")
 
 BUILD_TIMEOUT = 45 * 60
 DRAFT_TIMEOUT = 5 * 60
@@ -365,18 +367,21 @@ def write_job(sb: Supabase, site: Path, request, revision=None):
 
 
 def leftover_samples(site: Path):
+    """Sample-business text on the rendered pages (checked after `next build`)."""
     hits = []
-    for path in list((site / "src").rglob("*.ts")) + list((site / "src").rglob("*.tsx")):
-        text = path.read_text(errors="ignore")
-        hits += [f"{path.relative_to(site)}: {name}" for name in SAMPLE_NAMES if name in text]
+    for page in (site / ".next" / "server" / "app").glob("*.html"):
+        if page.name.startswith("_"):
+            continue
+        text = page.read_text(errors="ignore")
+        hits += [f"{page.stem} page: {marker}" for marker in SAMPLE_MARKERS if marker in text]
     return hits
 
 
 def build_and_check(site: Path):
     """Runs the image step and a local production build; one Claude repair pass on failure."""
     fulfil_image_requests(site)
-    problems = leftover_samples(site)
     build = run(["npm", "run", "build"], cwd=site, timeout=900, env=clean_env(), check=False)
+    problems = leftover_samples(site) if build.returncode == 0 else []
     if build.returncode == 0 and not problems:
         return
     log("  repair pass:", "build failed" if build.returncode else "sample text left")
@@ -399,9 +404,12 @@ def deploy(site: Path, production: bool) -> str:
     if not (site / ".vercel" / "project.json").exists():
         run(["vercel", "project", "add", project], cwd=site, timeout=120, check=False)  # no-op if it exists
         vercel(site, "link", "--yes", "--project", project)
+        # `project add` leaves the framework unset (Vercel would serve the repo as static files).
         # Demo content isn't secret and preview links must open on a phone without a Vercel login.
-        subprocess.run(["vercel", "api", f"/v9/projects/{project}", "-X", "PATCH", "--input", "-", "--silent"], cwd=site,
-                       input=json.dumps({"ssoProtection": None}), text=True, capture_output=True, timeout=120)
+        patch = subprocess.run(["vercel", "api", f"/v9/projects/{project}", "-X", "PATCH", "--input", "-", "--silent"], cwd=site,
+                               input=json.dumps({"framework": "nextjs", "ssoProtection": None}), text=True, capture_output=True, timeout=120)
+        if patch.returncode != 0:
+            raise RuntimeError(f"Could not configure Vercel project {project}: {(patch.stderr or patch.stdout)[-400:]}")
     output = vercel(site, "deploy", "--yes", *(["--prod"] if production else []), timeout=1200).stdout
     urls = re.findall(r"https://[a-z0-9.-]+\.vercel\.app", output)
     if not urls:
@@ -626,7 +634,7 @@ def send_approved_replies(sb: Supabase, ins: Instantly):
         source = item.get("source") or {}
         try:
             sent = ins.call("POST", "/emails/reply", {"reply_to_uuid": source["email_id"], "eaccount": source["eaccount"],
-                                                      "subject": item.get("email_subject") or "Re:", "body": {"text": item["final_body"]}})
+                                                      "subject": item.get("email_subject") or "Re:", "body": {"text": item["final_body"].replace("\r\n", "\n")}})
             sb.set_item(item["id"], status="sent", result=f"Instantly email {sent.get('id', '')}")
             if source.get("thread_id"):
                 try:
