@@ -147,12 +147,36 @@ class Supabase:
         return self.update("ops_items", f"id=eq.{item_id}", patch)
 
 
-def notify(sb: Supabase, title: str):
-    """Emails support@ the pending list (via keeplyn.com) and, if configured, pushes to the phone."""
+NOTIFY_STATE = STATE / "notify.json"
+NOTIFY_EVERY = 15 * 60  # keeps alert emails well inside Resend's daily cap
+
+
+def _notify_state():
+    try:
+        return json.loads(NOTIFY_STATE.read_text())
+    except Exception:
+        return {"last_sent": 0, "dirty": False}
+
+
+def flush_notify(sb: Supabase):
+    """Sends the pending-approvals digest email if something new is waiting and none went out recently."""
+    state = _notify_state()
+    if not state.get("dirty") or time.time() - state.get("last_sent", 0) < NOTIFY_EVERY:
+        return
     try:
         http("POST", f"{SITE_ORIGIN}/api/ops/notify", {"Authorization": f"Bearer {sb.key}"}, body={})
+        state = {"last_sent": time.time(), "dirty": False}
     except Exception as error:  # alerts must never break the pipeline
         log("notify email failed:", error)
+    NOTIFY_STATE.write_text(json.dumps(state))
+
+
+def notify(sb: Supabase, title: str):
+    """Queues a digest email to support@ (at most one per 15 min) and, if configured, pushes to the phone."""
+    state = _notify_state()
+    state["dirty"] = True
+    NOTIFY_STATE.write_text(json.dumps(state))
+    flush_notify(sb)
     if NTFY_TOPIC_FILE.exists():
         try:
             http("POST", f"https://ntfy.sh/{NTFY_TOPIC_FILE.read_text().strip()}",
@@ -194,6 +218,25 @@ def clean_env():
     return {k: os.environ[k] for k in ("HOME", "USER", "LANG", "PATH", "TERM") if k in os.environ} | {"PATH": f"{HOME}/.local/bin:/usr/local/bin:/usr/bin:/bin", "NEXT_TELEMETRY_DISABLED": "1"}
 
 
+NODE_ROOT = Path(os.path.realpath(shutil.which("node") or "/usr/bin/node")).parents[1]
+
+
+def sandboxed(cmd, site: Path):
+    """Runs site code (npm builds) with the whole home folder hidden except this site and Node.
+
+    Builds execute code Claude wrote from an untrusted brief; inside this sandbox there are
+    no keys, credentials, other customers' sites or repo files to read."""
+    return ["bwrap", "--ro-bind", "/", "/", "--tmpfs", str(HOME), "--tmpfs", "/tmp",
+            "--ro-bind", str(NODE_ROOT), str(NODE_ROOT), "--bind", str(site), str(site),
+            "--dev", "/dev", "--proc", "/proc", "--unshare-pid", "--die-with-parent", "--chdir", str(site),
+            "--setenv", "PATH", f"{NODE_ROOT}/bin:/usr/bin:/bin", "--setenv", "HOME", str(HOME),
+            "--setenv", "NEXT_TELEMETRY_DISABLED", "1", *cmd]
+
+
+def site_build(site: Path):
+    return run(sandboxed(["npm", "run", "build"], site), cwd=site, timeout=900, env=clean_env(), check=False)
+
+
 BUILD_SETTINGS = {
     "permissions": {
         "deny": [
@@ -210,8 +253,8 @@ def run_claude_build(site_dir: Path, prompt: str):
     settings_dir.mkdir(exist_ok=True)
     (settings_dir / "settings.json").write_text(json.dumps(BUILD_SETTINGS, indent=2))
     cmd = [claude_bin(), "-p", prompt, "--model", CLAUDE_MODEL,
-           "--tools", "Read,Edit,Write,Glob,Grep,Bash",
-           "--allowedTools", "Read", "Edit", "Write", "Glob", "Grep", "Bash(npm run typecheck)", "Bash(npm run build)",
+           "--tools", "Read,Edit,Write,Glob,Grep",
+           "--allowedTools", "Read", "Edit", "Write", "Glob", "Grep",
            "--permission-mode", "acceptEdits", "--setting-sources", "project",
            "--strict-mcp-config", "--mcp-config", '{"mcpServers":{}}',
            "--no-session-persistence", "--output-format", "json"]
@@ -383,7 +426,7 @@ def leftover_samples(site: Path):
 def build_and_check(site: Path):
     """Runs the image step and a local production build; one Claude repair pass on failure."""
     fulfil_image_requests(site)
-    build = run(["npm", "run", "build"], cwd=site, timeout=900, env=clean_env(), check=False)
+    build = site_build(site)
     problems = leftover_samples(site) if build.returncode == 0 else []
     if build.returncode == 0 and not problems:
         return
@@ -391,9 +434,11 @@ def build_and_check(site: Path):
     (site / "job" / "repair.txt").write_text(
         ("Build output:\n" + (build.stdout + build.stderr)[-6000:] if build.returncode else "") +
         ("\nSample-business text still present:\n" + "\n".join(problems) if problems else ""))
-    run_claude_build(site, "Read CLAUDE.md. The site in this folder has problems listed in job/repair.txt. Fix them without changing anything else, then run npm run typecheck.")
+    run_claude_build(site, "Read CLAUDE.md. The site in this folder has problems listed in job/repair.txt. Fix them without changing anything else.")
     fulfil_image_requests(site)
-    run(["npm", "run", "build"], cwd=site, timeout=900, env=clean_env())
+    build = site_build(site)
+    if build.returncode != 0:
+        raise RuntimeError(f"Build still failing after repair: {(build.stdout + build.stderr)[-1200:]}")
     if leftover_samples(site):
         raise RuntimeError("Sample-business text is still on the site after repair.")
 
@@ -524,14 +569,22 @@ def build_revision(sb: Supabase, request_id: int, change: str, ticket_id=None, s
 
 def build_lane_once(sb: Supabase):
     """Picks the oldest outstanding build job, if any. Returns True when it did work."""
-    # 1. New requests with no demo work yet.
-    requests = sb.select("website_requests", "status=in.(submitted,in_review)&select=id&order=created_at")
+    # 0. Items left "working" by a crash or reboot become failed so they can be retried.
+    stale = (dt.datetime.now(dt.timezone.utc) - dt.timedelta(minutes=90)).isoformat()
+    sb.update("ops_items", f"status=eq.working&updated_at=lt.{urllib.parse.quote(stale)}", {"status": "failed", "result": "Interrupted (worker restarted or timed out)."})
+    # 1. Requests with no demo yet; a failed build is retried after 30 minutes, at most 3 attempts.
+    requests = sb.select("website_requests", "status=in.(submitted,in_review,in_progress)&select=id&order=created_at")
     for request in requests:
-        existing = sb.select("ops_items", f"request_id=eq.{request['id']}&kind=eq.demo&status=neq.superseded&select=id&limit=1")
-        if not existing:
-            log(f"building demo for request {request['id']}")
-            build_demo(sb, request["id"])
-            return True
+        items = sb.select("ops_items", f"request_id=eq.{request['id']}&kind=eq.demo&status=neq.superseded&select=status,updated_at")
+        if any(i["status"] != "failed" for i in items):
+            continue
+        if items:
+            last = max(dt.datetime.fromisoformat(i["updated_at"]) for i in items)
+            if len(items) >= 3 or dt.datetime.now(dt.timezone.utc) - last < dt.timedelta(minutes=30):
+                continue
+        log(f"building demo for request {request['id']}" + (f" (attempt {len(items) + 1})" if items else ""))
+        build_demo(sb, request["id"])
+        return True
     # 2. Demos or revisions the reviewer sent back.
     for item in sb.select("ops_items", "status=eq.rejected&kind=in.(demo,revision)&select=*&order=decided_at"):
         if (item.get("source") or {}).get("rebuilt"):
@@ -676,6 +729,7 @@ def promote_approved_revisions(sb: Supabase):
 
 
 def fast_lane_once(sb: Supabase, ins: Instantly):
+    flush_notify(sb)
     send_approved_replies(sb, ins)
     promote_approved_revisions(sb)
     draft_replies(sb, ins)
