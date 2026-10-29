@@ -1,0 +1,24 @@
+@import "tailwindcss";
+
+/* Same base layer the Keeplyn demos render on, minus the Keeplyn site theme. */
+@layer base {
+  * {
+    box-sizing: border-box;
+  }
+
+  body {
+    margin: 0;
+    font-family: var(--font-geist-sans), Arial, Helvetica, sans-serif;
+  }
+
+  button,
+  a,
+  summary {
+    -webkit-tap-highlight-color: transparent;
+  }
+
+  :where(a, button, summary):focus-visible {
+    outline: 3px solid currentColor;
+    outline-offset: 3px;
+  }
+}

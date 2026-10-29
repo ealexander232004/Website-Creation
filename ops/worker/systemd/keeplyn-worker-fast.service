@@ -1,0 +1,16 @@
+[Unit]
+Description=Keeplyn ops worker (fast lane)
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+WorkingDirectory=%h/Website-Creation
+ExecStart=/usr/bin/python3 %h/Website-Creation/ops/worker/keeplyn_worker.py run --lane fast
+Restart=always
+RestartSec=30
+Nice=10
+Environment=PYTHONUNBUFFERED=1
+
+[Install]
+WantedBy=default.target
