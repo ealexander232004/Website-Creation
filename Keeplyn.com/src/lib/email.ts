@@ -60,6 +60,22 @@ function plainEmail(lines: string[]) {
   return `<!doctype html><html><body style="margin:0;padding:28px;background:#f4f5f0;color:#151515;font:15px/1.6 Arial,Helvetica,sans-serif">${body}</body></html>`;
 }
 
+/** Tells Keeplyn that demos or reply drafts are waiting in /admin/approvals. */
+export async function sendAdminApprovalsAlert(input: { items: { kind: string; title: string }[]; approvalsUrl: string; idempotencyKey: string }) {
+  const { resend, domain } = sender();
+  const count = input.items.length;
+  const lines = [
+    `${count} item${count === 1 ? " is" : "s are"} waiting for your approval:`,
+    ...input.items.slice(0, 10).map((item) => `• ${item.kind}: ${item.title}`),
+    `Review: ${input.approvalsUrl}`,
+  ];
+  const { error } = await resend.emails.send(
+    { from: `Keeplyn <updates@${domain}>`, to: KEEPLYN_SUPPORT_EMAIL, subject: `${count} waiting for approval`, html: plainEmail(lines), text: lines.join("\n\n") },
+    { headers: { "Idempotency-Key": input.idempotencyKey } },
+  );
+  if (error) throw new Error(error.message);
+}
+
 type AdminCustomer = { customerName?: string | null; customerEmail: string };
 
 function describeCustomer({ customerName, customerEmail }: AdminCustomer) {
