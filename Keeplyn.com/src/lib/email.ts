@@ -100,13 +100,14 @@ async function sendAdminAlert(input: AdminCustomer & { subject: string; lines: s
 }
 
 /** Tells Keeplyn a new website request is waiting in /admin. */
-export async function sendAdminNewRequestAlert(input: AdminCustomer & { requestId: number; planId: string; adminUrl: string }) {
+export async function sendAdminNewRequestAlert(input: AdminCustomer & { requestId: number; planId: string; businessName?: string | null; adminUrl: string }) {
   const requestNumber = formatRequestNumber(input.requestId);
   await sendAdminAlert({
     ...input,
-    subject: `New website request ${requestNumber} (${input.planId})`,
+    subject: `New website request ${requestNumber}${input.businessName ? `: ${input.businessName}` : ""} (${input.planId})`,
     lines: [
       `New ${input.planId} website request ${requestNumber}.`,
+      ...(input.businessName ? [`Business: ${input.businessName}`] : []),
       `Customer: ${describeCustomer(input)}`,
       `Review it: ${input.adminUrl}`,
       "The customer was promised a demo within two business days.",

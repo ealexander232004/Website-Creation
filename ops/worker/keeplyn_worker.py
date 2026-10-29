@@ -308,7 +308,7 @@ def refresh_base():
 
 
 def new_site_dir(request) -> Path:
-    slug = slugify(request.get("customer_name") or "", f"site-{request['id']}")
+    slug = slugify(request.get("business_name") or request.get("customer_name") or "", f"site-{request['id']}")
     return SITES / f"kl-r{request['id']}-{slug}"
 
 
@@ -333,7 +333,8 @@ def write_job(sb: Supabase, site: Path, request, revision=None):
     job.mkdir(exist_ok=True)
     offerings = sb.select("website_request_offerings", f"request_id=eq.{request['id']}&select=title,description,price,position&order=position")
     brief = {
-        "request_number": request["id"], "plan": request["plan_id"], "business_or_contact_name": request.get("customer_name"),
+        "request_number": request["id"], "plan": request["plan_id"], "business_name": request.get("business_name"),
+        "owner_name": request.get("customer_name"),
         "offerings": [{k: o[k] for k in ("title", "description", "price")} for o in offerings],
         "photo_direction": request.get("photo_brief"), "theme_and_feel": request.get("theme_description"),
         "additional_notes": request.get("additional_notes"), "domain_name": request.get("domain_name"),
@@ -471,7 +472,7 @@ REVISION_PROMPT = ("Read CLAUDE.md. This is a revision: apply job/revision.json 
 
 def build_demo(sb: Supabase, request_id: int, reviewer_note: str | None = None):
     request = sb.select("website_requests", f"id=eq.{request_id}&select=*")[0]
-    name = request.get("customer_name") or f"Request {request_id}"
+    name = request.get("business_name") or request.get("customer_name") or f"Request {request_id}"
     item = sb.insert("ops_items", {"kind": "demo", "status": "working", "request_id": request_id, "title": f"{name} — demo",
                                     "source": {"key": f"demo:{request_id}:{int(time.time())}"}})
     sb.update("website_requests", f"id=eq.{request_id}&status=in.(submitted,in_review)", {"status": "in_progress"})
@@ -487,7 +488,7 @@ def build_demo(sb: Supabase, request_id: int, reviewer_note: str | None = None):
         build_and_check(site)
         deploy(site, production=True)  # customer hasn't seen this address yet
         summary, result = result_summary(site)
-        url = ensure_demo_domain(site, result.get("business_name"))
+        url = ensure_demo_domain(site, request.get("business_name") or result.get("business_name"))
         sb.set_item(item["id"], status="pending", demo_url=url, summary=summary,
                     source={**item["source"], "site": site.name, "design": result.get("design")})
         notify(sb, f"Demo ready: {name}")
@@ -500,7 +501,7 @@ def build_demo(sb: Supabase, request_id: int, reviewer_note: str | None = None):
 
 def build_revision(sb: Supabase, request_id: int, change: str, ticket_id=None, source_key=None):
     request = sb.select("website_requests", f"id=eq.{request_id}&select=*")[0]
-    name = request.get("customer_name") or f"Request {request_id}"
+    name = request.get("business_name") or request.get("customer_name") or f"Request {request_id}"
     item = sb.insert("ops_items", {"kind": "revision", "status": "working", "request_id": request_id, "ticket_id": ticket_id,
                                     "title": f"{name} — revision", "source": {"key": source_key or f"revision:{request_id}:{int(time.time())}"}})
     try:

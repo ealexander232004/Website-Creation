@@ -11,11 +11,11 @@ export async function POST(_request: Request, { params }: RouteContext) {
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) return NextResponse.json({ error: "Authentication required." }, { status: 401 });
-  const { data } = await supabase.from("website_requests").select("id, plan_id, customer_name, customer_email").eq("id", requestId).single();
+  const { data } = await supabase.from("website_requests").select("id, plan_id, business_name, customer_name, customer_email").eq("id", requestId).single();
   if (!data?.customer_email) return NextResponse.json({ error: "Request not found." }, { status: 404 });
   const origin = await getEmailOrigin();
   try {
-    await sendAdminNewRequestAlert({ requestId, planId: data.plan_id, customerName: data.customer_name, customerEmail: data.customer_email, adminUrl: `${origin}/admin/requests/${requestId}` });
+    await sendAdminNewRequestAlert({ requestId, planId: data.plan_id, businessName: data.business_name, customerName: data.customer_name, customerEmail: data.customer_email, adminUrl: `${origin}/admin/requests/${requestId}` });
   } catch (error) {
     // Never block the customer's confirmation on the internal alert.
     console.error("New request admin alert failed", error);

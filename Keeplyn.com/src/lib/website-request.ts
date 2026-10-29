@@ -25,7 +25,10 @@ export const offeringSchema = z.object({
   ]),
 });
 
+export const businessNameSchema = z.string().trim().min(2, "Enter your business name.").max(120, "Keep the business name under 120 characters.");
+
 export const websiteRequestSchema = z.object({
+  businessName: businessNameSchema,
   plan: z.enum(["starter", "pro"]),
   offerings: z.array(offeringSchema).min(1).max(20),
   photoBrief: z.string().trim().max(3000),

@@ -11,7 +11,7 @@ You are building a **demo website for one small business** that asked Keeplyn fo
 
 ## Inputs
 
-- `job/brief.json` — business name, contact name, plan, offerings (title, description, optional price), photo direction, theme/feel, additional notes, location if known.
+- `job/brief.json` — `business_name` (may be missing on older requests), `owner_name`, plan, offerings (title, description, optional price), photo direction, theme/feel, additional notes.
 - `job/photos.json` — the customer's uploaded photos, already copied to `public/images/customer/` (file, width, height).
 - `job/revision.json` — present only for a revision. See "Revisions".
 
@@ -31,7 +31,7 @@ You are building a **demo website for one small business** that asked Keeplyn fo
    ```json
    {"design": "sera", "business_name": "The business's name as shown on the site", "summary": "2–3 sentences for the reviewer", "open_questions": ["…"], "flags": []}
    ```
-   The form asks for the owner's name, not the business name; find the business name in the brief (notes, offerings, email domain). If you truly can't, use a neutral name and say so in `open_questions`.
+   Use `business_name` from the brief. If it is missing (older requests), find it in the notes or offerings; if you truly can't, use a neutral name and say so in `open_questions`.
 
 ## Revisions
 
