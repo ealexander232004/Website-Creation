@@ -1,6 +1,6 @@
 import Image from "next/image";
 import Link from "next/link";
-import { ArrowDown, ArrowRight, ArrowUpRight, Menu, Plus } from "lucide-react";
+import { ArrowDown, ArrowRight, ArrowUpRight, Menu, Plus, X } from "lucide-react";
 import {
   businessHref,
   demoHref,
@@ -94,13 +94,14 @@ export function TemplateHeader({
         {b.id === "sera"
           ? "Preorder"
           : b.id === "moss"
-            ? "Start a project"
+            ? "Start a garden"
             : "Book a visit"}
         <ArrowUpRight size={16} aria-hidden="true" />
       </Link>
       <details className="template-mobile-menu">
-        <summary aria-label={`Open ${b.name} menu`}>
-          <Menu size={24} aria-hidden="true" />
+        <summary aria-label={`${b.name} menu`}>
+          <Menu size={24} aria-hidden="true" className="template-menu-open" />
+          <X size={24} aria-hidden="true" className="template-menu-close" />
         </summary>
         <nav aria-label={`${b.name} mobile navigation`}>
           <Link href={businessHref(b)}>Home</Link>

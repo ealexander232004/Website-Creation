@@ -5,7 +5,6 @@ import {
   ArrowUpRight,
   Asterisk,
   CalendarDays,
-  Plus,
 } from "lucide-react";
 import { dailyBake, businessHref, type BusinessTemplate } from "./catalog";
 import { Photo, TemplateButton } from "./template-chrome";
@@ -77,9 +76,10 @@ export function LandscapeTemplate({
         <div className="moss-intro-aside">
           <span className="template-eyebrow">Rooted in place</span>
           <div className="moss-arch t-rise">
+            {/* A tall crop of the hero, so the passage stays fresh for the portfolio. */}
             <Photo
-              image={passage}
-              className="t-parallax"
+              image={b.hero}
+              className="t-parallax moss-arch-photo"
               sizes="(min-width: 900px) 28vw, 70vw"
             />
           </div>
@@ -203,10 +203,6 @@ export function CareTemplate({ business: b }: { business: BusinessTemplate }) {
       <section className="northline-hero">
         <div className="northline-hero-copy">
           <Glyph kind="plus" className="northline-hero-plus" />
-          <span className="northline-status">
-            <span />
-            New faces welcome
-          </span>
           <div>
             <p className="template-eyebrow t-enter">{b.eyebrow}</p>
             <h1 className="t-enter" style={delay(120)}>
@@ -220,19 +216,6 @@ export function CareTemplate({ business: b }: { business: BusinessTemplate }) {
             <div className="t-enter" style={delay(360)}>
               <TemplateButton business={b} />
             </div>
-          </div>
-          <div className="northline-hero-meta">
-            <Plus size={20} aria-hidden="true" />
-            <span>
-              Great care.
-              <br />
-              Right here in {b.location.split(",")[0]}.
-            </span>
-            <span>
-              YOU CAN
-              <br />
-              EXHALE NOW.
-            </span>
           </div>
         </div>
         <div className="northline-portrait">
@@ -253,9 +236,6 @@ export function CareTemplate({ business: b }: { business: BusinessTemplate }) {
             </svg>
             <span>Feel like yourself.</span>
           </div>
-          <span className="northline-portrait-label">
-            A GOOD REASON TO SMILE
-          </span>
         </div>
       </section>
       <Marquee className="northline-care-strip">
