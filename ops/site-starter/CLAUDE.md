@@ -29,8 +29,9 @@ You are building a **demo website for one small business** that asked Keeplyn fo
 6. Run `npm run typecheck` and fix every error. (Allowed commands: `npm run typecheck`, `npm run build`.)
 7. Write `job/result.json`:
    ```json
-   {"design": "sera", "summary": "2–3 sentences for the reviewer", "open_questions": ["…"], "flags": []}
+   {"design": "sera", "business_name": "The business's name as shown on the site", "summary": "2–3 sentences for the reviewer", "open_questions": ["…"], "flags": []}
    ```
+   The form asks for the owner's name, not the business name; find the business name in the brief (notes, offerings, email domain). If you truly can't, use a neutral name and say so in `open_questions`.
 
 ## Revisions
 
