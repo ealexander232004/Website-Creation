@@ -93,6 +93,18 @@
   letter-spacing: -0.045em;
   line-height: 1;
 }
+/* Even line lengths for display type; no orphaned last words in copy. */
+.business-template p {
+  text-wrap: pretty;
+}
+.business-template :is(h1, h2, h3),
+.template-footer-top > p,
+.moss-closing-image p,
+.northline-space-note p,
+.template-about-image > p,
+.collection-headline {
+  text-wrap: balance;
+}
 .business-template a {
   text-decoration: none;
 }
@@ -144,6 +156,11 @@
   align-items: center;
   justify-content: space-between;
   gap: 28px;
+}
+.template-header > a:first-child {
+  display: flex;
+  align-items: center;
+  min-height: 44px;
 }
 .template-desktop-nav {
   display: flex;
@@ -215,7 +232,7 @@
 .sera-wordmark > span {
   display: block;
   font:
-    10px/1.2 var(--font-geist-sans),
+    11px/1.2 var(--font-geist-sans),
     sans-serif;
   letter-spacing: 0.03em;
   margin-top: 10px;
@@ -252,8 +269,9 @@
 }
 .template-text-link {
   display: inline-flex;
-  align-items: center;
+  align-items: flex-end;
   gap: 24px;
+  min-height: 44px;
   border-bottom: 1px solid currentColor;
   padding: 0 0 9px;
   font-size: 14px;
@@ -288,6 +306,8 @@
   display: inline-flex;
   gap: 12px;
   align-items: center;
+  padding-block: 12px;
+  margin-block: -12px;
 }
 /* Moss & Mortar — quiet typography, cinematic landscape, staggered portfolio. */
 .template-moss.template-page-home > .template-header {
@@ -365,7 +385,7 @@
   font-size: 14px;
 }
 .moss-hero-index {
-  font-size: 10px;
+  font-size: 11px;
   letter-spacing: 0.13em;
 }
 .moss-intro {
@@ -545,27 +565,10 @@
 }
 .northline-hero-copy {
   background: #ecf0fc;
-  padding: 35px var(--pad) 30px;
+  padding: 56px var(--pad);
   display: flex;
   flex-direction: column;
-  justify-content: space-between;
-  gap: 50px;
-}
-.northline-status {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  font-size: 12px;
-  width: fit-content;
-  border: 1px solid #194de340;
-  border-radius: 30px;
-  padding: 7px 11px;
-}
-.northline-status > span {
-  width: 7px;
-  height: 7px;
-  background: var(--ink);
-  border-radius: 50%;
+  justify-content: center;
 }
 .northline-hero h1 {
   font-size: clamp(55px, 6.6vw, 110px);
@@ -585,18 +588,6 @@
 }
 .northline-hero .template-button {
   margin-top: 28px;
-}
-.northline-hero-meta {
-  display: flex;
-  gap: 12px;
-  align-items: center;
-  font-size: 12px;
-}
-.northline-hero-meta > span:last-child {
-  margin-left: auto;
-  text-align: right;
-  font-size: 10px;
-  letter-spacing: 0.12em;
 }
 .northline-portrait {
   position: relative;
@@ -632,17 +623,6 @@
 .northline-smile-sticker span {
   font-size: 12px;
   font-weight: 600;
-}
-.northline-portrait-label {
-  position: absolute;
-  right: 23px;
-  bottom: 26px;
-  font-size: 10px;
-  letter-spacing: 0.13em;
-  color: #11348f;
-  writing-mode: vertical-rl;
-  background: #ffffffb8;
-  padding: 13px 7px;
 }
 .northline-care-strip {
   --copies: 3;
@@ -1515,6 +1495,7 @@
   display: flex;
   align-items: center;
   gap: 16px;
+  min-height: 44px;
   font-size: 13px;
 }
 .template-colophon {
@@ -2115,6 +2096,9 @@
   position: absolute;
   inset: 0;
 }
+.moss-arch-photo img {
+  object-position: 58% center;
+}
 .moss-intro-main {
   position: relative;
   min-width: 0;
@@ -2455,7 +2439,8 @@
 .sera-sticker {
   width: 172px;
   height: 172px;
-  top: -80px;
+  top: 32px;
+  right: 32px;
 }
 .sera-menu-heading .sera-polaroid {
   position: relative;
@@ -2485,6 +2470,39 @@
   padding-top: 14px;
   text-align: center;
   font: italic 500 17px var(--display);
+}
+/* Wide screens: the polaroid sits beside the intro instead of hanging below
+   the menu, so the two columns end together. */
+@media (min-width: 801px) and (max-width: 1100px) {
+  .sera-menu-heading .sera-polaroid {
+    width: 250px;
+  }
+}
+@media (min-width: 1101px) {
+  .sera-menu-heading {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    grid-template-rows: auto auto auto 1fr;
+    column-gap: 32px;
+    align-content: start;
+  }
+  .sera-menu-heading > * {
+    grid-column: 1;
+  }
+  .sera-menu-heading > h2 {
+    grid-column: 1 / -1;
+  }
+  .sera-menu-heading > a {
+    justify-self: start;
+    align-self: start;
+  }
+  .sera-menu-heading .sera-polaroid {
+    grid-column: 2;
+    grid-row: 3 / span 2;
+    align-self: start;
+    width: clamp(210px, 17vw, 270px);
+    margin: 8px 8px 0 0;
+  }
 }
 .sera-table-story > .template-photo {
   overflow: hidden;
@@ -2707,6 +2725,7 @@
   }
   .template-header-cta {
     margin-left: auto;
+    min-height: 44px;
     font-size: 12px;
     padding: 10px 14px;
   }
@@ -2718,11 +2737,22 @@
     place-items: center;
     list-style: none;
     cursor: pointer;
-    width: 36px;
-    height: 40px;
+    width: 44px;
+    height: 44px;
+    margin-right: -8px;
   }
   .template-mobile-menu summary::-webkit-details-marker {
     display: none;
+  }
+  .template-mobile-menu summary > svg {
+    grid-area: 1 / 1;
+  }
+  .template-mobile-menu .template-menu-close,
+  .template-mobile-menu[open] .template-menu-open {
+    display: none;
+  }
+  .template-mobile-menu[open] .template-menu-close {
+    display: block;
   }
   .template-mobile-menu nav {
     position: absolute;
@@ -2813,8 +2843,7 @@
     min-height: 600px;
   }
   .northline-hero-copy {
-    padding: 27px 25px;
-    gap: 40px;
+    padding: 44px 25px;
   }
   .northline-hero h1 {
     font-size: clamp(40px, 6.2vw, 54px);
@@ -2827,9 +2856,6 @@
     padding: 14px 17px;
     gap: 12px;
   }
-  .northline-hero-meta > span:last-child {
-    display: none;
-  }
   .northline-smile-sticker {
     bottom: 30px;
     width: 110px;
@@ -2840,7 +2866,7 @@
     width: 55px;
   }
   .northline-smile-sticker span {
-    font-size: 10px;
+    font-size: 11px;
   }
   .northline-care-strip {
     font-size: 13px;
@@ -3054,12 +3080,12 @@
   }
   .template-toolbar nav a {
     padding: 5px 8px;
-    font-size: 11px;
+    font-size: 12px;
   }
   .template-header-cta {
-    font-size: 11px;
+    font-size: 12px;
     gap: 8px;
-    padding: 10px 12px;
+    padding: 10px 13px;
   }
   .template-header {
     gap: 10px;
@@ -3104,7 +3130,7 @@
     align-items: flex-end;
   }
   .moss-hero-bottom > p {
-    font-size: 11px;
+    font-size: 12px;
   }
   .moss-explore {
     gap: 12px;
@@ -3145,7 +3171,7 @@
     font-size: 29px;
   }
   .moss-project span {
-    font-size: 11px;
+    font-size: 12px;
   }
   .moss-service-list h3 {
     font-size: 36px;
@@ -3163,16 +3189,11 @@
     grid-template-columns: 1fr;
   }
   .northline-hero-copy {
-    padding: 25px 24px 30px;
-    gap: 20px;
+    padding: 40px 24px 44px;
   }
   .northline-hero h1 {
     font-size: clamp(43px, 13.7vw, 67px);
     margin-block: 17px;
-  }
-  .northline-status {
-    border: 0;
-    padding: 0;
   }
   .northline-hero-description {
     font-size: 14px;
@@ -3181,9 +3202,6 @@
   .northline-hero .template-button {
     font-size: 14px;
     padding: 16px 22px;
-  }
-  .northline-hero-meta {
-    display: none;
   }
   .northline-portrait {
     height: 460px;
@@ -3197,10 +3215,6 @@
     top: -45px;
     width: 108px;
     height: 108px;
-  }
-  .northline-portrait-label {
-    bottom: 15px;
-    right: 15px;
   }
   .northline-care-strip {
     padding-block: 18px;
@@ -3229,10 +3243,8 @@
     margin-bottom: 10px;
   }
   .northline-space-note .template-circle {
-    width: 38px;
-    height: 38px;
-    right: 20px;
-    bottom: 20px;
+    width: 44px;
+    height: 44px;
   }
   .northline-service-grid {
     grid-template-columns: 1fr;
@@ -3283,14 +3295,12 @@
     margin: 0;
   }
   .sera-announcement {
-    gap: 10px;
     padding: 10px 16px;
-    font-size: 9px;
-    letter-spacing: 0.015em;
+    font-size: 11px;
+    letter-spacing: 0.06em;
   }
-  .sera-announcement svg {
-    width: 12px;
-    flex-shrink: 0;
+  .sera-announcement > :not(:last-child) {
+    display: none;
   }
   .sera-hero-title {
     padding: 26px 16px 21px;
@@ -3301,7 +3311,7 @@
     margin-top: 10px;
   }
   .sera-hero-title > .template-eyebrow {
-    font-size: 9px;
+    font-size: 11px;
   }
   .sera-hero-photo {
     margin-inline: 13px;
@@ -3359,7 +3369,7 @@
     font-size: 23px;
   }
   .sera-menu-list p {
-    font-size: 11px;
+    font-size: 12px;
   }
   .sera-menu-price {
     font-size: 26px;
@@ -3415,33 +3425,68 @@
   }
   .template-principles > div {
     grid-template-columns: 1fr;
-    gap: 35px;
-    margin-top: 30px;
+    gap: 26px;
+    margin-top: 26px;
+  }
+  .template-principles article {
+    display: grid;
+    grid-template-columns: 58px minmax(0, 1fr);
+    column-gap: 18px;
+    align-items: start;
+    padding-top: 24px;
+  }
+  .template-principles .template-principle-glyph {
+    grid-row: 1 / span 3;
+    width: 58px;
+    height: 58px;
+    margin: 0;
+  }
+  .template-principles article > :not(.template-principle-glyph) {
+    grid-column: 2;
   }
   .template-principles h2 {
-    font-size: 35px;
-    margin-top: 20px;
+    font-size: 28px;
+    margin: 2px 0 8px;
   }
   .template-principles article p {
     font-size: 15px;
   }
   .template-about-image {
-    height: 500px;
+    height: 460px;
+  }
+  .template-about-image::after {
+    background: linear-gradient(transparent 35%, #000000b3);
   }
   .template-about-image > p {
-    font-size: 38px;
-    bottom: 35px;
+    font-size: 27px;
+    line-height: 1.22;
+    bottom: 30px;
+  }
+  .template-faq {
+    display: flex;
+    flex-direction: column;
+    gap: 0;
   }
   .template-faq-intro {
-    display: block;
+    display: contents;
   }
   .template-faq-intro h1 {
-    font-size: 59px;
+    font-size: 46px;
+    margin: 18px 0 30px;
+  }
+  .template-faq-list {
+    order: 1;
+    padding-top: 0;
   }
   .template-faq-photo {
-    height: 230px;
+    order: 2;
+    height: 220px;
     min-height: 0;
-    margin-bottom: 25px;
+    margin: 44px 0 20px;
+  }
+  .template-faq-intro > a {
+    order: 3;
+    align-self: flex-start;
   }
   .template-faq-list h2 {
     font-size: 19px;
@@ -3469,11 +3514,14 @@
     padding: 45px 24px;
   }
   .template-contact-intro h1 {
-    font-size: 55px;
+    font-size: 46px;
   }
   .template-contact-intro .template-photo {
-    height: 230px;
+    height: 190px;
     margin-top: 25px;
+  }
+  .template-contact-map {
+    margin-top: 28px;
   }
   .template-form-pair {
     grid-template-columns: 1fr;
@@ -3506,7 +3554,7 @@
   .template-colophon {
     flex-direction: column;
     gap: 8px;
-    font-size: 10px;
+    font-size: 12px;
   }
   .template-collection {
     padding-top: 45px;
@@ -3527,12 +3575,12 @@
     font-size: 24px;
   }
   .collection-northline .collection-headline {
-    font-size: 35px;
+    font-size: clamp(26px, 7.6vw, 35px);
     bottom: 105px;
     left: 20px;
   }
   .collection-northline .template-photo {
-    left: 53%;
+    left: 55%;
   }
   .collection-sera .collection-headline {
     top: 105px;
@@ -3629,7 +3677,8 @@
   .sera-sticker {
     width: 128px;
     height: 128px;
-    top: -36px;
+    top: 22px;
+    right: 22px;
   }
   .sera-visit {
     grid-template-columns: 1fr;
@@ -3673,11 +3722,46 @@
     padding-right: 24px;
     font-size: 28px;
   }
+  .moss-service-list a {
+    display: grid;
+    grid-template-columns: 20px minmax(0, 1fr) auto;
+    column-gap: 14px;
+    row-gap: 4px;
+    align-items: center;
+  }
+  .moss-service-list a > span:first-child {
+    grid-row: 1 / 3;
+  }
+  .moss-service-list h3 {
+    grid-column: 2;
+  }
   .moss-service-price {
-    display: none;
+    grid-column: 2;
+    grid-row: 2;
+    margin-left: 0;
+    font-size: 11px;
   }
   .moss-service-list a > svg {
-    margin-left: auto;
+    grid-column: 3;
+    grid-row: 1 / 3;
+  }
+  .northline-appointment small {
+    font-size: 11px;
+  }
+  .template-price-grid > article {
+    padding: 28px 22px;
+  }
+  .template-price-grid h2 {
+    font-size: 32px;
+    margin: 18px 0 10px;
+  }
+  .template-price-grid strong {
+    font-size: 52px;
+    line-height: 1;
+    padding: 24px 0 20px;
+  }
+  .template-price-grid ul {
+    margin-bottom: 26px;
   }
   .moss-project-note {
     gap: 18px;
@@ -3687,9 +3771,6 @@
   }
   .northline-hero-plus {
     display: none;
-  }
-  .northline-appointment small {
-    font-size: 10px;
   }
   .northline-bubble {
     left: 10px;
@@ -3717,10 +3798,10 @@
     flex-shrink: 0;
   }
   .sera-sticker {
-    top: -30px;
-    right: 14px;
-    width: 104px;
-    height: 104px;
+    top: 16px;
+    right: 16px;
+    width: 96px;
+    height: 96px;
   }
   .sera-menu-list > a {
     gap: 16px;

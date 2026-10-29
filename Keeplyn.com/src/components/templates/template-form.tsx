@@ -18,6 +18,12 @@ export function TemplateForm({
     date: string;
   } | null>(null);
   const isAppointment = booking && b.id !== "sera";
+  const friendlyDate = (value: string) =>
+    new Date(`${value}T12:00:00`).toLocaleDateString("en-US", {
+      weekday: "short",
+      month: "short",
+      day: "numeric",
+    });
   function submit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     const form = event.currentTarget;
@@ -53,7 +59,7 @@ export function TemplateForm({
         </h2>
         <p>
           {receipt.service}
-          {receipt.date ? ` · ${receipt.date}` : ""}
+          {receipt.date ? ` · ${friendlyDate(receipt.date)}` : ""}
           {isAppointment ? ` · ${time}` : ""}
         </p>
         <p className="template-form-note">
