@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
+import { SiteAnalytics } from "@/components/site-analytics";
 import "./globals.css";
 
 const geistSans = Geist({
@@ -48,6 +49,7 @@ export default function RootLayout({
     >
       <body className="flex min-h-full flex-col overflow-x-hidden">
         {children}
+        <SiteAnalytics />
       </body>
     </html>
   );
