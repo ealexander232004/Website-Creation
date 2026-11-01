@@ -12,15 +12,17 @@ import {
   LockKeyhole,
   MailCheck,
   Plus,
+  RotateCcw,
   Sparkles,
   Trash2,
   UploadCloud,
   X,
 } from "lucide-react";
-import { FormEvent, useMemo, useRef, useState } from "react";
+import { FormEvent, useEffect, useMemo, useRef, useState } from "react";
 import { BrandLogo } from "@/components/brand-logo";
 import { createClient } from "@/lib/supabase/client";
 import { websitePlans, type WebsitePlan } from "@/lib/plans";
+import { clearDraft, loadDraft, normalizeOffering, saveDraft, savePhotos } from "@/lib/request-draft";
 import {
   acceptedPhotoTypes,
   MAX_PHOTOS,
@@ -50,16 +52,36 @@ type WebsiteRequestFlowProps = {
   initialUser: InitialUser | null;
   initialPlan: PlanId | null;
   expiredLink?: boolean;
+  /** The visitor just came back from the email-confirmation link. */
+  confirmed?: boolean;
 };
 
-const flowSteps = [
-  { label: "Account", eyebrow: "Create your login" },
-  { label: "Plan", eyebrow: "Choose your build" },
-  { label: "Offerings", eyebrow: "What you sell" },
-  { label: "Photos", eyebrow: "Show the work" },
-  { label: "Theme", eyebrow: "Set the feeling" },
-  { label: "Final notes", eyebrow: "Anything else" },
-] as const;
+/** Everything the request needs, so it can be sent from state or from a saved draft. */
+type RequestValues = {
+  plan: PlanId | null;
+  businessName: string;
+  offerings: Offering[];
+  photos: File[];
+  photoBrief: string;
+  themeTags: string[];
+  themeDescription: string;
+  additionalNotes: string;
+};
+
+// The brief comes first; the account is the last step, so nobody has to sign up
+// before they've seen what we ask for.
+type StepId = "offerings" | "photos" | "theme" | "plan" | "notes" | "account";
+
+const stepDetails: Record<StepId, { label: string; eyebrow: string }> = {
+  offerings: { label: "Your business", eyebrow: "What you sell" },
+  photos: { label: "Photos", eyebrow: "Show the work" },
+  theme: { label: "Theme", eyebrow: "Set the feeling" },
+  plan: { label: "Plan", eyebrow: "Pick a build" },
+  notes: { label: "Final notes", eyebrow: "Anything else" },
+  account: { label: "Send", eyebrow: "Where your demo goes" },
+};
+
+const requestSteps: StepId[] = ["offerings", "photos", "theme", "plan", "notes"];
 
 const themeOptions = [
   "Clean & minimal",
@@ -83,6 +105,10 @@ const mimeExtensions: Record<string, string> = {
 
 function formatBytes(bytes: number) {
   return `${(bytes / 1024 / 1024).toFixed(1)} MB`;
+}
+
+function hasAnswers(values: Pick<RequestValues, "businessName" | "offerings" | "photos">) {
+  return Boolean(values.businessName.trim() || values.offerings.some((item) => item.title.trim()) || values.photos.length);
 }
 
 function StepHeading({
@@ -115,12 +141,16 @@ export function WebsiteRequestFlow({
   initialUser,
   initialPlan,
   expiredLink = false,
+  confirmed = false,
 }: WebsiteRequestFlowProps) {
   const supabase = useMemo(() => createClient(), []);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const errorRef = useRef<HTMLDivElement>(null);
+  // A protected page sent them here: this is only a sign-in page, not a new request.
+  const signInOnly = Boolean(nextPath) && !initialUser;
 
-  const [step, setStep] = useState(initialUser ? 1 : 0);
-  const [accountMode, setAccountMode] = useState<"signup" | "signin">(initialAccountMode);
+  const [stepIndex, setStepIndex] = useState(0);
+  const [accountMode, setAccountMode] = useState<"signup" | "signin">(signInOnly ? "signin" : initialAccountMode);
   const [currentUser, setCurrentUser] = useState(initialUser);
   const [fullName, setFullName] = useState(initialUser?.name ?? "");
   const [email, setEmail] = useState(initialUser?.email ?? "");
@@ -137,13 +167,111 @@ export function WebsiteRequestFlow({
   const [error, setError] = useState<string | null>(
     expiredLink ? "That email link has expired or was already used. Sign in, or create your account again." : null,
   );
+  const [notice, setNotice] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
   const [confirmationEmail, setConfirmationEmail] = useState<string | null>(null);
   const [resent, setResent] = useState(false);
   const [requestId, setRequestId] = useState<number | null>(null);
+  const [draftLoaded, setDraftLoaded] = useState(signInOnly);
 
+  const steps: StepId[] = signInOnly ? ["account"] : currentUser ? requestSteps : [...requestSteps, "account"];
+  const currentIndex = Math.min(stepIndex, steps.length - 1);
+  const step = steps[currentIndex];
   const selectedPlan = websitePlans.find((item) => item.id === plan) ?? null;
-  const minimumStep = currentUser ? 1 : 0;
+
+  function currentValues(): RequestValues {
+    return { plan, businessName, offerings, photos, photoBrief, themeTags, themeDescription, additionalNotes };
+  }
+
+  function draftText() {
+    return { plan, businessName, offerings, photoBrief, themeTags, themeDescription, additionalNotes };
+  }
+
+  function applyValues(values: RequestValues) {
+    setPlan(values.plan ?? initialPlan);
+    setBusinessName(values.businessName);
+    setOfferings(values.offerings.length ? values.offerings : [emptyOffering()]);
+    setPhotos(values.photos);
+    setPhotoBrief(values.photoBrief);
+    setThemeTags(values.themeTags);
+    setThemeDescription(values.themeDescription);
+    setAdditionalNotes(values.additionalNotes);
+  }
+
+  // Bring back saved answers; send the request if they just confirmed their email.
+  useEffect(() => {
+    if (signInOnly) return;
+    let cancelled = false;
+    void loadDraft().then(async (draft) => {
+      if (cancelled) return;
+      if (draft) {
+        applyValues(draft);
+        if (!initialUser) {
+          setFullName(draft.fullName);
+          setEmail(draft.email);
+        }
+        if (draft.awaitingConfirmation && initialUser) {
+          setDraftLoaded(true);
+          // Land on the last step, so "Send" is right there if this attempt fails.
+          setStepIndex(requestSteps.length - 1);
+          setNotice("Email confirmed. Sending your request…");
+          await submitRequest(draft);
+          return;
+        }
+        if (draft.awaitingConfirmation) {
+          setConfirmationEmail(draft.email);
+          setStepIndex(requestSteps.length);
+        } else if (hasAnswers(draft)) {
+          setNotice("We kept your answers from last time.");
+        }
+      } else if (confirmed && initialUser) {
+        setNotice("Email confirmed. We couldn’t find your answers on this device — if you started on another device, open the email link there, or fill them in again here.");
+      }
+      setDraftLoaded(true);
+    });
+    return () => {
+      cancelled = true;
+    };
+    // Runs once on mount; later changes are saved by the effect below.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  // Save as they go, so a refresh or the email round-trip loses nothing.
+  useEffect(() => {
+    if (!draftLoaded || requestId !== null || signInOnly) return;
+    const timer = window.setTimeout(() => {
+      void saveDraft({
+        plan,
+        businessName,
+        offerings,
+        photoBrief,
+        themeTags,
+        themeDescription,
+        additionalNotes,
+        fullName,
+        email,
+        awaitingConfirmation: confirmationEmail !== null,
+      });
+    }, 500);
+    return () => window.clearTimeout(timer);
+  }, [draftLoaded, requestId, signInOnly, plan, businessName, offerings, photoBrief, themeTags, themeDescription, additionalNotes, fullName, email, confirmationEmail]);
+
+  // Photos are saved only when the selection changes.
+  useEffect(() => {
+    if (draftLoaded && requestId === null && !signInOnly) void savePhotos(photos);
+  }, [draftLoaded, requestId, signInOnly, photos]);
+
+  // On phones the error banner sits far above the Continue button; bring it into view.
+  useEffect(() => {
+    if (error) errorRef.current?.scrollIntoView({ behavior: "smooth", block: "center" });
+  }, [error]);
+
+  async function startOver() {
+    await clearDraft();
+    applyValues({ plan: initialPlan, businessName: "", offerings: [emptyOffering()], photos: [], photoBrief: "", themeTags: [], themeDescription: "", additionalNotes: "" });
+    setNotice(null);
+    setStepIndex(0);
+  }
 
   async function handleAccountSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -171,30 +299,39 @@ export function WebsiteRequestFlow({
         },
       });
 
-      setBusy(false);
-
       if (signUpError) {
+        setBusy(false);
         setError(signUpError.message);
         return;
       }
 
       if (!data.user) {
+        setBusy(false);
         setError("We couldn't finish creating your account. Please try again.");
         return;
       }
 
-      // Email confirmation is on: the session starts when they click the link.
+      // Supabase hides existing accounts: no identities means the email is already registered.
+      if (data.user.identities?.length === 0) {
+        setBusy(false);
+        setAccountMode("signin");
+        setPassword("");
+        setError("There's already an account for that email. Sign in to send your request.");
+        return;
+      }
+
+      // Email confirmation is on: hold the request until they click the link.
       if (!data.session) {
+        await saveDraft({ ...draftText(), fullName: fullName.trim(), email: email.trim(), awaitingConfirmation: true });
+        await savePhotos(photos);
+        setBusy(false);
         setConfirmationEmail(email.trim());
         return;
       }
 
-      setCurrentUser({
-        id: data.user.id,
-        email: data.user.email ?? email.trim(),
-        name: fullName.trim(),
-      });
-      setStep(1);
+      setCurrentUser({ id: data.user.id, email: data.user.email ?? email.trim(), name: fullName.trim() });
+      setBusy(false);
+      await submitRequest(currentValues());
       return;
     }
 
@@ -203,10 +340,13 @@ export function WebsiteRequestFlow({
       password,
     });
 
-    setBusy(false);
-
     if (signInError) {
+      setBusy(false);
       if (signInError.code === "email_not_confirmed") {
+        if (!signInOnly) {
+          await saveDraft({ ...draftText(), fullName, email: email.trim(), awaitingConfirmation: true });
+          await savePhotos(photos);
+        }
         setConfirmationEmail(email.trim());
         return;
       }
@@ -228,11 +368,12 @@ export function WebsiteRequestFlow({
           ? data.user.user_metadata.full_name
           : "",
     });
-    setStep(1);
+    setBusy(false);
+    await submitRequest(currentValues());
   }
 
   function confirmRedirect() {
-    return `${window.location.origin}/auth/confirm?next=${encodeURIComponent(nextPath ?? "/start")}`;
+    return `${window.location.origin}/auth/confirm?next=${encodeURIComponent(nextPath ?? "/start?confirmed=1")}`;
   }
 
   async function resendConfirmation() {
@@ -252,32 +393,32 @@ export function WebsiteRequestFlow({
     setResent(true);
   }
 
-  function goNext() {
-    setError(null);
-
-    if (step === 1 && !plan) {
-      setError("Choose a plan to continue.");
-      return;
-    }
-
-    if (step === 2) {
+  function validateStep(id: StepId) {
+    if (id === "offerings") {
       if (!websiteRequestSchema.shape.businessName.safeParse(businessName).success) {
-        setError("Enter your business name.");
-        return;
+        return "Enter your business name.";
       }
-      const result = websiteRequestSchema.shape.offerings.safeParse(offerings);
-      if (!result.success) {
-        setError("Give every offering a title and description. Prices are optional, but must be valid if you add one.");
-        return;
+      const incomplete = offerings.findIndex((item) => item.title.trim().length < 2 || item.description.trim().length < 2);
+      if (incomplete !== -1) {
+        return `Offering ${incomplete + 1} needs a title and a short description.`;
       }
     }
+    if (id === "plan" && !plan) return "Choose a plan to continue.";
+    return null;
+  }
 
-    setStep((current) => Math.min(current + 1, flowSteps.length - 1));
+  function goNext() {
+    const problem = validateStep(step);
+    setError(problem);
+    if (problem) return;
+    setStepIndex(Math.min(currentIndex + 1, steps.length - 1));
+    window.scrollTo({ top: 0 });
   }
 
   function goBack() {
     setError(null);
-    setStep((current) => Math.max(current - 1, minimumStep));
+    setStepIndex(Math.max(currentIndex - 1, 0));
+    window.scrollTo({ top: 0 });
   }
 
   function updateOffering(index: number, field: keyof Offering, value: string) {
@@ -303,23 +444,20 @@ export function WebsiteRequestFlow({
   function choosePhotos(files: File[]) {
     setError(null);
     const acceptedTypes = new Set<string>(acceptedPhotoTypes);
-    const combined = [...photos, ...files];
+    const usable = files.filter((file) => acceptedTypes.has(file.type) && file.size <= MAX_PHOTO_SIZE);
+    const room = MAX_PHOTOS - photos.length;
+    const added = usable.slice(0, Math.max(room, 0));
+    const skipped = files.length - added.length;
 
-    if (combined.length > MAX_PHOTOS) {
-      setError(`Choose no more than ${MAX_PHOTOS} photos.`);
-      return;
+    if (added.length) setPhotos((current) => [...current, ...added]);
+    // Keep the good photos; just say which ones didn't make it.
+    if (skipped) {
+      setError(
+        usable.length > room
+          ? `We added ${added.length} photo${added.length === 1 ? "" : "s"} — ${MAX_PHOTOS} is the limit.`
+          : `${skipped} photo${skipped === 1 ? " wasn't" : "s weren't"} added: photos must be JPG, PNG, or WebP and no larger than 8 MB each.`,
+      );
     }
-
-    const invalidFile = combined.find(
-      (file) => !acceptedTypes.has(file.type) || file.size > MAX_PHOTO_SIZE,
-    );
-
-    if (invalidFile) {
-      setError("Photos must be JPG, PNG, or WebP files no larger than 8 MB each.");
-      return;
-    }
-
-    setPhotos(combined);
   }
 
   function toggleTheme(theme: string) {
@@ -330,27 +468,29 @@ export function WebsiteRequestFlow({
     );
   }
 
-  async function submitRequest() {
+  async function submitRequest(values: RequestValues) {
     setError(null);
 
     const combinedTheme = [
-      themeTags.length ? `Preferred directions: ${themeTags.join(", ")}.` : "",
-      themeDescription.trim(),
+      values.themeTags.length ? `Preferred directions: ${values.themeTags.join(", ")}.` : "",
+      values.themeDescription.trim(),
     ]
       .filter(Boolean)
       .join("\n\n");
 
     const parsed = websiteRequestSchema.safeParse({
-      businessName,
-      plan,
-      offerings,
-      photoBrief,
+      businessName: values.businessName,
+      plan: values.plan,
+      offerings: values.offerings.map(normalizeOffering),
+      photoBrief: values.photoBrief,
       themeDescription: combinedTheme,
-      additionalNotes,
+      additionalNotes: values.additionalNotes,
     });
 
     if (!parsed.success) {
-      setError("Please review your business name, plan, and offering details before submitting.");
+      setNotice(null);
+      setStepIndex(0);
+      setError("Please review your business name, plan, and offering details before sending.");
       return;
     }
 
@@ -375,8 +515,9 @@ export function WebsiteRequestFlow({
         size_bytes: number;
       }> = [];
 
-      for (const [index, file] of photos.entries()) {
+      for (const [index, file] of values.photos.entries()) {
         const extension = mimeExtensions[file.type];
+        if (!extension) continue;
         const path = `${user.id}/${uploadGroup}/${String(index + 1).padStart(2, "0")}.${extension}`;
         const { error: uploadError } = await supabase.storage
           .from(WEBSITE_REQUEST_PHOTO_BUCKET)
@@ -410,6 +551,7 @@ export function WebsiteRequestFlow({
       if (requestError) throw requestError;
 
       const createdRequestId = Number(data);
+      await clearDraft();
       setRequestId(createdRequestId);
       void fetch(`/api/requests/${createdRequestId}/received-email`, { method: "POST" });
     } catch (submissionError) {
@@ -417,6 +559,7 @@ export function WebsiteRequestFlow({
         await supabase.storage.from(WEBSITE_REQUEST_PHOTO_BUCKET).remove(uploadedPaths);
       }
 
+      setNotice(null);
       setError(
         submissionError instanceof Error && submissionError.message.includes("session")
           ? submissionError.message
@@ -462,6 +605,9 @@ export function WebsiteRequestFlow({
     );
   }
 
+  const stepNumber = `Step ${String(currentIndex + 1).padStart(2, "0")}`;
+  const lastStep = currentIndex === steps.length - 1;
+
   return (
     <main className="min-h-svh bg-[#050505] text-white">
       <header className="border-b border-white/10 bg-black/70 backdrop-blur-xl">
@@ -479,218 +625,96 @@ export function WebsiteRequestFlow({
 
       <div className="site-container grid min-h-[calc(100svh-68px)] gap-10 py-8 lg:grid-cols-[16rem_minmax(0,1fr)_15rem] lg:gap-12 lg:py-12 xl:gap-16">
         <aside className="lg:sticky lg:top-10 lg:h-fit" aria-label="Request progress">
-          <div className="mb-8 flex items-center justify-between lg:hidden">
-            <p className="text-xs font-semibold text-white/68">
-              {flowSteps[step].label}
-            </p>
-            <p className="text-xs text-white/34">
-              {step + 1} / {flowSteps.length}
-            </p>
-          </div>
-          <div className="mb-10 h-1 overflow-hidden bg-white/10 lg:hidden">
-            <div
-              className="h-full bg-[#c9ff3b] transition-[width] duration-500"
-              style={{ width: `${((step + 1) / flowSteps.length) * 100}%` }}
-            />
-          </div>
+          {signInOnly ? null : (
+            <>
+              <div className="mb-8 flex items-center justify-between lg:hidden">
+                <p className="text-xs font-semibold text-white/68">
+                  {stepDetails[step].label}
+                </p>
+                <p className="text-xs text-white/34">
+                  {currentIndex + 1} / {steps.length}
+                </p>
+              </div>
+              <div className="mb-10 h-1 overflow-hidden bg-white/10 lg:hidden">
+                <div
+                  className="h-full bg-[#c9ff3b] transition-[width] duration-500"
+                  style={{ width: `${((currentIndex + 1) / steps.length) * 100}%` }}
+                />
+              </div>
 
-          <ol className="hidden space-y-1 lg:block">
-            {flowSteps.map((item, index) => {
-              const complete = index < step;
-              const active = index === step;
+              <ol className="hidden space-y-1 lg:block">
+                {steps.map((id, index) => {
+                  const complete = index < currentIndex;
+                  const active = index === currentIndex;
 
-              return (
-                <li
-                  key={item.label}
-                  className={`grid grid-cols-[2rem_1fr] gap-3 border-l px-4 py-3 transition-colors ${
-                    active
-                      ? "border-[#c9ff3b] bg-white/[0.045]"
-                      : "border-white/10"
-                  }`}
-                  aria-current={active ? "step" : undefined}
-                >
-                  <span
-                    className={`grid size-7 place-items-center rounded-full border text-[10px] font-semibold ${
-                      complete
-                        ? "border-[#c9ff3b] bg-[#c9ff3b] text-black"
-                        : active
-                          ? "border-[#c9ff3b]/55 text-[#c9ff3b]"
-                          : "border-white/14 text-white/30"
-                    }`}
-                  >
-                    {complete ? <Check className="size-3.5" aria-hidden="true" /> : index + 1}
-                  </span>
-                  <span>
-                    <span className={`block text-sm font-semibold ${active ? "text-white" : "text-white/42"}`}>
-                      {item.label}
-                    </span>
-                    <span className="mt-0.5 block text-[10px] text-white/24">{item.eyebrow}</span>
-                  </span>
-                </li>
-              );
-            })}
-          </ol>
+                  return (
+                    <li
+                      key={id}
+                      className={`grid grid-cols-[2rem_1fr] gap-3 border-l px-4 py-3 transition-colors ${
+                        active
+                          ? "border-[#c9ff3b] bg-white/[0.045]"
+                          : "border-white/10"
+                      }`}
+                      aria-current={active ? "step" : undefined}
+                    >
+                      <span
+                        className={`grid size-7 place-items-center rounded-full border text-[10px] font-semibold ${
+                          complete
+                            ? "border-[#c9ff3b] bg-[#c9ff3b] text-black"
+                            : active
+                              ? "border-[#c9ff3b]/55 text-[#c9ff3b]"
+                              : "border-white/14 text-white/30"
+                        }`}
+                      >
+                        {complete ? <Check className="size-3.5" aria-hidden="true" /> : index + 1}
+                      </span>
+                      <span>
+                        <span className={`block text-sm font-semibold ${active ? "text-white" : "text-white/42"}`}>
+                          {stepDetails[id].label}
+                        </span>
+                        <span className="mt-0.5 block text-[10px] text-white/24">{stepDetails[id].eyebrow}</span>
+                      </span>
+                    </li>
+                  );
+                })}
+              </ol>
+            </>
+          )}
         </aside>
 
         <section className="min-w-0 pb-12 lg:pb-20">
           {error ? (
-            <div className="mb-7 flex items-start gap-3 border border-[#ff8f7e]/30 bg-[#ff725e]/8 px-4 py-3 text-sm text-[#ffb4a8]" role="alert">
+            <div ref={errorRef} className="mb-7 flex items-start gap-3 border border-[#ff8f7e]/30 bg-[#ff725e]/8 px-4 py-3 text-sm text-[#ffb4a8]" role="alert">
               <X className="mt-0.5 size-4 shrink-0" aria-hidden="true" />
               {error}
             </div>
           ) : null}
 
-          {step === 0 ? (
-            <>
-              <StepHeading
-                kicker="Step 01 / Account"
-                title={accountMode === "signup" ? "First, let’s get to know you." : "Welcome back."}
-                description={
-                  accountMode === "signup"
-                    ? "Create a secure account so your request, photos, and future website updates stay connected to you."
-                    : nextPath
-                      ? "Sign in to see your requests, demos, and updates."
-                      : "Sign in to continue a new website request with your account."
-                }
-              />
-              {confirmationEmail ? (
-                <div className="max-w-2xl border border-[#c9ff3b]/30 bg-[#c9ff3b]/[0.05] p-6 sm:p-8" role="status">
-                  <MailCheck className="size-8 text-[#c9ff3b]" strokeWidth={1.5} aria-hidden="true" />
-                  <p className="mt-5 text-2xl font-semibold tracking-[-0.04em]">Check your inbox.</p>
-                  <p className="mt-3 text-sm leading-6 text-white/52">
-                    We sent a confirmation link to <strong className="text-white/80">{confirmationEmail}</strong>. Open it on this device to confirm your email and pick up right where you left off.
-                  </p>
-                  <div className="mt-6 flex flex-wrap items-center gap-4">
-                    <button type="button" className="button-secondary" onClick={resendConfirmation} disabled={busy || resent}>
-                      {busy ? <LoaderCircle className="size-4 animate-spin" aria-hidden="true" /> : null}
-                      {resent ? "Email sent again" : "Resend email"}
-                    </button>
-                    <button
-                      type="button"
-                      className="text-sm text-white/42 underline decoration-white/18 underline-offset-4 transition hover:text-white"
-                      onClick={() => {
-                        setConfirmationEmail(null);
-                        setResent(false);
-                        setError(null);
-                      }}
-                    >
-                      Use a different email
-                    </button>
-                  </div>
-                </div>
-              ) : (
-              <form onSubmit={handleAccountSubmit} className="max-w-2xl space-y-6">
-                {accountMode === "signup" ? (
-                  <label className="block text-xs font-semibold text-white/62">
-                    Your name
-                    <input
-                      className={fieldClass}
-                      autoComplete="name"
-                      value={fullName}
-                      onChange={(event) => setFullName(event.target.value)}
-                      placeholder="Alex Morgan"
-                      maxLength={100}
-                      required
-                    />
-                  </label>
-                ) : null}
-                <label className="block text-xs font-semibold text-white/62">
-                  Email address
-                  <input
-                    className={fieldClass}
-                    type="email"
-                    autoComplete="email"
-                    value={email}
-                    onChange={(event) => setEmail(event.target.value)}
-                    placeholder="you@business.com"
-                    required
-                  />
-                </label>
-                <label className="block text-xs font-semibold text-white/62">
-                  Password
-                  <input
-                    className={fieldClass}
-                    type="password"
-                    autoComplete={accountMode === "signup" ? "new-password" : "current-password"}
-                    value={password}
-                    onChange={(event) => setPassword(event.target.value)}
-                    placeholder="At least 8 characters"
-                    minLength={8}
-                    required
-                  />
-                </label>
-                <div className="flex flex-col gap-4 pt-2 sm:flex-row sm:items-center sm:justify-between">
-                  <button type="submit" className="button-primary justify-center" disabled={busy}>
-                    {busy ? <LoaderCircle className="size-4 animate-spin" aria-hidden="true" /> : null}
-                    {accountMode === "signup" ? "Create account" : "Sign in"}
-                    {!busy ? <ArrowRight className="size-4" aria-hidden="true" /> : null}
-                  </button>
-                  <button
-                    type="button"
-                    className="text-sm text-white/42 underline decoration-white/18 underline-offset-4 transition hover:text-white"
-                    onClick={() => {
-                      setError(null);
-                      setAccountMode((mode) => (mode === "signup" ? "signin" : "signup"));
-                    }}
-                  >
-                    {accountMode === "signup" ? "Already have an account? Sign in" : "Need an account? Sign up"}
-                  </button>
-                </div>
-                {accountMode === "signin" ? (
-                  <Link
-                    href="/auth/forgot-password"
-                    className="inline-block text-sm text-white/42 underline decoration-white/18 underline-offset-4 transition hover:text-white"
-                  >
-                    Forgot your password?
-                  </Link>
-                ) : null}
-              </form>
-              )}
-            </>
+          {notice ? (
+            <div className="mb-7 flex flex-wrap items-center justify-between gap-3 border border-[#c9ff3b]/25 bg-[#c9ff3b]/[0.045] px-4 py-3 text-sm text-white/70" role="status">
+              <span className="flex items-center gap-3">
+                {busy ? <LoaderCircle className="size-4 shrink-0 animate-spin text-[#c9ff3b]" aria-hidden="true" /> : <Check className="size-4 shrink-0 text-[#c9ff3b]" aria-hidden="true" />}
+                {notice}
+              </span>
+              {notice.startsWith("We kept") ? (
+                <button
+                  type="button"
+                  className="inline-flex items-center gap-1.5 text-xs text-white/48 underline decoration-white/18 underline-offset-4 transition hover:text-white"
+                  onClick={startOver}
+                >
+                  <RotateCcw className="size-3" aria-hidden="true" />
+                  Start over
+                </button>
+              ) : null}
+            </div>
           ) : null}
 
-          {step === 1 ? (
+          {step === "offerings" ? (
             <>
               <StepHeading
-                kicker="Step 02 / Plan"
-                title="Choose your build."
-                description="Pick the foundation that fits your business today. You can review everything before submitting—no payment is taken here."
-              />
-              <div className="grid gap-4 md:grid-cols-2">
-                {websitePlans.map((item) => {
-                  const active = plan === item.id;
-                  return (
-                    <button
-                      type="button"
-                      key={item.id}
-                      aria-pressed={active}
-                      onClick={() => setPlan(item.id)}
-                      className={`relative min-h-80 border p-6 text-left transition sm:p-8 ${
-                        active
-                          ? "border-[#c9ff3b] bg-[#c9ff3b]/[0.065]"
-                          : "border-white/14 bg-white/[0.025] hover:border-white/32 hover:bg-white/[0.045]"
-                      }`}
-                    >
-                      <span className={`absolute right-5 top-5 grid size-7 place-items-center rounded-full border ${active ? "border-[#c9ff3b] bg-[#c9ff3b] text-black" : "border-white/20 text-transparent"}`}>
-                        <Check className="size-4" aria-hidden="true" />
-                      </span>
-                      <span className="block text-4xl font-semibold tracking-[-0.065em]">{item.name}</span>
-                      <span className="mt-5 block max-w-xs text-sm leading-6 text-white/44">{item.summary}</span>
-                      <span className="mt-14 block text-5xl font-semibold tracking-[-0.075em]">{item.price}</span>
-                      <span className="mt-3 block text-xs text-[#c9ff3b]">Optional {item.hosting} care plan</span>
-                    </button>
-                  );
-                })}
-              </div>
-            </>
-          ) : null}
-
-          {step === 2 ? (
-            <>
-              <StepHeading
-                kicker="Step 03 / Offerings"
+                kicker={`${stepNumber} / Your business`}
                 title="What do you offer?"
-                description="Add the products, services, packages, or menu items you want customers to see. Add a price if you want one shown."
+                description="Your business name and what you sell is all we need to start. Add a price if you want one shown — “25”, “50/hr”, and “from $40” all work."
               />
               <label className="mb-7 block text-xs font-semibold text-white/62">
                 Business name
@@ -735,17 +759,14 @@ export function WebsiteRequestFlow({
                         <span>
                           Price <span className="font-normal text-white/34">(optional)</span>
                         </span>
-                        <span className="relative block">
-                          <span className="pointer-events-none absolute left-4 top-[1.4rem] -translate-y-1/2 text-sm text-white/34">$</span>
-                          <input
-                            className={`${fieldClass} pl-8`}
-                            inputMode="decimal"
-                            value={offering.price}
-                            onChange={(event) => updateOffering(index, "price", event.target.value)}
-                            placeholder="125.00"
-                            aria-label={`Offering ${index + 1} price in dollars, optional`}
-                          />
-                        </span>
+                        <input
+                          className={fieldClass}
+                          value={offering.price}
+                          onChange={(event) => updateOffering(index, "price", event.target.value)}
+                          placeholder="$125 or 50/hr"
+                          maxLength={60}
+                          aria-label={`Offering ${index + 1} price, optional`}
+                        />
                       </label>
                     </div>
                     <label className="mt-5 block text-xs font-semibold text-white/62">
@@ -755,7 +776,7 @@ export function WebsiteRequestFlow({
                         value={offering.description}
                         onChange={(event) => updateOffering(index, "description", event.target.value)}
                         placeholder="What is included, who it is for, and why customers choose it."
-                        maxLength={1000}
+                        maxLength={900}
                       />
                     </label>
                   </fieldset>
@@ -773,10 +794,10 @@ export function WebsiteRequestFlow({
             </>
           ) : null}
 
-          {step === 3 ? (
+          {step === "photos" ? (
             <>
               <StepHeading
-                kicker="Step 04 / Photos"
+                kicker={`${stepNumber} / Photos`}
                 title="Show us—or describe it."
                 description="Upload photos you already love, describe images you want us to generate, or skip this step and let us guide the art direction."
               />
@@ -851,10 +872,10 @@ export function WebsiteRequestFlow({
             </>
           ) : null}
 
-          {step === 4 ? (
+          {step === "theme" ? (
             <>
               <StepHeading
-                kicker="Step 05 / Theme"
+                kicker={`${stepNumber} / Theme`}
                 title="How should it feel?"
                 description="Describe the visual world you want. Brand colors, reference sites, words, eras, and moods are all useful—but this step is optional."
               />
@@ -887,10 +908,46 @@ export function WebsiteRequestFlow({
             </>
           ) : null}
 
-          {step === 5 ? (
+          {step === "plan" ? (
             <>
               <StepHeading
-                kicker="Step 06 / Final notes"
+                kicker={`${stepNumber} / Plan`}
+                title="Pick your build."
+                description="Your demo is free either way. Choose the plan you’d want if you love it — nothing is charged here, and you don’t pay until the website is exactly what you want."
+              />
+              <div className="grid gap-4 md:grid-cols-2">
+                {websitePlans.map((item) => {
+                  const active = plan === item.id;
+                  return (
+                    <button
+                      type="button"
+                      key={item.id}
+                      aria-pressed={active}
+                      onClick={() => setPlan(item.id)}
+                      className={`relative min-h-80 border p-6 text-left transition sm:p-8 ${
+                        active
+                          ? "border-[#c9ff3b] bg-[#c9ff3b]/[0.065]"
+                          : "border-white/14 bg-white/[0.025] hover:border-white/32 hover:bg-white/[0.045]"
+                      }`}
+                    >
+                      <span className={`absolute right-5 top-5 grid size-7 place-items-center rounded-full border ${active ? "border-[#c9ff3b] bg-[#c9ff3b] text-black" : "border-white/20 text-transparent"}`}>
+                        <Check className="size-4" aria-hidden="true" />
+                      </span>
+                      <span className="block text-4xl font-semibold tracking-[-0.065em]">{item.name}</span>
+                      <span className="mt-5 block max-w-xs text-sm leading-6 text-white/44">{item.summary}</span>
+                      <span className="mt-14 block text-5xl font-semibold tracking-[-0.075em]">{item.price}</span>
+                      <span className="mt-3 block text-xs text-[#c9ff3b]">Optional {item.hosting} care plan</span>
+                    </button>
+                  );
+                })}
+              </div>
+            </>
+          ) : null}
+
+          {step === "notes" ? (
+            <>
+              <StepHeading
+                kicker={`${stepNumber} / Final notes`}
                 title="Anything else?"
                 description="Share deadlines, must-have pages, links to an existing site, special functionality, or anything else we should know before we begin."
               />
@@ -918,62 +975,180 @@ export function WebsiteRequestFlow({
             </>
           ) : null}
 
-          {step >= 1 ? (
+          {step === "account" ? (
+            <>
+              <StepHeading
+                kicker={signInOnly ? "Sign in" : `${stepNumber} / Send`}
+                title={signInOnly ? "Welcome back." : accountMode === "signup" ? "Where should we send your demo?" : "Sign in to send it."}
+                description={
+                  signInOnly
+                    ? "Sign in to see your requests, demos, and updates."
+                    : accountMode === "signup"
+                      ? "Create your login so your demo, revisions, and photos stay private to you. No payment needed."
+                      : "Sign in and we’ll send your request right away."
+                }
+              />
+              {confirmationEmail ? (
+                <div className="max-w-2xl border border-[#c9ff3b]/30 bg-[#c9ff3b]/[0.05] p-6 sm:p-8" role="status">
+                  <MailCheck className="size-8 text-[#c9ff3b]" strokeWidth={1.5} aria-hidden="true" />
+                  <p className="mt-5 text-2xl font-semibold tracking-[-0.04em]">
+                    {signInOnly ? "Check your inbox." : "One last click: confirm your email."}
+                  </p>
+                  <p className="mt-3 text-sm leading-6 text-white/52">
+                    We sent a link to <strong className="text-white/80">{confirmationEmail}</strong>.{" "}
+                    {signInOnly
+                      ? "Open it to confirm your email and sign in."
+                      : "Open it on this device and we’ll send your request automatically — your answers are saved here."}
+                  </p>
+                  <div className="mt-6 flex flex-wrap items-center gap-4">
+                    <button type="button" className="button-secondary" onClick={resendConfirmation} disabled={busy || resent}>
+                      {busy ? <LoaderCircle className="size-4 animate-spin" aria-hidden="true" /> : null}
+                      {resent ? "Email sent again" : "Resend email"}
+                    </button>
+                    <button
+                      type="button"
+                      className="text-sm text-white/42 underline decoration-white/18 underline-offset-4 transition hover:text-white"
+                      onClick={() => {
+                        setConfirmationEmail(null);
+                        setResent(false);
+                        setError(null);
+                      }}
+                    >
+                      Use a different email
+                    </button>
+                  </div>
+                </div>
+              ) : (
+                <form onSubmit={handleAccountSubmit} className="max-w-2xl space-y-6">
+                  {accountMode === "signup" ? (
+                    <label className="block text-xs font-semibold text-white/62">
+                      Your name
+                      <input
+                        className={fieldClass}
+                        autoComplete="name"
+                        value={fullName}
+                        onChange={(event) => setFullName(event.target.value)}
+                        placeholder="Alex Morgan"
+                        maxLength={100}
+                        required
+                      />
+                    </label>
+                  ) : null}
+                  <label className="block text-xs font-semibold text-white/62">
+                    Email address
+                    <input
+                      className={fieldClass}
+                      type="email"
+                      autoComplete="email"
+                      value={email}
+                      onChange={(event) => setEmail(event.target.value)}
+                      placeholder="you@business.com"
+                      required
+                    />
+                  </label>
+                  <label className="block text-xs font-semibold text-white/62">
+                    Password
+                    <input
+                      className={fieldClass}
+                      type="password"
+                      autoComplete={accountMode === "signup" ? "new-password" : "current-password"}
+                      value={password}
+                      onChange={(event) => setPassword(event.target.value)}
+                      placeholder="At least 8 characters"
+                      minLength={8}
+                      required
+                    />
+                  </label>
+                  <div className="flex flex-col gap-4 pt-2 sm:flex-row sm:items-center sm:justify-between">
+                    <button type="submit" className="button-primary justify-center" disabled={busy}>
+                      {busy ? <LoaderCircle className="size-4 animate-spin" aria-hidden="true" /> : null}
+                      {signInOnly ? "Sign in" : accountMode === "signup" ? "Create account & send request" : "Sign in & send request"}
+                      {!busy ? <ArrowRight className="size-4" aria-hidden="true" /> : null}
+                    </button>
+                    {signInOnly ? null : (
+                      <button
+                        type="button"
+                        className="text-sm text-white/42 underline decoration-white/18 underline-offset-4 transition hover:text-white"
+                        onClick={() => {
+                          setError(null);
+                          setAccountMode((mode) => (mode === "signup" ? "signin" : "signup"));
+                        }}
+                      >
+                        {accountMode === "signup" ? "Already have an account? Sign in" : "New here? Create an account"}
+                      </button>
+                    )}
+                  </div>
+                  {accountMode === "signin" ? (
+                    <Link
+                      href="/auth/forgot-password"
+                      className="inline-block text-sm text-white/42 underline decoration-white/18 underline-offset-4 transition hover:text-white"
+                    >
+                      Forgot your password?
+                    </Link>
+                  ) : null}
+                </form>
+              )}
+            </>
+          ) : null}
+
+          {signInOnly ? null : (
             <div className="mt-10 flex flex-col-reverse gap-3 border-t border-white/10 pt-6 sm:flex-row sm:items-center sm:justify-between">
               <button
                 type="button"
                 className="button-secondary justify-center disabled:cursor-not-allowed disabled:opacity-35"
                 onClick={goBack}
-                disabled={step <= minimumStep || busy}
+                disabled={currentIndex === 0 || busy}
               >
                 <ChevronLeft className="size-4" aria-hidden="true" />
                 Back
               </button>
-              {step < flowSteps.length - 1 ? (
+              {step === "account" ? null : !lastStep ? (
                 <button type="button" className="button-primary justify-center" onClick={goNext}>
                   Continue
                   <ArrowRight className="size-4" aria-hidden="true" />
                 </button>
               ) : (
-                <button type="button" className="button-primary justify-center" onClick={submitRequest} disabled={busy}>
+                <button type="button" className="button-primary justify-center" onClick={() => submitRequest(currentValues())} disabled={busy}>
                   {busy ? <LoaderCircle className="size-4 animate-spin" aria-hidden="true" /> : <Sparkles className="size-4" aria-hidden="true" />}
                   {busy ? "Sending request…" : "Send website request"}
                 </button>
               )}
             </div>
-          ) : null}
+          )}
         </section>
 
         <aside className="hidden lg:block">
-          <div className="sticky top-10 border border-white/12 bg-white/[0.025] p-5">
-            <p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-white/30">Your brief</p>
-            <dl className="mt-6 space-y-5">
-              <div>
-                <dt className="text-[10px] uppercase tracking-[0.12em] text-white/26">Account</dt>
-                <dd className="mt-1.5 truncate text-sm text-white/62">{currentUser?.email || email || "Not created"}</dd>
+          {signInOnly ? null : (
+            <div className="sticky top-10 border border-white/12 bg-white/[0.025] p-5">
+              <p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-white/30">Your brief</p>
+              <dl className="mt-6 space-y-5">
+                <div>
+                  <dt className="text-[10px] uppercase tracking-[0.12em] text-white/26">Business</dt>
+                  <dd className="mt-1.5 truncate text-sm text-white/62">{businessName.trim() || "Not entered"}</dd>
+                </div>
+                <div>
+                  <dt className="text-[10px] uppercase tracking-[0.12em] text-white/26">Offerings</dt>
+                  <dd className="mt-1.5 text-sm text-white/62">{offerings.filter((item) => item.title.trim()).length || "None yet"}</dd>
+                </div>
+                <div>
+                  <dt className="text-[10px] uppercase tracking-[0.12em] text-white/26">Photos</dt>
+                  <dd className="mt-1.5 text-sm text-white/62">{photos.length ? `${photos.length} selected` : "Optional"}</dd>
+                </div>
+                <div>
+                  <dt className="text-[10px] uppercase tracking-[0.12em] text-white/26">Plan</dt>
+                  <dd className="mt-1.5 text-sm text-white/62">{selectedPlan ? `${selectedPlan.name} · ${selectedPlan.price}` : "Not chosen"}</dd>
+                </div>
+                <div>
+                  <dt className="text-[10px] uppercase tracking-[0.12em] text-white/26">Account</dt>
+                  <dd className="mt-1.5 truncate text-sm text-white/62">{currentUser?.email || "Last step"}</dd>
+                </div>
+              </dl>
+              <div className="mt-7 flex gap-3 border-t border-white/10 pt-5 text-[10px] leading-5 text-white/30">
+                <LockKeyhole className="mt-0.5 size-3.5 shrink-0" aria-hidden="true" />
+                Your answers are saved in this browser until you send them. Your request and photos are private to your account.
               </div>
-              <div>
-                <dt className="text-[10px] uppercase tracking-[0.12em] text-white/26">Business</dt>
-                <dd className="mt-1.5 truncate text-sm text-white/62">{businessName.trim() || "Not entered"}</dd>
-              </div>
-              <div>
-                <dt className="text-[10px] uppercase tracking-[0.12em] text-white/26">Plan</dt>
-                <dd className="mt-1.5 text-sm text-white/62">{selectedPlan ? `${selectedPlan.name} · ${selectedPlan.price}` : "Not chosen"}</dd>
-              </div>
-              <div>
-                <dt className="text-[10px] uppercase tracking-[0.12em] text-white/26">Offerings</dt>
-                <dd className="mt-1.5 text-sm text-white/62">{offerings.filter((item) => item.title.trim()).length || "None yet"}</dd>
-              </div>
-              <div>
-                <dt className="text-[10px] uppercase tracking-[0.12em] text-white/26">Photos</dt>
-                <dd className="mt-1.5 text-sm text-white/62">{photos.length ? `${photos.length} selected` : "Optional"}</dd>
-              </div>
-            </dl>
-            <div className="mt-7 flex gap-3 border-t border-white/10 pt-5 text-[10px] leading-5 text-white/30">
-              <LockKeyhole className="mt-0.5 size-3.5 shrink-0" aria-hidden="true" />
-              Your request and photos are private and tied to your account.
             </div>
-          </div>
+          )}
         </aside>
       </div>
     </main>
