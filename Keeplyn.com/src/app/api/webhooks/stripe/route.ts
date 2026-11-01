@@ -4,6 +4,7 @@ import type Stripe from "stripe";
 import { sendAdminPaymentAlert, sendCustomerNotification } from "@/lib/email";
 import { getEmailOrigin } from "@/lib/site-url";
 import { getStripe } from "@/lib/stripe";
+import { trackFunnel } from "@/lib/funnel-events";
 
 export const runtime = "nodejs";
 
@@ -87,6 +88,7 @@ export async function POST(request: Request) {
     requestId
   ) {
     const session = event.data.object as Stripe.Checkout.Session;
+    await trackFunnel("Payment received", { plan: session.metadata?.plan_id ?? null, care: session.mode === "subscription" }, request);
     const to = session.customer_details?.email ?? session.customer_email;
     const origin = await getEmailOrigin();
     if (to) {

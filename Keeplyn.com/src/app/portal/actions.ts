@@ -7,6 +7,7 @@ import { sendAdminApprovalAlert, sendAdminTicketAlert } from "@/lib/email";
 import { getEmailOrigin } from "@/lib/site-url";
 import { createClient } from "@/lib/supabase/server";
 import { signInPath } from "@/lib/safe-redirect";
+import { trackFunnel } from "@/lib/funnel-events";
 
 const requestIdSchema = z.coerce.number().int().positive();
 const ticketSchema = z.object({
@@ -39,6 +40,7 @@ export async function approveWebsite(formData: FormData) {
     // The approval is saved; a failed internal alert must not block domain setup.
     console.error("Approval admin alert failed", { requestId, alertError });
   }
+  await trackFunnel("Demo approved");
   revalidatePath(`/portal/requests/${requestId}`);
   redirect(`/portal/requests/${requestId}/domain`);
 }

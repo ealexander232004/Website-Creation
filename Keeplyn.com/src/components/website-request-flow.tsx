@@ -20,6 +20,7 @@ import {
 } from "lucide-react";
 import { FormEvent, useEffect, useMemo, useRef, useState } from "react";
 import { BrandLogo } from "@/components/brand-logo";
+import { trackEvent } from "@/lib/analytics-client";
 import { createClient } from "@/lib/supabase/client";
 import { websitePlans, type WebsitePlan } from "@/lib/plans";
 import { clearDraft, loadDraft, normalizeOffering, saveDraft, savePhotos } from "@/lib/request-draft";
@@ -261,6 +262,11 @@ export function WebsiteRequestFlow({
     if (draftLoaded && requestId === null && !signInOnly) void savePhotos(photos);
   }, [draftLoaded, requestId, signInOnly, photos]);
 
+  // /start is one URL, so step views are what show where people stop.
+  useEffect(() => {
+    if (!signInOnly) trackEvent("Request step", { step });
+  }, [signInOnly, step]);
+
   // On phones the error banner sits far above the Continue button; bring it into view.
   useEffect(() => {
     if (error) errorRef.current?.scrollIntoView({ behavior: "smooth", block: "center" });
@@ -319,6 +325,8 @@ export function WebsiteRequestFlow({
         setError("There's already an account for that email. Sign in to send your request.");
         return;
       }
+
+      trackEvent("Account created", { confirm: !data.session });
 
       // Email confirmation is on: hold the request until they click the link.
       if (!data.session) {
@@ -551,6 +559,7 @@ export function WebsiteRequestFlow({
       if (requestError) throw requestError;
 
       const createdRequestId = Number(data);
+      trackEvent("Request sent", { plan: parsed.data.plan });
       await clearDraft();
       setRequestId(createdRequestId);
       void fetch(`/api/requests/${createdRequestId}/received-email`, { method: "POST" });
