@@ -6,6 +6,7 @@ import { z } from "zod";
 import { sendAdminApprovalAlert, sendAdminTicketAlert } from "@/lib/email";
 import { getEmailOrigin } from "@/lib/site-url";
 import { createClient } from "@/lib/supabase/server";
+import { signInPath } from "@/lib/safe-redirect";
 
 const requestIdSchema = z.coerce.number().int().positive();
 const ticketSchema = z.object({
@@ -17,7 +18,7 @@ const ticketSchema = z.object({
 async function getAuthenticatedClient() {
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
-  if (!user) redirect("/start?mode=signin");
+  if (!user) redirect(signInPath("/portal"));
   return supabase;
 }
 

@@ -8,6 +8,7 @@ import type { WebsiteRequest } from "@/lib/customer-lifecycle";
 import { checkDomain, DNS_TARGETS, type DomainCheck } from "@/lib/domain-check";
 import { websitePlans } from "@/lib/plans";
 import { createClient } from "@/lib/supabase/server";
+import { signInPath } from "@/lib/safe-redirect";
 
 export const dynamic = "force-dynamic";
 export const metadata: Metadata = { title: "Domain setup" };
@@ -110,7 +111,7 @@ export default async function DomainSetupPage({ params, searchParams }: PageProp
   if (!Number.isInteger(requestId) || requestId < 1) notFound();
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
-  if (!user) redirect("/start?mode=signin");
+  if (!user) redirect(signInPath(`/portal/requests/${requestId}/domain`));
   const { data, error } = await supabase.from("website_requests").select("*").eq("id", requestId).single();
   if (error || !data) notFound();
   const request = data as WebsiteRequest;

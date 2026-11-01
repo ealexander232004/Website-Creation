@@ -7,6 +7,7 @@ import { sendCustomerNotification } from "@/lib/email";
 import type { OpsItem } from "@/lib/ops";
 import { getEmailOrigin } from "@/lib/site-url";
 import { createClient } from "@/lib/supabase/server";
+import { signInPath } from "@/lib/safe-redirect";
 
 const idSchema = z.coerce.number().int().positive();
 const bodySchema = z.string().trim().min(1, "Write the message before approving.").max(10000);
@@ -15,7 +16,7 @@ const noteSchema = z.string().trim().max(4000);
 async function requireAdmin() {
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
-  if (!user) redirect("/start?mode=signin");
+  if (!user) redirect(signInPath("/admin/approvals"));
   const { data } = await supabase.rpc("is_keeplyn_admin");
   if (!data) redirect("/portal");
   return supabase;

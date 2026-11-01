@@ -5,6 +5,7 @@ import { ArrowRight, CirclePlus, ShieldCheck } from "lucide-react";
 import { SiteHeader } from "@/components/site-header";
 import { formatDate, formatRequestNumber, statusLabels, type WebsiteRequest } from "@/lib/customer-lifecycle";
 import { createClient } from "@/lib/supabase/server";
+import { signInPath } from "@/lib/safe-redirect";
 
 export const dynamic = "force-dynamic";
 export const metadata: Metadata = { title: "Customer portal", description: "Manage your Keeplyn website requests, demos, updates, domain, and launch." };
@@ -12,7 +13,7 @@ export const metadata: Metadata = { title: "Customer portal", description: "Mana
 export default async function PortalPage() {
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
-  if (!user) redirect("/start?mode=signin");
+  if (!user) redirect(signInPath("/portal"));
   const [{ data, error }, { data: admin }] = await Promise.all([
     supabase.from("website_requests").select("*").order("created_at", { ascending: false }),
     supabase.rpc("is_keeplyn_admin"),

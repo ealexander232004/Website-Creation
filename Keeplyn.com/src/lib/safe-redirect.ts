@@ -3,3 +3,8 @@ export function safeNextPath(value: string | null | undefined, fallback = "/port
   if (!value || !value.startsWith("/") || value.startsWith("//") || value.startsWith("/\\")) return fallback;
   return value;
 }
+
+/** Sign-in URL that brings the visitor back to `next` afterwards. */
+export function signInPath(next: string) {
+  return `/start?mode=signin&next=${encodeURIComponent(safeNextPath(next))}`;
+}

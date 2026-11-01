@@ -1,5 +1,7 @@
 import type { Metadata } from "next";
+import { redirect } from "next/navigation";
 import { WebsiteRequestFlow } from "@/components/website-request-flow";
+import { safeNextPath } from "@/lib/safe-redirect";
 import { createClient } from "@/lib/supabase/server";
 
 export const dynamic = "force-dynamic";
@@ -15,6 +17,7 @@ type StartPageProps = {
     mode?: string;
     plan?: string;
     link?: string;
+    next?: string;
   }>;
 };
 
@@ -24,10 +27,15 @@ export default async function StartPage({ searchParams }: StartPageProps) {
   const {
     data: { user },
   } = await supabase.auth.getUser();
+  const signingIn = params.mode === "signin";
+  // Where to go after signing in: the page that sent them here, else the portal.
+  const nextPath = signingIn ? safeNextPath(params.next, "/portal") : null;
+  if (user && nextPath) redirect(nextPath);
 
   return (
     <WebsiteRequestFlow
-      initialAccountMode={params.mode === "signin" ? "signin" : "signup"}
+      initialAccountMode={signingIn ? "signin" : "signup"}
+      nextPath={nextPath}
       expiredLink={params.link === "expired"}
       initialPlan={params.plan === "starter" || params.plan === "pro" ? params.plan : null}
       initialUser={
