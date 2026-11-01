@@ -9,6 +9,7 @@ import { getSiteOrigin } from "@/lib/site-url";
 import { createClient } from "@/lib/supabase/server";
 import { getStripe, getStripePriceId, stripeIntegrationIdentifier } from "@/lib/stripe";
 import { signInPath } from "@/lib/safe-redirect";
+import { trackFunnel } from "@/lib/funnel-events";
 
 const requestIdSchema = z.coerce.number().int().positive();
 const domainSchema = z.string().trim().toLowerCase()
@@ -56,6 +57,7 @@ async function checkout(request: WebsiteRequest, supabase: SupabaseClient) {
     throw new Error(error.message);
   }
   if (!session.url) throw new Error("Stripe did not return a checkout URL.");
+  await trackFunnel("Checkout started", { plan: request.plan_id, care: request.hosting_selected });
   redirect(session.url);
 }
 
