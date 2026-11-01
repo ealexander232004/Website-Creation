@@ -45,6 +45,8 @@ type Offering = {
 
 type WebsiteRequestFlowProps = {
   initialAccountMode: "signup" | "signin";
+  /** Set when a protected page sent the visitor here to sign in; they return to it afterwards. */
+  nextPath?: string | null;
   initialUser: InitialUser | null;
   initialPlan: PlanId | null;
   expiredLink?: boolean;
@@ -109,6 +111,7 @@ function StepHeading({
 
 export function WebsiteRequestFlow({
   initialAccountMode,
+  nextPath = null,
   initialUser,
   initialPlan,
   expiredLink = false,
@@ -211,6 +214,12 @@ export function WebsiteRequestFlow({
       return;
     }
 
+    if (nextPath) {
+      // Full navigation so the server renders the page with the new session.
+      window.location.assign(nextPath);
+      return;
+    }
+
     setCurrentUser({
       id: data.user.id,
       email: data.user.email ?? email.trim(),
@@ -223,7 +232,7 @@ export function WebsiteRequestFlow({
   }
 
   function confirmRedirect() {
-    return `${window.location.origin}/auth/confirm?next=/start`;
+    return `${window.location.origin}/auth/confirm?next=${encodeURIComponent(nextPath ?? "/start")}`;
   }
 
   async function resendConfirmation() {
@@ -539,7 +548,9 @@ export function WebsiteRequestFlow({
                 description={
                   accountMode === "signup"
                     ? "Create a secure account so your request, photos, and future website updates stay connected to you."
-                    : "Sign in to continue a new website request with your account."
+                    : nextPath
+                      ? "Sign in to see your requests, demos, and updates."
+                      : "Sign in to continue a new website request with your account."
                 }
               />
               {confirmationEmail ? (

@@ -6,6 +6,7 @@ import { z } from "zod";
 import { sendCustomerNotification } from "@/lib/email";
 import { getEmailOrigin } from "@/lib/site-url";
 import { createClient } from "@/lib/supabase/server";
+import { signInPath } from "@/lib/safe-redirect";
 
 const idSchema = z.coerce.number().int().positive();
 const httpsUrl = z.string().trim().url().refine((value) => value.startsWith("https://"), "Use a secure URL.");
@@ -13,7 +14,7 @@ const httpsUrl = z.string().trim().url().refine((value) => value.startsWith("htt
 async function requireAdmin() {
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
-  if (!user) redirect("/start?mode=signin");
+  if (!user) redirect(signInPath("/admin"));
   const { data } = await supabase.rpc("is_keeplyn_admin");
   if (!data) redirect("/portal");
   return supabase;

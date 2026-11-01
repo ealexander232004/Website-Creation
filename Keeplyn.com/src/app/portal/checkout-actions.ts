@@ -8,6 +8,7 @@ import type { WebsiteRequest } from "@/lib/customer-lifecycle";
 import { getSiteOrigin } from "@/lib/site-url";
 import { createClient } from "@/lib/supabase/server";
 import { getStripe, getStripePriceId, stripeIntegrationIdentifier } from "@/lib/stripe";
+import { signInPath } from "@/lib/safe-redirect";
 
 const requestIdSchema = z.coerce.number().int().positive();
 const domainSchema = z.string().trim().toLowerCase()
@@ -17,7 +18,7 @@ const domainSchema = z.string().trim().toLowerCase()
 async function requireCheckoutRequest(requestId: number) {
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
-  if (!user) redirect("/start?mode=signin");
+  if (!user) redirect(signInPath(`/portal/requests/${requestId}`));
   const { data, error } = await supabase.from("website_requests").select("*").eq("id", requestId).single();
   if (error || !data) throw new Error("Website request not found.");
   return { supabase, request: data as WebsiteRequest };

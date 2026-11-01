@@ -7,6 +7,7 @@ import { SiteHeader } from "@/components/site-header";
 import { formatDate, formatRequestNumber } from "@/lib/customer-lifecycle";
 import { opsKindLabels, opsStatusLabels, type OpsItem } from "@/lib/ops";
 import { createClient } from "@/lib/supabase/server";
+import { signInPath } from "@/lib/safe-redirect";
 
 export const dynamic = "force-dynamic";
 export const metadata: Metadata = { title: "Approvals" };
@@ -16,7 +17,7 @@ const fieldClass = "mt-2 w-full border border-white/14 bg-black/30 px-4 py-3 tex
 export default async function ApprovalsPage() {
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
-  if (!user) redirect("/start?mode=signin");
+  if (!user) redirect(signInPath("/admin/approvals"));
   const { data: admin } = await supabase.rpc("is_keeplyn_admin");
   if (!admin) redirect("/portal");
 

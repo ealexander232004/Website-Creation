@@ -10,6 +10,7 @@ import { editableRequestStatuses, formatDate, formatOfferingPrice, formatRequest
 import { websitePlans } from "@/lib/plans";
 import { WEBSITE_REQUEST_PHOTO_BUCKET } from "@/lib/website-request";
 import { createClient } from "@/lib/supabase/server";
+import { signInPath } from "@/lib/safe-redirect";
 
 export const dynamic = "force-dynamic";
 export const metadata: Metadata = { title: "Website request" };
@@ -21,7 +22,7 @@ export default async function RequestDetailsPage({ params, searchParams }: PageP
   if (!Number.isInteger(requestId) || requestId < 1) notFound();
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
-  if (!user) redirect("/start?mode=signin");
+  if (!user) redirect(signInPath(`/portal/requests/${requestId}`));
   const { data, error } = await supabase.from("website_requests").select("*, website_request_offerings(*), website_request_assets(*), website_request_updates(*)").eq("id", requestId).single();
   if (error || !data) notFound();
   const request = data as WebsiteRequest;

@@ -34,6 +34,7 @@ export async function GET(request: NextRequest) {
     destination.pathname = "/start";
     destination.searchParams.set("mode", "signin");
     destination.searchParams.set("link", "expired");
+    if (next !== "/start") destination.searchParams.set("next", next);
   }
   return NextResponse.redirect(destination);
 }

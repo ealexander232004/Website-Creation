@@ -5,6 +5,7 @@ import { ArrowRight, LayoutDashboard } from "lucide-react";
 import { SiteHeader } from "@/components/site-header";
 import { formatDate, formatRequestNumber, statusLabels, type WebsiteRequest } from "@/lib/customer-lifecycle";
 import { createClient } from "@/lib/supabase/server";
+import { signInPath } from "@/lib/safe-redirect";
 
 export const dynamic = "force-dynamic";
 export const metadata: Metadata = { title: "Admin workspace" };
@@ -12,7 +13,7 @@ export const metadata: Metadata = { title: "Admin workspace" };
 export default async function AdminPage() {
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
-  if (!user) redirect("/start?mode=signin");
+  if (!user) redirect(signInPath("/admin"));
   const { data: admin } = await supabase.rpc("is_keeplyn_admin");
   if (!admin) redirect("/portal");
   const { data, error } = await supabase.from("website_requests").select("*").order("updated_at", { ascending: false });

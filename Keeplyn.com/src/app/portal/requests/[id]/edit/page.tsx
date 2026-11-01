@@ -5,6 +5,7 @@ import { SiteHeader } from "@/components/site-header";
 import { editableRequestStatuses, formatRequestNumber, type WebsiteRequest } from "@/lib/customer-lifecycle";
 import { WEBSITE_REQUEST_PHOTO_BUCKET } from "@/lib/website-request";
 import { createClient } from "@/lib/supabase/server";
+import { signInPath } from "@/lib/safe-redirect";
 
 export const dynamic = "force-dynamic";
 export const metadata: Metadata = { title: "Edit website request" };
@@ -15,7 +16,7 @@ export default async function EditRequestPage({ params }: PageProps) {
   if (!Number.isInteger(requestId) || requestId < 1) notFound();
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
-  if (!user) redirect("/start?mode=signin");
+  if (!user) redirect(signInPath(`/portal/requests/${requestId}/edit`));
   const { data, error } = await supabase.from("website_requests").select("*, website_request_offerings(*), website_request_assets(*)").eq("id", requestId).single();
   if (error || !data) notFound();
   const request = data as WebsiteRequest;
