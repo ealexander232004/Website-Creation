@@ -11,6 +11,7 @@ import {
   type DemoSlug,
   type TemplateImage,
 } from "./catalog";
+import { DemoMobileCta } from "./demo-mobile-cta";
 import { Contours, Glyph } from "./template-art";
 
 export function Photo({
@@ -196,26 +197,30 @@ export function TemplateFooter({
 
 export function DemoToolbar({ active }: { active: DemoSlug }) {
   return (
-    <div className="template-toolbar">
-      <Link href="/demos" className="template-toolbar-back">
-        <ArrowDown size={14} className="rotate-90" aria-hidden="true" />
-        <strong>Keeplyn</strong>
-        <span> / Demos</span>
-      </Link>
-      <nav aria-label="Switch demo website">
-        {demoSlugs.map((id, i) => (
-          <Link
-            key={id}
-            href={demoHref(id)}
-            aria-current={active === id ? "page" : undefined}
-          >
-            <span>0{i + 1}</span> {templates[id].shortName}
-          </Link>
-        ))}
-      </nav>
-      <Link href="/start" className="template-toolbar-start">
-        Make it yours <ArrowUpRight size={14} aria-hidden="true" />
-      </Link>
-    </div>
+    <>
+      <div className="template-toolbar">
+        <Link href="/demos" className="template-toolbar-back">
+          <ArrowDown size={14} className="rotate-90" aria-hidden="true" />
+          <strong>Keeplyn</strong>
+          <span> / Demos</span>
+        </Link>
+        <nav aria-label="Switch demo website">
+          {demoSlugs.map((id, i) => (
+            <Link
+              key={id}
+              href={demoHref(id)}
+              aria-current={active === id ? "page" : undefined}
+            >
+              <span>0{i + 1}</span> {templates[id].shortName}
+            </Link>
+          ))}
+        </nav>
+        <Link href="/start" className="template-toolbar-start">
+          Make it yours <ArrowUpRight size={14} aria-hidden="true" />
+        </Link>
+      </div>
+      {/* Phones hide the toolbar link above, so keep the next step in reach. */}
+      <DemoMobileCta />
+    </>
   );
 }
