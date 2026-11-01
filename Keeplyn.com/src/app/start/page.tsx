@@ -18,6 +18,7 @@ type StartPageProps = {
     plan?: string;
     link?: string;
     next?: string;
+    confirmed?: string;
   }>;
 };
 
@@ -37,6 +38,7 @@ export default async function StartPage({ searchParams }: StartPageProps) {
       initialAccountMode={signingIn ? "signin" : "signup"}
       nextPath={nextPath}
       expiredLink={params.link === "expired"}
+      confirmed={params.confirmed === "1"}
       initialPlan={params.plan === "starter" || params.plan === "pro" ? params.plan : null}
       initialUser={
         user

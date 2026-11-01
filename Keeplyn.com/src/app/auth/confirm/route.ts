@@ -26,7 +26,10 @@ export async function GET(request: NextRequest) {
   const destination = request.nextUrl.clone();
   destination.search = "";
   if (ok) {
-    destination.pathname = next;
+    // `next` may carry a query (e.g. /start?confirmed=1).
+    const target = new URL(next, destination.origin);
+    destination.pathname = target.pathname;
+    destination.search = target.search;
   } else if (type === "recovery" || next === "/auth/reset-password") {
     destination.pathname = "/auth/forgot-password";
     destination.searchParams.set("link", "expired");
