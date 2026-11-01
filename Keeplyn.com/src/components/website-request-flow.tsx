@@ -77,7 +77,6 @@ const mimeExtensions: Record<string, string> = {
   "image/jpeg": "jpg",
   "image/png": "png",
   "image/webp": "webp",
-  "image/avif": "avif",
 };
 
 function formatBytes(bytes: number) {
@@ -307,7 +306,7 @@ export function WebsiteRequestFlow({
     );
 
     if (invalidFile) {
-      setError("Photos must be JPG, PNG, WebP, or AVIF files no larger than 8 MB each.");
+      setError("Photos must be JPG, PNG, or WebP files no larger than 8 MB each.");
       return;
     }
 
@@ -786,7 +785,7 @@ export function WebsiteRequestFlow({
               >
                 <UploadCloud className="mx-auto size-10 text-white/34" strokeWidth={1.5} aria-hidden="true" />
                 <p className="mt-5 text-base font-semibold">Drop your photos here</p>
-                <p className="mt-2 text-xs leading-5 text-white/34">JPG, PNG, WebP, or AVIF · up to 8 MB each · {MAX_PHOTOS} photos max</p>
+                <p className="mt-2 text-xs leading-5 text-white/34">JPG, PNG, or WebP · up to 8 MB each · {MAX_PHOTOS} photos max</p>
                 <input
                   ref={fileInputRef}
                   className="sr-only"

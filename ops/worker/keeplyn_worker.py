@@ -395,11 +395,16 @@ def write_job(sb: Supabase, site: Path, request, revision=None):
             raw = sb.download(PHOTO_BUCKET, asset["storage_path"])
             tmp = customer_dir / f".upload-{index}"
             tmp.write_bytes(raw)
-            with Image.open(tmp) as image:
-                image = image.convert("RGB")
-                image.thumbnail((2400, 2400))
-                image.save(dest, "WEBP", quality=85)
-            tmp.unlink()
+            try:
+                with Image.open(tmp) as image:
+                    image = image.convert("RGB")
+                    image.thumbnail((2400, 2400))
+                    image.save(dest, "WEBP", quality=85)
+            except Exception as error:
+                log(f"skipping unreadable photo {asset['original_filename']!r} for request {request['id']}:", error)
+                continue
+            finally:
+                tmp.unlink(missing_ok=True)
         with Image.open(dest) as image:
             photos.append({"file": f"/images/customer/{dest.name}", "width": image.width, "height": image.height, "original_name": asset["original_filename"]})
     (job / "photos.json").write_text(json.dumps(photos, indent=2))
@@ -773,6 +778,18 @@ def doctor():
 
 # ── Main ─────────────────────────────────────────────────────────────────────
 
+_last_heartbeat = 0.0
+
+
+def heartbeat(sb: Supabase):
+    """Tells the hourly Vercel watchdog (/api/ops/watchdog) that the PC worker is alive."""
+    global _last_heartbeat
+    if time.time() - _last_heartbeat < 300:
+        return
+    sb.update("ops_worker_heartbeat", "id=eq.1", {"seen_at": dt.datetime.now(dt.timezone.utc).isoformat()})
+    _last_heartbeat = time.time()
+
+
 def main():
     parser = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     sub = parser.add_subparsers(dest="cmd", required=True)
@@ -796,6 +813,7 @@ def main():
         try:
             if args.lane == "fast":
                 fast_lane_once(sb, ins)
+                heartbeat(sb)
             else:
                 while build_lane_once(sb):
                     pass

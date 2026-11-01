@@ -4,11 +4,11 @@ export const MAX_PHOTOS = 8;
 export const MAX_PHOTO_SIZE = 8 * 1024 * 1024;
 export const WEBSITE_REQUEST_PHOTO_BUCKET = "website-request-photos";
 
+// No AVIF: the demo builder's image library can't read it.
 export const acceptedPhotoTypes = [
   "image/jpeg",
   "image/png",
   "image/webp",
-  "image/avif",
 ] as const;
 
 export const offeringSchema = z.object({
