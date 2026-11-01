@@ -11,7 +11,7 @@ import { websitePlans } from "@/lib/plans";
 import { acceptedPhotoTypes, MAX_PHOTOS, MAX_PHOTO_SIZE, WEBSITE_REQUEST_PHOTO_BUCKET, websiteRequestSchema } from "@/lib/website-request";
 
 const fieldClass = "mt-2 w-full border border-white/14 bg-white/[0.045] px-4 py-3.5 text-[15px] text-white outline-none transition placeholder:text-white/24 focus:border-[#c9ff3b]/70";
-const extensions: Record<string, string> = { "image/jpeg": "jpg", "image/png": "png", "image/webp": "webp", "image/avif": "avif" };
+const extensions: Record<string, string> = { "image/jpeg": "jpg", "image/png": "png", "image/webp": "webp" };
 
 export function RequestEditor({ request }: { request: WebsiteRequest }) {
   const supabase = useMemo(() => createClient(), []);
@@ -34,7 +34,7 @@ export function RequestEditor({ request }: { request: WebsiteRequest }) {
   function choosePhotos(files: File[]) {
     const combined = [...newPhotos, ...files];
     if (assets.length + combined.length > MAX_PHOTOS) return setError(`A request can have up to ${MAX_PHOTOS} photos.`);
-    if (combined.some((file) => !acceptedPhotoTypes.includes(file.type as never) || file.size > MAX_PHOTO_SIZE)) return setError("Photos must be JPG, PNG, WebP, or AVIF and no larger than 8 MB each.");
+    if (combined.some((file) => !acceptedPhotoTypes.includes(file.type as never) || file.size > MAX_PHOTO_SIZE)) return setError("Photos must be JPG, PNG, or WebP and no larger than 8 MB each.");
     setError(null); setNewPhotos(combined);
   }
   async function removeExisting(asset: RequestAsset) {
