@@ -18,10 +18,16 @@ export function DemoShowcase() {
             different designs.
           </h1>
         </div>
-        <p>
-          Three original concept websites. Explore the pages, try the details,
-          find your direction.
-        </p>
+        <div className="template-collection-offer">
+          <p>
+            Three original concept websites. Explore the pages, try the details,
+            find your direction.
+          </p>
+          <Link href="/start" className="button-primary">
+            Get a free demo <ArrowUpRight className="size-4" aria-hidden="true" />
+          </Link>
+          <small>Yours in 2 business days. Pay only if you love it.</small>
+        </div>
       </div>
       <div className="template-collection-grid">
         {demoSlugs.map((id, i) => {
@@ -72,6 +78,17 @@ export function DemoShowcase() {
             </Link>
           );
         })}
+      </div>
+      <div className="template-collection-cta">
+        <h2>Want one made for your business?</h2>
+        <p>
+          Tell us what you sell and we&apos;ll design a custom demo within two
+          business days. You don&apos;t pay anything until it&apos;s exactly
+          what you want.
+        </p>
+        <Link href="/start" className="button-primary">
+          Get my free demo <ArrowUpRight className="size-4" aria-hidden="true" />
+        </Link>
       </div>
     </section>
   );

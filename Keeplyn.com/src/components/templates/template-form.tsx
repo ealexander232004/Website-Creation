@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useState, type FormEvent } from "react";
 import { ArrowUpRight, Check, RotateCcw } from "lucide-react";
 import type { BusinessTemplate } from "./catalog";
@@ -66,12 +67,16 @@ export function TemplateForm({
           This is a preview. Nothing was sent, and no booking or order was
           placed.
         </p>
+        <Link href="/start" className="template-button">
+          Get a free demo for your business{" "}
+          <ArrowUpRight size={18} aria-hidden="true" />
+        </Link>
         <button
-          className="template-button"
+          className="template-form-retry"
           type="button"
           onClick={() => setReceipt(null)}
         >
-          Try again <RotateCcw size={18} aria-hidden="true" />
+          Try again <RotateCcw size={16} aria-hidden="true" />
         </button>
       </div>
     );

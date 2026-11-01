@@ -20,11 +20,14 @@ export function HeroSection() {
             Professional, customized websites
           </p>
           <div className="mt-8 flex flex-wrap justify-center gap-3">
-            <Link href="/demos" className="button-primary">View demos</Link>
-            <Link href="/start" className="button-secondary">
-              Start a project <ArrowUpRight className="size-4" aria-hidden="true" />
+            <Link href="/start" className="button-primary">
+              Get a free demo <ArrowUpRight className="size-4" aria-hidden="true" />
             </Link>
+            <Link href="/demos" className="button-secondary">View demos</Link>
           </div>
+          <p className="mt-5 text-sm text-white/72">
+            A custom demo in 2 business days. Pay only if you love it.
+          </p>
         </div>
       </div>
 
