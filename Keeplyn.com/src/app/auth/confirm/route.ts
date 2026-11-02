@@ -30,6 +30,9 @@ export async function GET(request: NextRequest) {
     const target = new URL(next, destination.origin);
     destination.pathname = target.pathname;
     destination.search = target.search;
+    // The Supabase template hardcodes next=/start, so mark confirmations here: the request
+    // flow then explains itself when the saved answers are on another device.
+    if (target.pathname === "/start" && type !== "recovery") destination.searchParams.set("confirmed", "1");
   } else if (type === "recovery" || next === "/auth/reset-password") {
     destination.pathname = "/auth/forgot-password";
     destination.searchParams.set("link", "expired");
